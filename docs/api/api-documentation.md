@@ -20,12 +20,12 @@ This document provides a comprehensive guide to the APIs exposed by the Genie Me
 - `PUT /api/users/{user_id}` - Update user details
 - `DELETE /api/users/{user_id}` - Delete a user
 
-### Bot Assignment
+### Agent Assignment
 
-- `GET /api/bots` - List all available bots
-- `GET /api/users/{user_id}/bots` - List bots assigned to a user
-- `POST /api/users/{user_id}/bots` - Assign a bot to a user
-- `DELETE /api/users/{user_id}/bots/{bot_id}` - Unassign a bot from a user
+- `GET /api/agents` - List all available agents
+- `GET /api/users/{user_id}/agents` - List agents assigned to a user
+- `POST /api/users/{user_id}/agents` - Assign an agent to a user
+- `DELETE /api/users/{user_id}/agents/{agent_id}` - Unassign an agent from a user
 
 ### Knowledgebase Management
 
@@ -35,18 +35,18 @@ This document provides a comprehensive guide to the APIs exposed by the Genie Me
 - `PUT /api/knowledgebases/{kb_id}` - Update knowledgebase details
 - `DELETE /api/knowledgebases/{kb_id}` - Delete a knowledgebase
 
-## Bot Service Endpoints
+## Agent Service Endpoints
 
-### Learning Bot
+### Learning Agent
 
-- `POST /api/learning-bot/interact` - Interact with the Learning Bot
-- `GET /api/learning-bot/progress/{user_id}` - Get user learning progress
-- `POST /api/learning-bot/reminders/{user_id}` - Set learning reminders
+- `POST /api/agent/learning/interact` - Interact with the Learning Agent
+- `GET /api/agent/learning/progress/{user_id}` - Get user learning progress
+- `POST /api/agent/learning/reminders/{user_id}` - Set learning reminders
 
-### Onboarding Bot
+### Onboarding Agent
 
-- `POST /api/onboarding-bot/interact` - Interact with the Onboarding Bot
-- `GET /api/onboarding-bot/history/{user_id}` - Get conversation history
+- `POST /api/agent/onboarding/interact` - Interact with the Onboarding Agent
+- `GET /api/agent/onboarding/history/{user_id}` - Get conversation history
 
 ## Memory Service Endpoints
 

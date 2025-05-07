@@ -20,9 +20,9 @@ The API Gateway serves as the single entry point for all client requests, routin
 - Role-based access control (RBAC)
 - Swagger/OpenAPI documentation
 
-## Bot Service
+## Agent Service
 
-The Bot Service implements the core agent orchestration for both the Learning Bot and Onboarding Bot.
+The Agent Service implements the core agent orchestration for both the Learning Bot and Onboarding Bot.
 
 ### Responsibilities:
 - Learning Bot implementation

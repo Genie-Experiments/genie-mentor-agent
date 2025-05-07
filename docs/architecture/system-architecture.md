@@ -24,7 +24,7 @@ flowchart TD
         AuthService["Auth Service"]
         UserService["User Management Service"]
         KBService["Knowledgebase Service"]
-        BotService["Bot Assignment Service"]
+        AgentAssignmentService["Agent Assignment Service"]
         AgentService["Agent Orchestration Service"]
         TalentLMSService["TalentLMS Integration Service"]
     end
@@ -71,7 +71,7 @@ flowchart TD
     BE -- Auth --> AuthService
     BE -- User Management --> UserService
     BE -- Knowledgebase --> KBService
-    BE -- Bot Assignment --> BotService
+    BE -- Agent Assignment --> AgentAssignmentService
     BE -- Agent Orchestration --> AgentService
     BE -- TalentLMS Sync --> TalentLMSService
 
@@ -88,7 +88,7 @@ flowchart TD
     VEC -- Vector Data --> PG
     UserService -- DB Ops --> PG
     KBService -- DB Ops --> PG
-    BotService -- DB Ops --> PG
+    AgentAssignmentService -- DB Ops --> PG
     AgentService -- DB Ops --> PG
 
     KBService -- MCP Config --> MCP_WIKI
@@ -107,10 +107,10 @@ flowchart TD
    - Handles authentication and authorization
    - Provides API documentation and discovery
 
-2. **Bot Service**
+2. **Agent Service**
    - Implements the core agent orchestration
    - Contains both Learning Bot and Onboarding Bot implementations
-   - Uses LangGraph for agent workflows
+   - Uses Autogen for agent workflows
    - Consumes Memory Service for state management
    - Communicates with Data Ingestion Service for document retrieval
 

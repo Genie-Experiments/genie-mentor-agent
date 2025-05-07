@@ -19,9 +19,6 @@ For a comprehensive overview of the project, including architecture, workflows, 
 - **infrastructure/**: Docker and AWS configuration files
 - **docs/**: Additional documentation
 
-## Getting Started
-
-See the [Implementation Plan](implementation-plan.md#developer-getting-started-guide) for detailed instructions.
 
 ## Core Features
 
