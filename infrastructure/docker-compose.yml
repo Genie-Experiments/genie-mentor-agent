@@ -1,0 +1,86 @@
+version: '3.8'
+
+services:
+  local-api-gateway:
+    image: amazon/aws-sam-cli-emulation-image-amazon-api-gateway
+    ports:
+      - "3000:3000"
+    environment:
+      - SERVICES_HOST=host.docker.internal
+      - BOT_SERVICE_URL=http://bot-service:8001
+      - MEMORY_SERVICE_URL=http://memory-service:8002
+      - DATA_INGESTION_SERVICE_URL=http://data-ingestion-service:8003
+      - INTEGRATION_SERVICE_URL=http://integration-service:8004
+    volumes:
+      - ./local/api-gateway-config.json:/var/task/api-gateway-config.json
+    depends_on:
+      - bot-service
+      - memory-service
+      - data-ingestion-service
+      - integration-service
+
+  agent-service:
+    build:
+      context: ../services/agent-service
+    ports:
+      - "8001:8001"
+    environment:
+      - MEMORY_SERVICE_URL=http://memory-service:8002
+      - DATA_INGESTION_SERVICE_URL=http://data-ingestion-service:8003
+    depends_on:
+      - memory-service
+      - data-ingestion-service
+      - rabbitmq
+      
+  data-ingestion-service:
+    build:
+      context: ../services/data-ingestion-service
+    ports:
+      - "8003:8003"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/genie_mentor_bot
+    depends_on:
+      - postgres
+
+  integration-service:
+    build:
+      context: ../services/integration-service
+    ports:
+      - "8004:8004"
+    environment:
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+    depends_on:
+      - rabbitmq
+
+  postgres:
+    image: ankane/pgvector:latest
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=genie_mentor_bot
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  # rabbitmq:
+  #   image: rabbitmq:3-management
+  #   ports:
+  #     - "5672:5672"
+  #     - "15672:15672"
+  #   volumes:
+  #     - rabbitmq-data:/var/lib/rabbitmq
+
+  frontend:
+    build:
+      context: ../frontend
+    ports:
+      - "3001:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:3000/v1
+    depends_on:
+      - local-api-gateway
+
+volumes:
+  postgres-data:
+  rabbitmq-data:

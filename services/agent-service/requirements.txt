@@ -1,0 +1,7 @@
+fastapi==0.103.1
+uvicorn==0.23.2
+pydantic==2.3.0
+langchain==0.0.267
+pyautogen==0.2.3
+langmem==0.0.5
+httpx==0.24.1

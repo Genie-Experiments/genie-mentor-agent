@@ -1,0 +1,152 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Genie Mentor Agent API",
+    "version": "1.0.0"
+  },
+  "basePath": "/v1",
+  "schemes": ["http"],
+  "paths": {
+    "/bot-service/learning-bot/interact": {
+      "post": {
+        "produces": ["application/json"],
+        "responses": {
+          "200": {
+            "description": "200 response"
+          }
+        },
+        "x-amazon-apigateway-integration": {
+          "uri": "${BOT_SERVICE_URL}/api/learning-bot/interact",
+          "responses": {
+            "default": {
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "when_no_match",
+          "httpMethod": "POST",
+          "contentHandling": "CONVERT_TO_TEXT",
+          "type": "http"
+        }
+      }
+    },
+    "/bot-service/onboarding-bot/interact": {
+      "post": {
+        "produces": ["application/json"],
+        "responses": {
+          "200": {
+            "description": "200 response"
+          }
+        },
+        "x-amazon-apigateway-integration": {
+          "uri": "${BOT_SERVICE_URL}/api/onboarding-bot/interact",
+          "responses": {
+            "default": {
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "when_no_match",
+          "httpMethod": "POST",
+          "contentHandling": "CONVERT_TO_TEXT",
+          "type": "http"
+        }
+      }
+    },
+    "/memory-service/conversation": {
+      "post": {
+        "produces": ["application/json"],
+        "responses": {
+          "200": {
+            "description": "200 response"
+          }
+        },
+        "x-amazon-apigateway-integration": {
+          "uri": "${MEMORY_SERVICE_URL}/api/memory/conversation",
+          "responses": {
+            "default": {
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "when_no_match",
+          "httpMethod": "POST",
+          "contentHandling": "CONVERT_TO_TEXT",
+          "type": "http"
+        }
+      },
+      "get": {
+        "produces": ["application/json"],
+        "responses": {
+          "200": {
+            "description": "200 response"
+          }
+        },
+        "x-amazon-apigateway-integration": {
+          "uri": "${MEMORY_SERVICE_URL}/api/memory/conversation",
+          "responses": {
+            "default": {
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "when_no_match",
+          "httpMethod": "GET",
+          "contentHandling": "CONVERT_TO_TEXT",
+          "type": "http"
+        }
+      }
+    },
+    "/memory-service/conversation/{conversation_id}": {
+      "get": {
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "200 response"
+          }
+        },
+        "x-amazon-apigateway-integration": {
+          "uri": "${MEMORY_SERVICE_URL}/api/memory/conversation/{conversation_id}",
+          "responses": {
+            "default": {
+              "statusCode": "200"
+            }
+          },
+          "requestParameters": {
+            "integration.request.path.conversation_id": "method.request.path.conversation_id"
+          },
+          "passthroughBehavior": "when_no_match",
+          "httpMethod": "GET",
+          "contentHandling": "CONVERT_TO_TEXT",
+          "type": "http"
+        }
+      }
+    },
+    "/data-ingestion-service/rag/query": {
+      "post": {
+        "produces": ["application/json"],
+        "responses": {
+          "200": {
+            "description": "200 response"
+          }
+        },
+        "x-amazon-apigateway-integration": {
+          "uri": "${DATA_INGESTION_SERVICE_URL}/api/rag/query",
+          "responses": {
+            "default": {
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "when_no_match",
+          "httpMethod": "POST",
+          "contentHandling": "CONVERT_TO_TEXT",
+          "type": "http"
+        }
+      }
+    }
+  }
+}
