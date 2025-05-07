@@ -312,18 +312,20 @@ flowchart LR
 
 ```mermaid
 sequenceDiagram
-    participant Admin/Instructor as <b style="color:#1976d2;">Admin/Instructor</b>
-    participant Platform as <b style="color:#fbc02d;">Platform</b>
-    participant MCP_WIKI as <b style="color:#d81b60;">MCP_Server_WikiDocs</b>
-    participant ExternalWiki as <b style="color:#0277bd;">Wiki Docs (Notion/Confluence/etc.)</b>
-    participant KB as <b style="color:#8e24aa;">Knowledgebase</b>
+  participant AI as Admin/Instructor 🧑‍💼
+  participant P as Platform 🖥️
+  participant MW as MCP_Server_WikiDocs 📄
+  participant EW as Wiki Docs (Notion/Confluence/etc.) 🌐
+  participant KB as Knowledgebase 📚
 
-    Admin/Instructor->>Platform: Create Knowledgebase, Provide MCP Config
-    Platform->>MCP_WIKI: Connect & Authenticate
-    MCP_WIKI->>ExternalWiki: List/Fetch Documents
-    MCP_WIKI->>Platform: Return Document Metadata
-    Platform->>KB: Index Documents for RAG
-    KB->>Platform: Ready for Q&A
+  rect rgb(250,250,200)
+    AI ->> P: Create Knowledgebase, Provide MCP Config
+    P ->> MW: Connect & Authenticate
+    MW ->> EW: List/Fetch Documents
+    MW ->> P: Return Document Metadata
+    P ->> KB: Index Documents for RAG
+    KB ->> P: Ready for Q&A
+  end
 ```
 
 ---
