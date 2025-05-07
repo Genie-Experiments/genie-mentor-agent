@@ -19,6 +19,12 @@ For a comprehensive overview of the project, including architecture, workflows, 
 - **infrastructure/**: Docker and AWS configuration files
 - **docs/**: Additional documentation
 
+## Documentation
+
+- [System Architecture](docs/architecture/system-architecture.md): Detailed overview of the system architecture and components
+- [Services Overview](docs/services/services-overview.md): Description of each microservice and its responsibilities
+- [API Documentation](docs/api/api-documentation.md): Comprehensive guide to the APIs exposed by the platform
+
 
 ## Core Features
 
