@@ -1,0 +1,33 @@
+{
+  "93f5f2fd-e3d5-4383-ab20-5952230a78e0": {
+    "session_id": "cb898b16-6fe7-4c4e-b956-4901f6217248",
+    "chat_history": [
+      {
+        "role": "user",
+        "content": "hello"
+      },
+      {
+        "role": "assistant",
+        "content": "Here’s a quick answer for you."
+      },
+      {
+        "role": "user",
+        "content": "whats u["
+      },
+      {
+        "role": "assistant",
+        "content": "Sure! How can I help you further?"
+      },
+      {
+        "role": "user",
+        "content": "are u there"
+      },
+      {
+        "role": "assistant",
+        "content": "Here’s a quick answer for you."
+      }
+    ],
+    "created_at": "2025-05-08T13:04:09.102082",
+    "title": "Chat 1"
+  }
+}

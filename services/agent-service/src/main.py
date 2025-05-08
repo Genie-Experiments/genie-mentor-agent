@@ -5,6 +5,8 @@ This service implements the core agent orchestration for both Learning Bot and O
 
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from .routes import onboarding
+from .db.database import Base, engine
 
 app = FastAPI(
     title="Bot Service",
@@ -19,6 +21,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(onboarding.router) 
+@app.on_event("startup")                
+def _init_db() -> None:
+    Base.metadata.create_all(bind=engine)
 
 @app.get("/")
 async def root():
