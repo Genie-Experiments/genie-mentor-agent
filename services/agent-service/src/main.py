@@ -5,6 +5,7 @@ This service implements the core agent orchestration for both Learning Bot and O
 
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from rag.rag import query_knowledgebase
 
 app = FastAPI(
     title="Bot Service",
@@ -28,6 +29,18 @@ async def root():
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
+
+
+@app.post("/api/rag/query")
+async def rag_query(query: str):
+    print(f"Received query: {query}")
+    try:
+        result = query_knowledgebase(
+            query=query
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 if __name__ == "__main__":

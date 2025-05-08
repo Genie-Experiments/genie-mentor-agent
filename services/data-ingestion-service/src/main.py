@@ -38,18 +38,9 @@ async def health_check():
 # Document processing endpoints will be implemented here
 # RAG query endpoints will be implemented here
 
-@app.post("/api/rag/query")
-async def rag_query(query: str):
-    try:
-        result = query_knowledgebase(
-            query=query
-        )
-        return result
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/api/ingestion/upload")
+@app.post("/api/documents")
 async def upload_file(file: UploadFile = File(...)):
     """
     Endpoint for uploading PDF files for ingestion into the knowledge base.

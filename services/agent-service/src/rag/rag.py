@@ -13,7 +13,7 @@ def get_embedding_model():
     """
     return HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
 
-def query_knowledgebase(query, persist_directory="db", model_name="gemma2-9b-it", temperature=0.1, k=4):
+def query_knowledgebase(query, persist_directory="../../shared-lib/chroma_db", model_name="meta-llama/llama-4-scout-17b-16e-instruct", temperature=0.1, k=5):
     """
     Query the knowledgebase using Groq LLM.
     

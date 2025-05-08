@@ -16,7 +16,7 @@ def load_document(file_path: str):
     documents = loader.load()
     return documents
 
-def split_documents(documents, chunk_size=700, chunk_overlap=100):
+def split_documents(documents, chunk_size=1200, chunk_overlap=100):
     """
     Split documents into smaller chunks.
     """
@@ -33,7 +33,7 @@ def get_embedding_model():
     """
     return HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
 
-def store_embeddings(documents, embedding_model, persist_directory="db"):
+def store_embeddings(documents, embedding_model, persist_directory="../../shared-lib/chroma_db"):
     """
     Store documents in a Chroma vector store using the embedding model.
     """
@@ -57,7 +57,7 @@ def ingest_files(file_paths):
         store_embeddings(split_docs, embedding_model)
         print(f"Processed {file_path} and stored embeddings.")
 
-def process_uploaded_file(file_content, filename, persist_directory="db"):
+def process_uploaded_file(file_content, filename, persist_directory="../../shared-lib/chroma_db"):
     """
     Process an uploaded file by saving it temporarily, loading it, splitting it,
     and storing embeddings in the vector store.
@@ -106,7 +106,7 @@ def process_uploaded_file(file_content, filename, persist_directory="db"):
         if os.path.exists(temp_file_path):
             os.remove(temp_file_path)
 
-def retrieve_and_query(query, k=3, persist_directory="db"):
+def retrieve_and_query(query, k=3, persist_directory="../../shared-lib/chroma_db"):
     """
     Retrieve relevant documents from the vector store and run the query through Groq API.
     
