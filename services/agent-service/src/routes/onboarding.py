@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Query, Body
 from typing import Optional
 
-from ..llm.handler import get_llm_response
+from ..onboarding_agent.onboarding_agent import onboarding_agent
 from ..db.crud import get_history, store_conversation
 from ..schemas.chat import ChatHistory
 
@@ -14,6 +14,6 @@ async def chat(
     body: Optional[ChatHistory] = Body(None),
 ):
     history = body.history if body else []
-    response = get_llm_response(query, history)
+    response = onboarding_agent(query, history)
     store_conversation(session_id, query, response)
     return {"response": response}
