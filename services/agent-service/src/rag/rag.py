@@ -5,7 +5,7 @@ from langchain_community.embeddings import HuggingFaceEmbeddings
 import os
 
 from dotenv import load_dotenv, find_dotenv
-_ = load_dotenv(find_dotenv()) #
+load_dotenv()
 
 def get_embedding_model():
     """
@@ -13,7 +13,7 @@ def get_embedding_model():
     """
     return HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
 
-def query_knowledgebase(query, persist_directory="../../shared-lib/chroma_db", model_name="meta-llama/llama-4-scout-17b-16e-instruct", temperature=0.1, k=5):
+def query_knowledgebase(query, persist_directory=None, model_name="meta-llama/llama-4-scout-17b-16e-instruct", temperature=0.1, k=5):
     """
     Query the knowledgebase using Groq LLM.
     
@@ -27,15 +27,23 @@ def query_knowledgebase(query, persist_directory="../../shared-lib/chroma_db", m
     Returns:
         Response from the Groq model
     """
+        # ✅ fallback to .env if not passed explicitly
+    if persist_directory is None:
+        persist_directory = os.getenv("CHROMA_DB_PATH")
+
+    if not persist_directory:
+        raise ValueError("persist_directory not set and CHROMA_DB_PATH missing in .env")
     # Initialize the embedding model
     embedding_model = get_embedding_model()
-    
+    from pathlib import Path
+    print("[DEBUG] persist_directory =", Path(persist_directory).resolve())
     # Load vector store
     vector_store = Chroma(
         persist_directory=persist_directory,
         embedding_function=embedding_model
     )
-    
+    print("[RAG] Total documents in store:", vector_store._collection.count())
+
     # Create a retriever
     retriever = vector_store.as_retriever(search_kwargs={"k": k})
     
@@ -60,7 +68,10 @@ def query_knowledgebase(query, persist_directory="../../shared-lib/chroma_db", m
     
     # Run the query
     result = qa_chain({"query": query})
-    
+    print("[RAG] Retrieved documents:")
+    for doc in result["source_documents"]:
+        print(doc.page_content[:150])
+
     return {
         "answer": result["result"],
         "source_documents": [doc.page_content for doc in result["source_documents"]]

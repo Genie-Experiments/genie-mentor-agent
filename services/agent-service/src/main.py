@@ -8,6 +8,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from .routes import onboarding, upload
 from .db.database import Base, engine
 from .onboarding_agent.onboarding_agent import initialize_agent, shutdown_agent
+from .routes import onboarding, upload, planner 
+from dotenv import load_dotenv
+load_dotenv(override=True)
 
 app = FastAPI(
     title="Bot Service",
@@ -24,6 +27,7 @@ app.add_middleware(
 
 app.include_router(onboarding.router)
 app.include_router(upload.router)  
+app.include_router(planner.router)  
 
 @app.on_event("startup")
 async def on_startup():
