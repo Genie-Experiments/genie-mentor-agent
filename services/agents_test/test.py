@@ -1,5 +1,5 @@
 import asyncio
-from planner_agent import initialize_agent, send_to_agent, shutdown_agent
+from services.agents_test.planner_agent_bk import initialize_agent, send_to_agent, shutdown_agent
 
 async def main():
     await initialize_agent()

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Query
-from services.planner_agent.planner_agent import initialize_agent, send_to_agent
+from ..onboarding_agent.planner_agent import initialize_agent, send_to_agent
 
 router = APIRouter(prefix="/planner", tags=["planner"])
 
