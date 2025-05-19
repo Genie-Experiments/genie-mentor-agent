@@ -74,6 +74,6 @@ def query_knowledgebase(query, persist_directory=None, model_name="meta-llama/ll
 
     return {
         "answer": result["result"],
-        "source_documents": [doc.page_content for doc in result["source_documents"]]
+        "sources": [doc.page_content for doc in result["source_documents"]]
     }
 

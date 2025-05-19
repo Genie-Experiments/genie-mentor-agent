@@ -27,8 +27,10 @@ class PlannerAgent(RoutedAgent):
 
     @message_handler
     async def handle_user_message(self, message: Message, ctx: MessageContext) -> Message:
-        # return await self.process_query(message.content)
-        return await self.send_message(message, self.query_agent_id)
+        plan =  await self.process_query(message.content)
+        result = await self.send_message(plan, self.query_agent_id)
+
+        return result
 
     def determine_data_sources(self, query: str) -> List[str]:
         embedding_model = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
@@ -110,22 +112,3 @@ Ensure the JSON is properly formatted.
             json_output=QueryPlan
         )
         return Message(content=response.content)
-
-# Runtime setup
-runtime = SingleThreadedAgentRuntime()
-planner_agent_id = AgentId("planner_agent", "default")
-agent_initialized = False
-
-async def initialize_agent():
-    global agent_initialized
-    if not agent_initialized:
-        await PlannerAgent.register(runtime, "planner_agent", PlannerAgent)
-        runtime.start()
-        agent_initialized = True
-
-async def send_to_agent(user_message: str) -> str:
-    response = await runtime.send_message(Message(content=user_message), planner_agent_id)
-    return response.content
-
-async def shutdown_agent():
-    await runtime.stop()

@@ -19,8 +19,8 @@ async def initialize_agent():
         runtime.start()
         agent_initialized = True
 
-async def send_to_agent(user_message: str) -> str:
-    response = await runtime.send_message(Message(content=user_message.content), planner_agent_id)
+async def send_to_agent(user_message: Message) -> str:
+    response = await runtime.send_message(user_message, planner_agent_id)
     return response.content
 
 async def shutdown_agent():
