@@ -2,7 +2,6 @@ import os
 import sys
 import asyncio
 from typing import List
-from pydantic import BaseModel
 from autogen_core import AgentId, MessageContext, RoutedAgent, SingleThreadedAgentRuntime, message_handler
 from autogen_core.models import UserMessage
 from autogen_ext.models.openai import OpenAIChatCompletionClient
@@ -14,14 +13,13 @@ from langchain_community.embeddings import HuggingFaceEmbeddings
 # Add the path to the 'schemas' directory
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'agent-service', 'src')))
 from ..schemas.planner_schema import QueryPlan
+from .message import Message
 persist_path = os.getenv("CHROMA_DB_PATH")
 
-class Message(BaseModel):
-    content: str
-
 class PlannerAgent(RoutedAgent):
-    def __init__(self):
+    def __init__(self, query_agent_id):
         super().__init__("planner_agent")
+        self.query_agent_id = query_agent_id
         self.model_client = OpenAIChatCompletionClient(
             model="gpt-4o",
             api_key=os.getenv("OPENAI_API_KEY")
@@ -29,7 +27,8 @@ class PlannerAgent(RoutedAgent):
 
     @message_handler
     async def handle_user_message(self, message: Message, ctx: MessageContext) -> Message:
-        return await self.process_query(message.content)
+        # return await self.process_query(message.content)
+        return await self.send_message(message, self.query_agent_id)
 
     def determine_data_sources(self, query: str) -> List[str]:
         embedding_model = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")

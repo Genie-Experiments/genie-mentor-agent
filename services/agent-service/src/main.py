@@ -5,10 +5,9 @@ This service implements the core agent orchestration for both Learning Bot and O
 
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from .routes import onboarding, upload
 from .db.database import Base, engine
-from .onboarding_agent.onboarding_agent import initialize_agent, shutdown_agent
-from .routes import onboarding, upload, planner 
+from .onboarding_team.team import initialize_agent, shutdown_agent
+from .routes import planner 
 from dotenv import load_dotenv
 load_dotenv(override=True)
 
@@ -25,8 +24,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(onboarding.router)
-app.include_router(upload.router)  
+
 app.include_router(planner.router)  
 
 @app.on_event("startup")
