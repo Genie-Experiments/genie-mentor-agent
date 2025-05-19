@@ -97,6 +97,62 @@
       {
         "role": "assistant",
         "content": "**Planner Agent Output**\n\n```json\n{\n  \"user_query\": \"what is rag?\",\n  \"query_intent\": \"define concept\",\n  \"data_sources\": [\n    \"knowledgebase\"\n  ],\n  \"query_components\": [\n    {\n      \"id\": \"q1\",\n      \"sub_query\": \"Define 'rag'.\",\n      \"source\": \"knowledgebase\"\n    }\n  ],\n  \"execution_order\": {\n    \"nodes\": [\n      \"q1\"\n    ],\n    \"edges\": [],\n    \"aggregation\": \"combine_and_summarize\"\n  }\n}\n```\n\n **RAG Agent Answer**\n\nBased on the context provided, RAG stands for Retrieval Augmented Generation. It appears to be a type of model or system that combines retrieval and generation components to achieve a specific task, likely related to natural language processing (NLP).\n\nThe context mentions a \"RAG pipeline\" which is divided into 6 components:\n\n1. Pre-Retrieval\n2. Retrieval\n3. Generation\n4. Augmentation\n5. RAG Evaluation\n6. Tools\n\nIt seems that RAG is a framework or architecture that aims to provide a structured approach to building and evaluating retrieval-augmented generation models. However, I don't have a more detailed definition or explanation of RAG beyond what's provided in the context."
+      },
+      {
+        "role": "user",
+        "content": "what is rag"
+      },
+      {
+        "role": "assistant",
+        "content": "**Planner Agent Output**\n\n```json\n{\n  \"user_query\": \"what is rag\",\n  \"query_intent\": \"define term\",\n  \"data_sources\": [\n    \"knowledgebase\"\n  ],\n  \"query_components\": [\n    {\n      \"id\": \"q1\",\n      \"sub_query\": \"Define 'rag' including its possible meanings and uses.\",\n      \"source\": \"knowledgebase\"\n    }\n  ],\n  \"execution_order\": {\n    \"nodes\": [\n      \"q1\"\n    ],\n    \"edges\": [],\n    \"aggregation\": \"combine_and_summarize\"\n  }\n}\n```\n\n **RAG Agent Answer**\n\nBased on the context provided, RAG stands for Retrieval Augmented Generation. It appears to be a type of model or system that combines retrieval and generation capabilities, likely in the context of natural language processing (NLP).\n\nThe context mentions a \"RAG pipeline\" that consists of several components, including:\n\n1. Pre-Retrieval\n2. Retrieval\n3. Generation\n4. Augmentation\n5. RAG Evaluation\n6. Tools\n\nIt seems that RAG is a framework or architecture that aims to provide a structured approach to building and evaluating retrieval-augmented generation models. However, I don't have a more detailed understanding of what RAG is or its specific applications beyond this context. If you have more information or clarification, I'd be happy to try and help further!"
+      },
+      {
+        "role": "user",
+        "content": "what is rag"
+      },
+      {
+        "role": "assistant",
+        "content": "**Planner Agent Output**\n\n```json\n{\n  \"user_query\": \"what is rag\",\n  \"query_intent\": \"definition inquiry\",\n  \"data_sources\": [\n    \"knowledgebase\"\n  ],\n  \"query_components\": [\n    {\n      \"id\": \"q1\",\n      \"sub_query\": \"Define 'rag' including different contexts if applicable\",\n      \"source\": \"knowledgebase\"\n    }\n  ],\n  \"execution_order\": {\n    \"nodes\": [\n      \"q1\"\n    ],\n    \"edges\": [],\n    \"aggregation\": \"combine_and_summarize\"\n  }\n}\n```\n\n **RAG Agent Answer**\n\nBased on the context provided, RAG stands for Retrieval Augmented Generation. It appears to be a type of model or system that combines retrieval and generation capabilities, likely in the context of natural language processing (NLP).\n\nThe context mentions a \"RAG pipeline\" that consists of several components, including:\n\n1. Pre-Retrieval\n2. Retrieval\n3. Generation\n4. Augmentation\n5. RAG Evaluation\n6. Tools\n\nIt seems that RAG is a framework or architecture that aims to provide a structured approach to building and evaluating retrieval-augmented generation models. However, I don't have a more detailed understanding of what RAG is or its specific applications beyond this context. If you have more information or clarification, I'd be happy to try and help further!"
+      },
+      {
+        "role": "user",
+        "content": "what is rag"
+      },
+      {
+        "role": "assistant",
+        "content": "**Planner Agent Output**\n\n```json\n{\n  \"user_query\": \"what is rag\",\n  \"query_intent\": \"define term\",\n  \"data_sources\": [\n    \"knowledgebase\"\n  ],\n  \"query_components\": [\n    {\n      \"id\": \"q1\",\n      \"sub_query\": \"what is rag\",\n      \"source\": \"knowledgebase\"\n    }\n  ],\n  \"execution_order\": {\n    \"nodes\": [\n      \"q1\"\n    ],\n    \"edges\": [],\n    \"aggregation\": \"combine_and_summarize\"\n  }\n}\n```\n\n **RAG Agent Answer**\n\nBased on the context provided, RAG stands for Retrieval-Augmented Generation. It appears to be a type of model or system that combines retrieval and generation capabilities, likely in the context of natural language processing (NLP).\n\nThe context mentions that the goal of the Advanced RAG Taxonomy is to provide a structured framework for categorizing tools and techniques used in different components of the RAG pipeline. The RAG pipeline is divided into 6 components: Pre-Retrieval, Retrieval, Generation, Augmentation, RAG Evaluation, and Tools.\n\nWhile a more detailed definition of RAG is not provided, it seems that RAG models aim to leverage retrieval mechanisms to enhance generation tasks, such as text generation or question answering. If you'd like more information, I can try to provide more general information on Retrieval-Augmented Generation models."
+      },
+      {
+        "role": "user",
+        "content": "what is rag"
+      },
+      {
+        "role": "assistant",
+        "content": "**Planner Agent Output**\n\n```json\n{\n  \"user_query\": \"what is rag\",\n  \"query_intent\": \"define term\",\n  \"data_sources\": [\n    \"knowledgebase\"\n  ],\n  \"query_components\": [\n    {\n      \"id\": \"q1\",\n      \"sub_query\": \"what is rag\",\n      \"source\": \"knowledgebase\"\n    }\n  ],\n  \"execution_order\": {\n    \"nodes\": [\n      \"q1\"\n    ],\n    \"edges\": [],\n    \"aggregation\": \"combine_and_summarize\"\n  }\n}\n```\n\n **RAG Agent Answer**\n\nBased on the context provided, RAG stands for Retrieval Augmented Generation. It appears to be a type of model or system that combines retrieval and generation capabilities, likely in the context of natural language processing (NLP).\n\nThe context mentions a \"RAG pipeline\" that consists of several components, including:\n\n1. Pre-Retrieval\n2. Retrieval\n3. Generation\n4. Augmentation\n5. RAG Evaluation\n6. Tools\n\nIt seems that RAG is a framework or architecture that aims to provide a structured approach to building and evaluating retrieval-augmented generation models. However, I don't have a more detailed understanding of what RAG is or its specific applications beyond this context. If you have more information or clarification, I'd be happy to try and help further!"
+      },
+      {
+        "role": "user",
+        "content": "what is giskard evaluation?"
+      },
+      {
+        "role": "assistant",
+        "content": "**Planner Agent Output**\n\n```json\n{\n  \"user_query\": \"what is giskard evaluation?\",\n  \"query_intent\": \"define giskard evaluation\",\n  \"data_sources\": [\n    \"knowledgebase\"\n  ],\n  \"query_components\": [\n    {\n      \"id\": \"q1\",\n      \"sub_query\": \"What is the definition and purpose of Giskard evaluation?\",\n      \"source\": \"knowledgebase\"\n    }\n  ],\n  \"execution_order\": {\n    \"nodes\": [\n      \"q1\"\n    ],\n    \"edges\": [],\n    \"aggregation\": \"combine_and_summarize\"\n  }\n}\n```\n\n **RAG Agent Answer**\n\nGiskard is an automatic evaluation methodology that provides a comprehensive approach to evaluating the results of language models. It covers both automatic evaluation and manual evaluation by providing human reviewers to assess the results provided through automatic evaluation.\n\nGiskard can be used to identify:\n\n1. Hallucinations: generated text that is not grounded in reality or factual information.\n2. Harmful responses: generated text that may be offensive, toxic, or hurtful.\n3. Legal issues: generated text that may raise legal concerns or violate laws and regulations.\n\nOverall, Giskard seems to be a robust evaluation framework for assessing the performance and safety of language models."
+      },
+      {
+        "role": "user",
+        "content": "what is rag?"
+      },
+      {
+        "role": "assistant",
+        "content": "**Planner Agent Output**\n```json\n{\n  \"aggregated_results\": \"RAG stands for Retrieval Augmented Generation, which is a type of model or system that combines retrieval and generation components. This approach involves several key components: Pre-Retrieval, Retrieval, Generation, Augmentation, RAG Evaluation, and Tools. Together, these components enable models to retrieve relevant information and generate appropriate responses or outputs. While this explanation addresses its use in AI, RAG could potentially have other meanings or contexts not covered here.\",\n  \"confidence_score\": 85\n}\n```\n\n**Query Agent Output**\n```json\n{\n  \"aggregated_results\": \"RAG stands for Retrieval Augmented Generation, which is a type of model or system that combines retrieval and generation components. This approach involves several key components: Pre-Retrieval, Retrieval, Generation, Augmentation, RAG Evaluation, and Tools. Together, these components enable models to retrieve relevant information and generate appropriate responses or outputs. While this explanation addresses its use in AI, RAG could potentially have other meanings or contexts not covered here.\",\n  \"confidence_score\": 85\n}\n```"
+      },
+      {
+        "role": "user",
+        "content": "what is rag?"
+      },
+      {
+        "role": "assistant",
+        "content": "**Planner Agent Output**\n```json\n{\n  \"user_query\": \"what is rag?\",\n  \"query_intent\": \"define term\",\n  \"data_sources\": [\n    \"knowledgebase\"\n  ],\n  \"query_components\": [\n    {\n      \"id\": \"q1\",\n      \"sub_query\": \"Define 'rag' in general context.\",\n      \"source\": \"knowledgebase\"\n    }\n  ],\n  \"execution_order\": {\n    \"nodes\": [\n      \"q1\"\n    ],\n    \"edges\": [],\n    \"aggregation\": \"combine_and_summarize\"\n  }\n}\n```\n\n**Query Agent Output**\n```json\n{\n  \"answer\": \"RAG stands for Retrieval Augmented Generation. It is an approach that integrates retrieval of relevant information with generation capabilities to enhance tasks such as text generation. This framework leverages retrieval mechanisms to improve the quality and relevance of generated content.\",\n  \"confidence_score\": 85\n}\n```"
       }
     ],
     "created_at": "2025-05-14T10:04:23.543856",

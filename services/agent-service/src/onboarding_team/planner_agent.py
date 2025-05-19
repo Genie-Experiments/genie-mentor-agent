@@ -1,6 +1,7 @@
 import os
 import sys
 import asyncio
+import json
 from typing import List
 from autogen_core import AgentId, MessageContext, RoutedAgent, SingleThreadedAgentRuntime, message_handler
 from autogen_core.models import UserMessage
@@ -27,10 +28,42 @@ class PlannerAgent(RoutedAgent):
 
     @message_handler
     async def handle_user_message(self, message: Message, ctx: MessageContext) -> Message:
-        plan =  await self.process_query(message.content)
-        result = await self.send_message(plan, self.query_agent_id)
-
-        return result
+        try:
+            # Generate the plan
+            plan = await self.process_query(message.content)
+            plan_dict = json.loads(plan.content)
+            
+            # Send the plan to query agent and get results
+            query_result = await self.send_message(plan, self.query_agent_id)
+            
+            # Debug print
+            print(f"[DEBUG] Query result content: {query_result.content}")
+            
+            # Try to parse query result
+            try:
+                query_dict = json.loads(query_result.content)
+                # Add execution results to plan
+                plan_dict["execution_results"] = {
+                    "answer": query_dict["aggregated_results"],
+                    "confidence_score": query_dict["confidence_score"]
+                }
+            except json.JSONDecodeError:
+                print(f"[WARNING] Failed to parse query result as JSON: {query_result.content}")
+                plan_dict["execution_results"] = {
+                    "answer": query_result.content,
+                    "confidence_score": 0
+                }
+            
+            return Message(content=json.dumps(plan_dict))
+        except Exception as e:
+            print(f"[ERROR] Error in handle_user_message: {str(e)}")
+            # Return error in a structured format
+            error_response = {
+                "error": str(e),
+                "plan": plan_dict if 'plan_dict' in locals() else None,
+                "query_result": query_result.content if 'query_result' in locals() else None
+            }
+            return Message(content=json.dumps(error_response))
 
     def determine_data_sources(self, query: str) -> List[str]:
         embedding_model = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")

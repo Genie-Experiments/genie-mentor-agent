@@ -56,7 +56,7 @@ class QueryAgent(RoutedAgent):
         
         User Query: "{user_query}"
         Results: {results}
-        Aggregation Strategy: "{strategy}""What is RAG and how is it evaluated?"
+        Aggregation Strategy: "{strategy}"
         
         Instructions:
         - Aggregate the provided results into a coherent and concise response.
@@ -74,7 +74,28 @@ class QueryAgent(RoutedAgent):
             messages=[UserMessage(content=prompt, source=self.id.key)],
         )
 
-        return response.content
+        try:
+            # First try to parse the response content
+            content = response.content.strip()
+            
+            # If the content is wrapped in markdown code blocks, extract the JSON
+            if content.startswith('```json') and content.endswith('```'):
+                content = content[7:-3].strip()  # Remove ```json and ``` markers
+            
+            # Parse the JSON
+            result = json.loads(content)
+            
+            # Return both aggregated results and confidence score
+            return json.dumps({
+                "aggregated_results": result["aggregated_results"],
+                "confidence_score": result["confidence_score"]
+            })
+        except json.JSONDecodeError:
+            # If parsing fails, wrap the raw response
+            return json.dumps({
+                "aggregated_results": response.content,
+                "confidence_score": 0
+            })
 
 #replace with MCP
 def query_notion(sub_query):

@@ -9,31 +9,31 @@ DEFAULT_BACKEND= os.getenv("BACKEND_URL", "http://127.0.0.1:8001")
 
 # ── helper: talk to backend 
 def call_backend(query: str) -> str:
-    """POST /planner/plan and /onboarding/chat, return planner and RAG response"""
+    """POST /planner/plan and return both planner and query results"""
     if not st.session_state.current_chat_id:
         return "❌ No active chat session"
 
     current_chat = st.session_state.chats[st.session_state.current_chat_id]
     session_id = current_chat["session_id"]
 
-    # Step 1: Call planner agent
-    planner_resp = requests.post(f"{backend_url}/planner/plan", params={"query": query}, timeout=190)
-    planner_resp.raise_for_status()
-    plan = json.loads(planner_resp.json()["plan"])
-    planner_pretty = json.dumps(plan, indent=2)
+    # Call planner endpoint which now returns both planner and query results
+    response = requests.post(f"{DEFAULT_BACKEND}/planner/plan", params={"query": query}, timeout=190)
+    response.raise_for_status()
+    result = response.json()
+    
+    # Format the response - result is already parsed JSON
+    planner_output = result["planner_output"]
+    query_output = result["query_output"]
+    
+    return f"""**Planner Agent Output**
+```json
+{json.dumps(planner_output, indent=2)}
+```
 
-    # Step 2: Call onboarding agent (RAG)
-    rag_resp = requests.post(
-        f"{backend_url}/onboarding/chat",
-        params={"query": query, "session_id": session_id},
-        json={"history": []},
-        timeout=190
-    )
-    rag_resp.raise_for_status()
-    rag_answer = rag_resp.json().get("response", "[No RAG response]")
-
-    # Combine
-    return f"**Planner Agent Output**\n\n```json\n{planner_pretty}\n```\n\n **RAG Agent Answer**\n\n{rag_answer}"
+**Query Agent Output**
+```json
+{json.dumps(query_output, indent=2)}
+```"""
 
 # ── session‑state bootstrap 
 if "chats" not in st.session_state:
