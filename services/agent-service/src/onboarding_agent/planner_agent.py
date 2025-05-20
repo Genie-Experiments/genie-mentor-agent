@@ -1,29 +1,25 @@
-# Standard library imports
-import asyncio
-import json
 import os
 import sys
-from typing import Any, Dict, List, Optional
-
-# Third-party imports
+import asyncio
+from typing import List
 from autogen_core import AgentId, MessageContext, RoutedAgent, SingleThreadedAgentRuntime, message_handler
 from autogen_core.models import UserMessage
 from autogen_ext.models.openai import OpenAIChatCompletionClient
-from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain_community.vectorstores import Chroma
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+from langchain_community.vectorstores import Chroma
+from langchain_community.embeddings import HuggingFaceEmbeddings
 
-# Local application imports
+# Add the path to the 'schemas' directory
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'agent-service', 'src')))
 from ..schemas.planner_schema import QueryPlan
-from .message import Message
+from ..db.models import Message
 
 persist_path = os.getenv('CHROMA_DB_PATH')
 
 class PlannerAgent(RoutedAgent):
-    def __init__(self, query_agent_id: AgentId) -> None:
+    def __init__(self):
         super().__init__('planner_agent')
-        self.query_agent_id = query_agent_id
         self.model_client = OpenAIChatCompletionClient(
             model='gpt-4o',
             api_key=os.getenv('OPENAI_API_KEY')
@@ -31,42 +27,7 @@ class PlannerAgent(RoutedAgent):
 
     @message_handler
     async def handle_user_message(self, message: Message, ctx: MessageContext) -> Message:
-        try:
-            # Generate the plan
-            plan = await self.process_query(message.content)
-            plan_dict = json.loads(plan.content)
-            
-            # Send the plan to query agent and get results
-            query_result = await self.send_message(plan, self.query_agent_id)
-            
-            # Debug print
-            print(f'[DEBUG] Query result content: {query_result.content}')
-            
-            # Try to parse query result
-            try:
-                query_dict = json.loads(query_result.content)
-                # Add execution results to plan
-                plan_dict['execution_results'] = {
-                    'answer': query_dict['aggregated_results'],
-                    'confidence_score': query_dict['confidence_score']
-                }
-            except json.JSONDecodeError:
-                print(f'[WARNING] Failed to parse query result as JSON: {query_result.content}')
-                plan_dict['execution_results'] = {
-                    'answer': query_result.content,
-                    'confidence_score': 0
-                }
-            
-            return Message(content=json.dumps(plan_dict))
-        except Exception as e:
-            print(f'[ERROR] Error in handle_user_message: {str(e)}')
-            # Return error in a structured format
-            error_response = {
-                'error': str(e),
-                'plan': plan_dict if 'plan_dict' in locals() else None,
-                'query_result': query_result.content if 'query_result' in locals() else None
-            }
-            return Message(content=json.dumps(error_response))
+        return await self.process_query(message.content)
 
     def determine_data_sources(self, query: str) -> List[str]:
         embedding_model = HuggingFaceEmbeddings(model_name='all-MiniLM-L6-v2')
@@ -146,3 +107,22 @@ Ensure the JSON is properly formatted.
             json_output=QueryPlan
         )
         return Message(content=response.content)
+
+# Runtime setup
+runtime = SingleThreadedAgentRuntime()
+planner_agent_id = AgentId('planner_agent', 'default')
+agent_initialized = False
+
+async def initialize_agent():
+    global agent_initialized
+    if not agent_initialized:
+        await PlannerAgent.register(runtime, 'planner_agent', PlannerAgent)
+        runtime.start()
+        agent_initialized = True
+
+async def send_to_agent(user_message: str) -> str:
+    response = await runtime.send_message(Message(content=user_message), planner_agent_id)
+    return response.content
+
+async def shutdown_agent():
+    await runtime.stop()

@@ -31,9 +31,9 @@ def get_embedding_model():
     """
     Create and return an embedding model.
     """
-    return HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+    return HuggingFaceEmbeddings(model_name='all-MiniLM-L6-v2')
 
-def store_embeddings(documents, embedding_model, persist_directory="../../shared-lib/chroma_db"):
+def store_embeddings(documents, embedding_model, persist_directory='../../shared-lib/chroma_db'):
     """
     Store documents in a Chroma vector store using the embedding model.
     """
@@ -55,9 +55,9 @@ def ingest_files(file_paths):
         documents = load_document(file_path)
         split_docs = split_documents(documents)
         store_embeddings(split_docs, embedding_model)
-        print(f"Processed {file_path} and stored embeddings.")
+        print(f'Processed {file_path} and stored embeddings.')
 
-def process_uploaded_file(file_content, filename, persist_directory="../../shared-lib/chroma_db"):
+def process_uploaded_file(file_content, filename, persist_directory='../../shared-lib/chroma_db'):
     """
     Process an uploaded file by saving it temporarily, loading it, splitting it,
     and storing embeddings in the vector store.
@@ -90,23 +90,23 @@ def process_uploaded_file(file_content, filename, persist_directory="../../share
         
         # Return information about the ingested file
         return {
-            "filename": filename,
-            "document_chunks": len(split_docs),
-            "status": "success",
-            "message": f"Successfully ingested {filename} with {len(split_docs)} chunks."
+            'filename': filename,
+            'document_chunks': len(split_docs),
+            'status': 'success',
+            'message': f'Successfully ingested {filename} with {len(split_docs)} chunks.'
         }
     except Exception as e:
         return {
-            "filename": filename,
-            "status": "error",
-            "message": str(e)
+            'filename': filename,
+            'status': 'error',
+            'message': str(e)
         }
     finally:
         # Clean up temporary file
         if os.path.exists(temp_file_path):
             os.remove(temp_file_path)
 
-def retrieve_and_query(query, k=3, persist_directory="../../shared-lib/chroma_db"):
+def retrieve_and_query(query, k=3, persist_directory='../../shared-lib/chroma_db'):
     """
     Retrieve relevant documents from the vector store and run the query through Groq API.
     
@@ -131,10 +131,10 @@ def retrieve_and_query(query, k=3, persist_directory="../../shared-lib/chroma_db
     retrieved_docs = vector_store.similarity_search(query, k=k)
     
     # Extract content from the retrieved documents
-    context = "\n\n".join([doc.page_content for doc in retrieved_docs])
+    context = '\n\n'.join([doc.page_content for doc in retrieved_docs])
     
     # Prepare the prompt for Groq API
-    prompt = f"""You are a helpful assistant answering questions based on the provided information.
+    prompt = f'''You are a helpful assistant answering questions based on the provided information.
     
 Context:
 {context}
@@ -142,31 +142,31 @@ Context:
 Question: {query}
 
 Based strictly on the context provided, answer the question. If the answer is not contained within the context, say "I don't have enough information to answer this question."
-"""
+'''
     
     # Call Groq API
-    api_key = os.environ.get("GROQ_API_KEY")
+    api_key = os.environ.get('GROQ_API_KEY')
     if not api_key:
-        raise ValueError("GROQ_API_KEY environment variable not set")
+        raise ValueError('GROQ_API_KEY environment variable not set')
         
     headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json"
+        'Authorization': f'Bearer {api_key}',
+        'Content-Type': 'application/json'
     }
     
     payload = {
-        "model": "llama3-70b-8192",
-        "messages": [{"role": "user", "content": prompt}],
-        "temperature": 0.1
+        'model': 'llama3-70b-8192',
+        'messages': [{'role': 'user', 'content': prompt}],
+        'temperature': 0.1
     }
     
     response = requests.post(
-        "https://api.groq.com/openai/v1/chat/completions",
+        'https://api.groq.com/openai/v1/chat/completions',
         headers=headers,
         data=json.dumps(payload)
     )
     
     if response.status_code == 200:
-        return response.json()["choices"][0]["message"]["content"]
+        return response.json()['choices'][0]['message']['content']
     else:
-        return f"Error: {response.status_code} - {response.text}"
+        return f'Error: {response.status_code} - {response.text}'

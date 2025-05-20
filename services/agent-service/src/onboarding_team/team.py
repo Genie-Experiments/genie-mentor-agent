@@ -1,27 +1,33 @@
+# Standard library imports
+from typing import Optional
+
+# Third-party imports
 from autogen_core import AgentId, SingleThreadedAgentRuntime
+
+# Local application imports
+from .message import Message
 from .planner_agent import PlannerAgent
 from .query_agent import QueryAgent
-from .message import Message
 
-runtime = SingleThreadedAgentRuntime()
-
-planner_agent_id = AgentId("planner_agent", "default")
-query_agent_id = AgentId("query_agent", "default")
+# Constants
+RUNTIME = SingleThreadedAgentRuntime()
+PLANNER_AGENT_ID = AgentId('planner_agent', 'default')
+QUERY_AGENT_ID = AgentId('query_agent', 'default')
 
 # Flag to ensure the agent is only initialized once
 agent_initialized = False
 
-async def initialize_agent():
+async def initialize_agent() -> None:
     global agent_initialized
     if not agent_initialized:
-        await PlannerAgent.register(runtime, "planner_agent", lambda: PlannerAgent(query_agent_id ))
-        await QueryAgent.register(runtime, "query_agent", lambda: QueryAgent())
-        runtime.start()
+        await PlannerAgent.register(RUNTIME, 'planner_agent', lambda: PlannerAgent(QUERY_AGENT_ID))
+        await QueryAgent.register(RUNTIME, 'query_agent', lambda: QueryAgent())
+        RUNTIME.start()
         agent_initialized = True
 
 async def send_to_agent(user_message: Message) -> str:
-    response = await runtime.send_message(user_message, planner_agent_id)
+    response = await RUNTIME.send_message(user_message, PLANNER_AGENT_ID)
     return response.content
 
-async def shutdown_agent():
-    await runtime.stop()
+async def shutdown_agent() -> None:
+    await RUNTIME.stop()

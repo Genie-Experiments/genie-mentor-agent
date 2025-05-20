@@ -1,15 +1,20 @@
-import os
+# Standard library imports
 import json
+import os
+from typing import Any, Dict, Optional
+
+# Third-party imports
 from autogen_core import AgentId, MessageContext, RoutedAgent, message_handler
 from autogen_core.models import UserMessage
-from .message import Message
-from typing import Dict, Any
 from autogen_ext.models.openai import OpenAIChatCompletionClient
+
+# Local application imports
 from ..rag.rag import query_knowledgebase
+from .message import Message
 
 
 class QueryAgent(RoutedAgent):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__("query_agent")
         self.model_client = OpenAIChatCompletionClient(
             model="gpt-4o",
@@ -30,7 +35,7 @@ class QueryAgent(RoutedAgent):
             results[qid] = result
 
         # Aggregate results using custom strategy
-        aggregated = await self.aggregate_results(plan["user_query"],results, strategy=execution_order.get("aggregation"))
+        aggregated = await self.aggregate_results(plan["user_query"], results, strategy=execution_order.get("aggregation"))
         return Message(content=aggregated)
 
     async def execute_query(self, qid: str, query_components: Dict[str, Any]) -> Dict[str, Any]:
@@ -48,9 +53,8 @@ class QueryAgent(RoutedAgent):
         self._sources_used.extend(response["sources"])
         return response["answer"]
 
-    async def aggregate_results(self, user_query: str, results: Dict[str, Any], strategy: str = None) -> Dict[str, Any]:
-        
-        prompt = f"""
+    async def aggregate_results(self, user_query: str, results: Dict[str, Any], strategy: Optional[str] = None) -> Dict[str, Any]:
+        prompt = f'''
         You are an assistant tasked with aggregating results fetched from multiple sources in response to a user query.
         When aggregating the results, ensure they are relevant to the user's query and follow the given aggregation strategy.
         
@@ -68,7 +72,7 @@ class QueryAgent(RoutedAgent):
             "aggregated_results": "<your aggregated response here>",
             "confidence_score": <integer between 0 and 100>
         }}
-        """
+        '''
 
         response = await self.model_client.create(
             messages=[UserMessage(content=prompt, source=self.id.key)],
@@ -80,7 +84,7 @@ class QueryAgent(RoutedAgent):
             
             # If the content is wrapped in markdown code blocks, extract the JSON
             if content.startswith('```json') and content.endswith('```'):
-                content = content[7:-3].strip()  # Remove ```json and ``` markers
+                content = content[7:-3].strip()  #
             
             # Parse the JSON
             result = json.loads(content)
@@ -97,8 +101,7 @@ class QueryAgent(RoutedAgent):
                 "confidence_score": 0
             })
 
-#replace with MCP
-def query_notion(sub_query):
+def query_notion(sub_query: str) -> Dict[str, Any]:
     return {
         "answer": "",
         "sources": []

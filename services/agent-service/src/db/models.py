@@ -1,8 +1,13 @@
-# SQLAlchemy models for memory
-
-from sqlalchemy import Column, Integer, String, Text, DateTime
-from .database import Base
+# Standard library imports
 import datetime
+from typing import Optional
+
+# Third-party imports
+from sqlalchemy import Column, Integer, String, Text, DateTime
+from pydantic import BaseModel
+
+# Local application imports
+from .database import Base
 
 class Conversation(Base):
     __tablename__ = "conversations"
@@ -11,3 +16,8 @@ class Conversation(Base):
     query = Column(Text)
     response = Column(Text)
     timestamp = Column(DateTime, default=datetime.datetime.utcnow)
+
+class Message(BaseModel):
+    """Base message model for agent communication."""
+    content: str
+    role: Optional[str] = None
