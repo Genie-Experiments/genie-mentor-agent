@@ -11,9 +11,7 @@ from sqlalchemy.orm import sessionmaker
 load_dotenv()
 
 # Database configuration
-DATABASE_URL = os.getenv('DATABASE_URL')
-if not DATABASE_URL:
-    raise ValueError('DATABASE_URL environment variable is not set')
+DATABASE_URL = os.getenv('DATABASE_URL', 'sqlite:///./memory.db')  # Default to SQLite for development
 
 # Create engine with appropriate configuration
 if DATABASE_URL.startswith('sqlite'):
