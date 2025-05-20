@@ -5,6 +5,11 @@ This service implements the core agent orchestration for both Learning Bot and O
 
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from .db.database import Base, engine
+from .onboarding_team.team import initialize_agent, shutdown_agent
+from .routes import planner 
+from dotenv import load_dotenv
+load_dotenv(override=True)
 
 app = FastAPI(
     title="Bot Service",
@@ -20,17 +25,25 @@ app.add_middleware(
 )
 
 
+app.include_router(planner.router)  
+
+@app.on_event("startup")
+async def on_startup():
+    Base.metadata.create_all(bind=engine)
+    await initialize_agent()  # Initialize agent once at startup
+
+@app.on_event("shutdown")
+async def on_shutdown():
+    await shutdown_agent()  # shut down agent runtime
+
 @app.get("/")
 async def root():
     return {"message": "Genie Mentor Agent Service API"}
-
 
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
 
-
 if __name__ == "__main__":
     import uvicorn
-
     uvicorn.run(app, host="0.0.0.0", port=8001)
