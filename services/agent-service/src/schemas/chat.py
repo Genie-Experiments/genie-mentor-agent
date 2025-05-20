@@ -1,6 +1,9 @@
 # services/agent-service/src/schemas/chat.py
+# Standard library imports
+from typing import List, Optional, Tuple
+
+# Third-party imports
 from pydantic import BaseModel
-from typing import List, Tuple, Optional
 
 class ChatHistory(BaseModel):
     history: List[Tuple[Optional[str], Optional[str]]]
