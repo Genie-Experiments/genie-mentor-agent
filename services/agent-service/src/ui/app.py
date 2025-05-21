@@ -48,17 +48,8 @@ def format_trace_info(trace_info: dict) -> dict:
     return formatted_trace
 
 # ── helper: talk to backend 
-def call_backend(query: str) -> str:
+def call_backend(query: str, session_id: str) -> tuple:
     """POST /planner/plan and return both planner and query results"""
-    if not st.session_state.current_chat_id:
-        return '❌ No active chat session'
-
-    current_chat = st.session_state.chats[st.session_state.current_chat_id]
-    session_id = current_chat['session_id']
-
-    # Start timing the request
-    start_time = time.time()
-    
     # Call planner endpoint which now returns both planner and query results
     response = requests.post(
         f'{DEFAULT_BACKEND}/planner/plan',
@@ -69,30 +60,13 @@ def call_backend(query: str) -> str:
         timeout=190
     )
     response.raise_for_status()
-    result = response.json()
-    
-    # Calculate total time taken
-    total_time = time.time() - start_time
-    
-    # Format the response - result is already parsed JSON
+    return response.json()
+
+def format_response(result: dict) -> str:
+    """Format the API response for display"""
     planner_output = result['planner_output']
     query_output = result['query_output']
-    trace_info = result.get('trace_info', {})
     
-    # Initialize trace_history if it doesn't exist
-    if 'trace_history' not in current_chat:
-        current_chat['trace_history'] = []
-    
-    # Add trace block to chat history
-    current_chat['trace_history'].append(trace_info)
-    
-    # Save updated chat history
-    DB_FILE.write_text(
-        json.dumps(st.session_state.chats, indent=2, ensure_ascii=False),
-        encoding='utf-8'
-    )
-    
-    # Format the response with planner output as JSON and query output as chat
     try:
         if isinstance(query_output, str):
             # If query_output is a string, try to parse it as JSON
@@ -256,20 +230,26 @@ if st.session_state.current_chat_id:
         with st.chat_message('assistant'):
             with st.spinner('Thinking…'):
                 try:
-                    # Make a single API call and store the result
-                    response = requests.post(
-                        f'{DEFAULT_BACKEND}/planner/plan',
-                        params={
-                            'query': prompt,
-                            'session_id': current_chat['session_id']
-                        },
-                        timeout=190
-                    ).json()
+                    # Make a single API call
+                    result = call_backend(prompt, current_chat['session_id'])
                     
-                    # Get the formatted response
-                    answer = call_backend(prompt)
-                    # Format the trace information
-                    formatted_trace = format_trace_info(response.get('trace_info', {}))
+                    # Format the response
+                    answer = format_response(result)
+                    
+                    # Get and format trace information
+                    trace_info = result.get('trace_info', {})
+                    formatted_trace = format_trace_info(trace_info)
+                    
+                    # Update chat history
+                    if 'trace_history' not in current_chat:
+                        current_chat['trace_history'] = []
+                    current_chat['trace_history'].append(trace_info)
+                    
+                    # Save updated chat history
+                    DB_FILE.write_text(
+                        json.dumps(st.session_state.chats, indent=2, ensure_ascii=False),
+                        encoding='utf-8'
+                    )
                 except requests.HTTPError as e:
                     detail = e.response.text if e.response is not None else ''
                     answer = f'❌ *backend error* ({e.response.status_code}): {detail}'
