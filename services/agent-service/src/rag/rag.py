@@ -48,6 +48,7 @@ def query_knowledgebase(
     # Initialize the embedding model
     embedding_model = get_embedding_model()
     from pathlib import Path
+    
     print('[DEBUG] persist_directory =', Path(persist_directory).resolve())
     
     # Load vector store
@@ -80,13 +81,13 @@ def query_knowledgebase(
     )
     
     # Run the query
+    sources=[]
     result = qa_chain({'query': query})
-    print('[RAG] Retrieved documents:')
     for doc in result['source_documents']:
-        print(doc.page_content[:150])
-
+        sources.append(doc.page_content)
+    
     return {
         'answer': result['result'],
-        'sources': [doc.page_content for doc in result['source_documents']]
+        'sources': sources
     }
 
