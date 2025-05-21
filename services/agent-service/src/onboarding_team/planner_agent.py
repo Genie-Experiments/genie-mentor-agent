@@ -21,9 +21,9 @@ from .message import Message
 persist_path = os.getenv('CHROMA_DB_PATH')
 
 class PlannerAgent(RoutedAgent):
-    def __init__(self, query_agent_id: AgentId) -> None:
+    def __init__(self, refiner_agent_id: AgentId) -> None:
         super().__init__('planner_agent')
-        self.query_agent_id = query_agent_id
+        self.refiner_agent_id = refiner_agent_id
         self.model_client = OpenAIChatCompletionClient(
             model='gpt-4o',
             api_key=os.getenv('OPENAI_API_KEY')
@@ -37,7 +37,7 @@ class PlannerAgent(RoutedAgent):
             plan_dict = json.loads(plan.content)
             
             # Send the plan to query agent and get results
-            query_result = await self.send_message(plan, self.query_agent_id)
+            query_result = await self.send_message(plan, self.refiner_agent_id)
             
             # Debug print
             print(f'[DEBUG] Query result content: {query_result.content}')
