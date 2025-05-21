@@ -256,8 +256,7 @@ if st.session_state.current_chat_id:
         with st.chat_message('assistant'):
             with st.spinner('Thinking…'):
                 try:
-                    answer = call_backend(prompt)
-                    # Get the trace info from the response
+                    # Make a single API call and store the result
                     response = requests.post(
                         f'{DEFAULT_BACKEND}/planner/plan',
                         params={
@@ -266,9 +265,11 @@ if st.session_state.current_chat_id:
                         },
                         timeout=190
                     ).json()
-                    trace_info = response.get('trace_info', {})
+                    
+                    # Get the formatted response
+                    answer = call_backend(prompt)
                     # Format the trace information
-                    formatted_trace = format_trace_info(trace_info)
+                    formatted_trace = format_trace_info(response.get('trace_info', {}))
                 except requests.HTTPError as e:
                     detail = e.response.text if e.response is not None else ''
                     answer = f'❌ *backend error* ({e.response.status_code}): {detail}'
