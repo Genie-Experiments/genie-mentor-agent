@@ -1,22 +1,27 @@
-"""
-Agent Service - Main Entry Point
-This service implements the core agent orchestration for both Learning Bot and Onboarding Bot.
-"""
 
-# Standard library imports
 import uvicorn
 
-# Third-party imports
 from dotenv import load_dotenv
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
-# Local application imports
 from .db.database import Base, engine
 from .onboarding_team.team import initialize_agent, shutdown_agent
 from .routes import planner
+import logging, sys, warnings
 
-# Load environment variables
+FMT = "%(asctime)s | %(levelname)-8s | %(name)s | %(message)s"
+
+root = logging.getLogger()
+root.setLevel(logging.INFO)
+
+handler = logging.StreamHandler(sys.stdout)
+handler.setFormatter(logging.Formatter(FMT))
+root.addHandler(handler)
+
+logging.captureWarnings(True)
+warnings.filterwarnings("ignore", category=DeprecationWarning)      
+
 load_dotenv(override=True)
 
 app = FastAPI(

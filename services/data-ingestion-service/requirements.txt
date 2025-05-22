@@ -9,3 +9,4 @@ httpx==0.24.1
 unstructured==0.10.8
 sentence-transformers==2.2.2
 python-multipart==0.0.6
+pypdf
