@@ -32,9 +32,21 @@ async def initialize_agent() -> None:
             raise EnvironmentError(
                 f"Missing required environment variables: {', '.join(missing)}"
             )
-        await PlannerAgent.register(RUNTIME, 'planner_agent', lambda: PlannerAgent(REFINER_AGENT_ID))
-        await RefinerAgent.register(RUNTIME, 'refiner_agent', lambda: RefinerAgent(QUERY_AGENT_ID))
-        await QueryAgent.register(RUNTIME, 'query_agent', lambda: QueryAgent())
+        await PlannerAgent.register(
+            RUNTIME,
+            'planner_agent',
+            lambda: PlannerAgent(REFINER_AGENT_ID, QUERY_AGENT_ID),
+        )
+        await RefinerAgent.register(
+            RUNTIME,
+            'refiner_agent',
+            lambda: RefinerAgent(QUERY_AGENT_ID),
+        )
+        await QueryAgent.register(
+         RUNTIME,
+            'query_agent',
+            lambda: QueryAgent(),
+        )
         await EvaluationAgent.register(RUNTIME, 'evaluation_agent', lambda: EvaluationAgent())
         await EditorAgent.register(RUNTIME, 'editor_agent', lambda: EditorAgent())
         

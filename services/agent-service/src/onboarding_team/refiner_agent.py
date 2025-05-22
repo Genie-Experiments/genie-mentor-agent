@@ -17,7 +17,7 @@ persist_path = os.getenv('CHROMA_DB_PATH')
 
 class RefinerAgent(RoutedAgent):
     def __init__(self, query_agent_id: AgentId) -> None:
-        super().__init__('planner_agent')
+        super().__init__('refiner_agent')
         self.query_agent_id = query_agent_id
         self.model_client = OpenAIChatCompletionClient(
             model='gpt-4o',

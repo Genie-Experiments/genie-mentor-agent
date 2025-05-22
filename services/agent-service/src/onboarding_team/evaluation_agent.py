@@ -8,24 +8,26 @@ from typing import Any, Dict, List
 from autogen_core import AgentId, MessageContext, RoutedAgent, message_handler
 from uptrain import EvalLLM, Evals
 
-from .message import Message 
+from .message import Message
 
-_handler = logging.StreamHandler()
 logger = logging.getLogger("evaluation_agent")
-logger.setLevel(logging.INFO)     
-logger.addHandler(_handler)
-logger.propagate = False
+logger.setLevel(logging.INFO)
+logger.addHandler(logging.StreamHandler())
+
 
 
 class EvaluationAgent(RoutedAgent):
-
-    MAX_CORRECTIONS = 2
+    """Run UpTrain factual-accuracy check.  
+    If incorrect and caller allows another correction, pass to EditorAgent **once** and return
+    the edited answer; do **not** recurse back into ourselves.
+    """
 
     def __init__(self) -> None:
         super().__init__("evaluation_agent")
         self.eval_llm = EvalLLM(openai_api_key=os.getenv("OPENAI_API_KEY"))
         logger.debug("Initialised EvaluationAgent (UpTrain backend)")
 
+  
     @message_handler
     async def handle_message(self, message: Message, ctx: MessageContext) -> Message:
         try:
@@ -38,16 +40,18 @@ class EvaluationAgent(RoutedAgent):
                 answer=data["answer"],
                 attempt=data.get("correction_attempt", 0),
             )
-            logger.info("UpTrain result: %s (score %.2f)",
-                        evaluation["response_verified"],
-                        evaluation["factual_accuracy_score"])
+            logger.info(
+                "UpTrain result: %s (score %.2f)",
+                evaluation["response_verified"],
+                evaluation["factual_accuracy_score"],
+            )
 
-            # Retry path
+            max_attempts = data.get("max_corrections", 0) 
             if (
                 evaluation["response_verified"] == "Incorrect"
-                and evaluation["correction_attempt"] < self.MAX_CORRECTIONS
+                and evaluation["correction_attempt"] < max_attempts
             ):
-                return await self._route_for_correction(ctx, data, evaluation)
+                return await self._edit_once(data, evaluation)
 
             return Message(content=json.dumps(evaluation))
 
@@ -64,15 +68,14 @@ class EvaluationAgent(RoutedAgent):
                 )
             )
 
+    
     async def _evaluate_response(
         self, *, question: str, context: str, answer: str, attempt: int
     ) -> Dict[str, Any]:
-        query: List[Dict[str, str]] = [
-            {"question": question, "context": context, "response": answer}
-        ]
         result = self.eval_llm.evaluate(
-            data=query, checks=[Evals.FACTUAL_ACCURACY]
-        )[0]  
+            data=[{"question": question, "context": context, "response": answer}],
+            checks=[Evals.FACTUAL_ACCURACY],
+        )[0]
 
         return {
             "response_verified": "Correct"
@@ -81,31 +84,29 @@ class EvaluationAgent(RoutedAgent):
             "factual_accuracy_score": result["score_factual_accuracy"],
             "explanation_factual_accuracy": result["explanation_factual_accuracy"],
             "correction_attempt": attempt,
+            "answer": answer,
             "error": None,
         }
 
-   
-    async def _route_for_correction(
+    async def _edit_once(
         self,
-        ctx: MessageContext,
         original: Dict[str, Any],
         evaluation: Dict[str, Any],
     ) -> Message:
-        logger.info("Forwarding to EditorAgent (attempt %d)",evaluation["correction_attempt"] + 1)
+        """Call EditorAgent a single time and return its answer to the caller."""
+        attempt = evaluation["correction_attempt"] + 1
+        logger.info("Forwarding to EditorAgent (attempt %d)", attempt)
 
         editor_payload = {
             "question": original["question"],
             "context": original["context"],
             "answer": original["answer"],
             "explanation": evaluation["explanation_factual_accuracy"],
-            "correction_attempt": evaluation["correction_attempt"],
+            "correction_attempt": attempt,
         }
 
         editor_response = await self.send_message(
             Message(content=json.dumps(editor_payload)),
             AgentId("editor_agent", "default"),
         )
-        updated = json.loads(editor_response.content)
-        updated["correction_attempt"] += 1
-        logger.debug("EditorAgent returned:\n%s", json.dumps(updated, indent=2))
-        return await self.send_message( Message(content=json.dumps(updated)),self.id)
+        return editor_response

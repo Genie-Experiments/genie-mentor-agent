@@ -12,11 +12,8 @@ from autogen_ext.models.openai import OpenAIChatCompletionClient
 from .message import Message  
 
 
-_handler = logging.StreamHandler()
 logger = logging.getLogger("editor_agent")
 logger.setLevel(logging.INFO)       
-logger.addHandler(_handler)
-logger.propagate = False
 
 
 class EditorAgent(RoutedAgent):
@@ -29,9 +26,6 @@ class EditorAgent(RoutedAgent):
             api_key=os.getenv("OPENAI_API_KEY"),
         )
 
-       
-
-   
     @message_handler
     async def handle_message(self, message: Message, ctx: MessageContext) -> Message:  # noqa: D401
         
