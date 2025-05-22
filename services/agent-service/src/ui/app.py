@@ -74,15 +74,8 @@ def format_response(result: dict) -> str:
         
         # Extract the actual response and confidence score from the query output
         if isinstance(query_output, dict):
-            if 'aggregated_results' in query_output:
-                query_response = query_output['aggregated_results']
-                confidence_score = query_output.get('confidence_score', 'N/A')
-            elif 'answer' in query_output:
-                query_response = query_output['answer']
-                confidence_score = query_output.get('confidence_score', 'N/A')
-            else:
-                query_response = str(query_output)
-                confidence_score = 'N/A'
+            query_response = query_output.get('answer', '')
+            confidence_score = query_output.get('confidence_score', 'N/A')
         else:
             query_response = str(query_output)
             confidence_score = 'N/A'
@@ -91,10 +84,29 @@ def format_response(result: dict) -> str:
         query_response = str(query_output)
         confidence_score = 'N/A'
     
-    return f'''**Planner Agent Output**
+    # Format refiner output if available
+    refiner_section = ""
+    if isinstance(query_output, dict):
+        refiner_metadata = query_output.get('refiner_metadata', {})
+        if refiner_metadata:
+            refiner_section = f'''
+**Refiner Agent Output**
+```json
+{json.dumps(json.loads(refiner_metadata.get('refined_plan', '{}')), indent=2)}
+```
+
+**Refiner Feedback**
+{refiner_metadata.get('feedback', 'No feedback provided')}
+
+**Changes Made**
+{chr(10).join(f"- {change}" for change in refiner_metadata.get('changes_made', ['No changes made']))}'''
+    
+    return f'''**Planner & Refiner Agent Output**
 ```json
 {json.dumps(planner_output, indent=2)}
 ```
+
+{refiner_section}
 
 **Query Agent Response**
 {query_response}

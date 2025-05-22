@@ -46,16 +46,42 @@ class PlannerAgent(RoutedAgent):
             try:
                 query_dict = json.loads(query_result.content)
                 # Add execution results to plan
-                plan_dict['execution_results'] = {
-                    'answer': query_dict['aggregated_results'],
-                    'confidence_score': query_dict['confidence_score']
-                }
+                if 'answer' in query_dict:
+                    answer = query_dict['answer']
+                    if isinstance(answer, dict):
+                        plan_dict['execution_results'] = {
+                            'answer': answer.get('aggregated_results', ''),
+                            'confidence_score': answer.get('confidence_score', 0)
+                        }
+                    else:
+                        plan_dict['execution_results'] = {
+                            'answer': str(answer),
+                            'confidence_score': 0
+                        }
+                else:
+                    plan_dict['execution_results'] = {
+                        'answer': str(query_dict),
+                        'confidence_score': 0
+                    }
+                
+                # Add refiner metadata at the top level
+                refiner_metadata = query_dict.get('refiner_metadata', {})
+                if refiner_metadata:
+                    # Use the refined plan directly from the refiner metadata
+                    plan_dict['refiner_metadata'] = {
+                        'refined_plan': refiner_metadata.get('refined_plan', '{}'),
+                        'feedback': refiner_metadata.get('feedback', ''),
+                        'changes_made': refiner_metadata.get('changes_made', [])
+                    }
+                else:
+                    plan_dict['refiner_metadata'] = {}
             except json.JSONDecodeError:
                 print(f'[WARNING] Failed to parse query result as JSON: {query_result.content}')
                 plan_dict['execution_results'] = {
                     'answer': query_result.content,
                     'confidence_score': 0
                 }
+                plan_dict['refiner_metadata'] = {}
             
             return Message(content=json.dumps(plan_dict))
         except Exception as e:
@@ -63,7 +89,7 @@ class PlannerAgent(RoutedAgent):
             # Return error in a structured format
             error_response = {
                 'error': str(e),
-                'plan': plan_dict if 'plan_dict' in locals() else None,
+                'plan': json.dumps(plan_dict) if 'plan_dict' in locals() else None,
                 'query_result': query_result.content if 'query_result' in locals() else None
             }
             return Message(content=json.dumps(error_response))

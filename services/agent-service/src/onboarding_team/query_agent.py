@@ -23,20 +23,55 @@ class QueryAgent(RoutedAgent):
 
     @message_handler
     async def handle_query_plan(self, message: Message, ctx: MessageContext) -> Message:
-        plan = json.loads(message.content)
-        query_components = {q["id"]: q for q in plan["query_components"]}
-        execution_order = plan["execution_order"]
+        try:
+            # Parse the message content which now contains both refined plan and metadata
+            content = json.loads(message.content)
+            plan = json.loads(content.get('refined_plan', message.content))
+            
+            # Store the refiner metadata for trace information
+            self._refiner_metadata = {
+                'refined_plan': content.get('refined_plan'),
+                'original_plan': content.get('original_plan'),
+                'feedback': content.get('feedback'),
+                'changes_made': content.get('changes_made')
+            }
+            
+            query_components = {q["id"]: q for q in plan["query_components"]}
+            execution_order = plan["execution_order"]
 
-        self._sources_used = []
-        results = {}
+            self._sources_used = []
+            results = {}
 
-        for qid in execution_order["nodes"]:
-            result = await self.execute_query(qid, query_components)
-            results[qid] = result
+            for qid in execution_order["nodes"]:
+                result = await self.execute_query(qid, query_components)
+                results[qid] = result
 
-        # Aggregate results using custom strategy
-        aggregated = await self.aggregate_results(plan["user_query"], results, strategy=execution_order.get("aggregation"))
-        return Message(content=aggregated)
+            # Aggregate results using custom strategy
+            aggregated = await self.aggregate_results(plan["user_query"], results, strategy=execution_order.get("aggregation"))
+            
+            # Include refiner metadata in the response
+            response = {
+                "answer": {
+                    "aggregated_results": aggregated["aggregated_results"],
+                    "confidence_score": aggregated["confidence_score"]
+                },
+                "refiner_metadata": self._refiner_metadata
+            }
+            
+            return Message(content=json.dumps(response))
+            
+        except json.JSONDecodeError as e:
+            print(f"[ERROR] Failed to parse message content: {e}")
+            return Message(content=json.dumps({
+                "error": f"Failed to parse message content: {str(e)}",
+                "raw_content": message.content
+            }))
+        except Exception as e:
+            print(f"[ERROR] Error in handle_query_plan: {str(e)}")
+            return Message(content=json.dumps({
+                "error": str(e),
+                "raw_content": message.content
+            }))
 
     async def execute_query(self, qid: str, query_components: Dict[str, Any]) -> Dict[str, Any]:
         q = query_components[qid]
@@ -84,22 +119,22 @@ class QueryAgent(RoutedAgent):
             
             # If the content is wrapped in markdown code blocks, extract the JSON
             if content.startswith('```json') and content.endswith('```'):
-                content = content[7:-3].strip()  #
+                content = content[7:-3].strip()
             
             # Parse the JSON
             result = json.loads(content)
             
             # Return both aggregated results and confidence score
-            return json.dumps({
+            return {
                 "aggregated_results": result["aggregated_results"],
                 "confidence_score": result["confidence_score"]
-            })
+            }
         except json.JSONDecodeError:
             # If parsing fails, wrap the raw response
-            return json.dumps({
+            return {
                 "aggregated_results": response.content,
                 "confidence_score": 0
-            })
+            }
 
 def query_notion(sub_query: str) -> Dict[str, Any]:
     return {
