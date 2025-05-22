@@ -81,15 +81,16 @@ class QueryAgent(RoutedAgent):
         source = q["source"]
 
         if source == "knowledgebase":
-            response = await self.query_knowledgebase(sub_query)
+            response = query_knowledgebase(sub_query)
             
         elif source == "notion":
-            response = await self.send_message(
+            response_message = await self.send_message(
                 Message(
-                    content=f"Use Notion to find relevant information about the following query: {sub_query}. Retrieve key information from all the relevant pages, and based on the information retrieved, answer the user query. The answer should be detailed and include information from all the sources used. Your final response should be a json object, with an 'answer' key, which is the answer to the query based on the information fetched, and a 'sources' key"
+                    content=f"Use Notion to find relevant information about the following query: {sub_query}. Retrieve key information from all the relevant pages, and based on the information retrieved, always answer the user query. The answer should be detailed and include information from all the sources used. Your final response should be a json object, with an 'answer' key, which is the answer to the query based on the information fetched, and a 'sources' key"
                 ), 
                 self.workbench_agent_id
             )
+            response = json.loads(response_message.content)
         else: 
             raise ValueError(f"Unknown source: {source}")
 
