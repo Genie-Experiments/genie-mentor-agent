@@ -14,12 +14,14 @@ from .message import Message
 
 
 class QueryAgent(RoutedAgent):
-    def __init__(self) -> None:
+    def __init__(self, workbench_agent_id: AgentId) -> None:
         super().__init__("query_agent")
+        self.workbench_agent_id = workbench_agent_id
         self.model_client = OpenAIChatCompletionClient(
             model="gpt-4o",
             api_key=os.getenv("OPENAI_API_KEY")
         )
+        
 
     @message_handler
     async def handle_query_plan(self, message: Message, ctx: MessageContext) -> Message:
@@ -79,14 +81,23 @@ class QueryAgent(RoutedAgent):
         source = q["source"]
 
         if source == "knowledgebase":
-            response = query_knowledgebase(sub_query)
+            response = await self.query_knowledgebase(sub_query)
+            
         elif source == "notion":
-            response = query_notion(sub_query)
-        else:
-            raise ValueError(f"Unsupported source: {source}")
+            response = await self.send_message(
+                Message(
+                    content=f"Use Notion to find relevant information about the following query: {sub_query}. Retrieve key information from all the relevant pages, and based on the information retrieved, answer the user query. The answer should be detailed and include information from all the sources used. Your final response should be a json object, with an 'answer' key, which is the answer to the query based on the information fetched, and a 'sources' key"
+                ), 
+                self.workbench_agent_id
+            )
+        else: 
+            raise ValueError(f"Unknown source: {source}")
 
-        self._sources_used.extend(response["sources"])
+        if "sources" in response:
+            self._sources_used.extend(response["sources"])
         return response["answer"]
+
+    
 
     async def aggregate_results(self, user_query: str, results: Dict[str, Any], strategy: Optional[str] = None) -> Dict[str, Any]:
         prompt = f'''
@@ -136,8 +147,3 @@ class QueryAgent(RoutedAgent):
                 "confidence_score": 0
             }
 
-def query_notion(sub_query: str) -> Dict[str, Any]:
-    return {
-        "answer": "",
-        "sources": []
-    }

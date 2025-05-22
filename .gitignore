@@ -25,6 +25,7 @@ MANIFEST
 venv/
 env/
 ENV/
+venv-agent-service/
 .env
 .venv
 env.bak/
