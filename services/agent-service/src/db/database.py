@@ -11,7 +11,7 @@ from sqlalchemy.orm import sessionmaker
 load_dotenv()
 
 # Database configuration
-DATABASE_URL = os.getenv('DATABASE_URL', 'sqlite:///./memory.db')  # Default to SQLite for development
+DATABASE_URL = os.getenv('DATABASE_URL', 'sqlite:///./temp.db')  # Using a temporary database file
 
 # Create engine with appropriate configuration
 if DATABASE_URL.startswith('sqlite'):

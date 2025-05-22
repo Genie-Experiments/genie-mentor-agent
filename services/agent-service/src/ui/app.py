@@ -3,6 +3,7 @@
 import json
 import os
 import uuid
+import time
 from datetime import datetime
 from pathlib import Path
 
@@ -14,33 +15,91 @@ import streamlit as st
 DB_FILE        = Path('db.json')
 DEFAULT_BACKEND= os.getenv('BACKEND_URL', 'http://127.0.0.1:8001')
 
-# ── helper: talk to backend 
-def call_backend(query: str) -> str:
-    """POST /planner/plan and return both planner and query results"""
-    if not st.session_state.current_chat_id:
-        return '❌ No active chat session'
+def format_timestamp(timestamp_str: str) -> str:
+    """Format ISO timestamp string to a more readable format."""
+    try:
+        dt = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
+        return dt.strftime('%B %d, %Y at %I:%M:%S %p')
+    except (ValueError, AttributeError):
+        return timestamp_str
 
-    current_chat = st.session_state.chats[st.session_state.current_chat_id]
-    session_id = current_chat['session_id']
-
-    # Call planner endpoint which now returns both planner and query results
-    response = requests.post(f'{DEFAULT_BACKEND}/planner/plan', params={'query': query}, timeout=190)
-    response.raise_for_status()
-    result = response.json()
+def format_trace_info(trace_info: dict) -> dict:
+    """Format timestamps in trace information to be more readable."""
+    formatted_trace = trace_info.copy()
     
-    # Format the response - result is already parsed JSON
+    # Format main timestamp
+    if 'timestamp' in formatted_trace:
+        formatted_trace['timestamp'] = format_timestamp(formatted_trace['timestamp'])
+    
+    # Format user input timestamp
+    if 'user_input' in formatted_trace and 'time' in formatted_trace['user_input']:
+        formatted_trace['user_input']['time'] = format_timestamp(formatted_trace['user_input']['time'])
+    
+    # Format planner agent timestamps
+    if 'planner_agent' in formatted_trace:
+        if 'timestamp' in formatted_trace['planner_agent']:
+            formatted_trace['planner_agent']['timestamp'] = format_timestamp(formatted_trace['planner_agent']['timestamp'])
+    
+    # Format query agent timestamps
+    if 'query_agent' in formatted_trace:
+        if 'timestamp' in formatted_trace['query_agent']:
+            formatted_trace['query_agent']['timestamp'] = format_timestamp(formatted_trace['query_agent']['timestamp'])
+    
+    return formatted_trace
+
+# ── helper: talk to backend 
+def call_backend(query: str, session_id: str) -> tuple:
+    """POST /planner/plan and return both planner and query results"""
+    # Call planner endpoint which now returns both planner and query results
+    response = requests.post(
+        f'{DEFAULT_BACKEND}/planner/plan',
+        params={
+            'query': query,
+            'session_id': session_id
+        },
+        timeout=190
+    )
+    response.raise_for_status()
+    return response.json()
+
+def format_response(result: dict) -> str:
+    """Format the API response for display"""
     planner_output = result['planner_output']
     query_output = result['query_output']
+    
+    try:
+        if isinstance(query_output, str):
+            # If query_output is a string, try to parse it as JSON
+            query_output = json.loads(query_output)
+        
+        # Extract the actual response and confidence score from the query output
+        if isinstance(query_output, dict):
+            if 'aggregated_results' in query_output:
+                query_response = query_output['aggregated_results']
+                confidence_score = query_output.get('confidence_score', 'N/A')
+            elif 'answer' in query_output:
+                query_response = query_output['answer']
+                confidence_score = query_output.get('confidence_score', 'N/A')
+            else:
+                query_response = str(query_output)
+                confidence_score = 'N/A'
+        else:
+            query_response = str(query_output)
+            confidence_score = 'N/A'
+    except json.JSONDecodeError:
+        # If parsing fails, return the raw output
+        query_response = str(query_output)
+        confidence_score = 'N/A'
     
     return f'''**Planner Agent Output**
 ```json
 {json.dumps(planner_output, indent=2)}
 ```
 
-**Query Agent Output**
-```json
-{json.dumps(query_output, indent=2)}
-```'''
+**Query Agent Response**
+{query_response}
+
+**Confidence Score**: {confidence_score}'''
 
 # ── session‑state bootstrap 
 if 'chats' not in st.session_state:
@@ -53,12 +112,20 @@ if 'chats' not in st.session_state:
                     new_chat_id: {
                         'session_id': str(uuid.uuid4()),
                         'chat_history': data['chat_history'],
+                        'trace_history': [],  # Initialize trace_history
                         'created_at': datetime.now().isoformat(),
                         'title': 'Chat 1'
                     }
                 }
             else:
-                st.session_state.chats = data
+                # Convert existing chats to include trace_history
+                st.session_state.chats = {
+                    chat_id: {
+                        **chat_data,
+                        'trace_history': []  # Add trace_history to existing chats
+                    }
+                    for chat_id, chat_data in data.items()
+                }
         except json.JSONDecodeError:
             st.session_state.chats = {}
     else:
@@ -80,6 +147,7 @@ if st.sidebar.button('➕ New Chat'):
     st.session_state.chats[new_chat_id] = {
         'session_id': str(uuid.uuid4()),
         'chat_history': [],
+        'trace_history': [],  # Initialize trace_history
         'created_at': datetime.now().isoformat(),
         'title': f'Chat {len(st.session_state.chats) + 1}'
     }
@@ -149,6 +217,7 @@ if st.session_state.current_chat_id:
     current_chat = st.session_state.chats[st.session_state.current_chat_id]
     st.title(f'💬 {current_chat["title"]}')
 
+    # Display chat history
     for m in current_chat['chat_history']:
         with st.chat_message(m['role']):
             st.markdown(m['content'])
@@ -161,12 +230,36 @@ if st.session_state.current_chat_id:
         with st.chat_message('assistant'):
             with st.spinner('Thinking…'):
                 try:
-                    answer = call_backend(prompt)
+                    # Make a single API call
+                    result = call_backend(prompt, current_chat['session_id'])
+                    
+                    # Format the response
+                    answer = format_response(result)
+                    
+                    # Get and format trace information
+                    trace_info = result.get('trace_info', {})
+                    formatted_trace = format_trace_info(trace_info)
+                    
+                    # Update chat history
+                    if 'trace_history' not in current_chat:
+                        current_chat['trace_history'] = []
+                    current_chat['trace_history'].append(trace_info)
+                    
+                    # Save updated chat history
+                    DB_FILE.write_text(
+                        json.dumps(st.session_state.chats, indent=2, ensure_ascii=False),
+                        encoding='utf-8'
+                    )
                 except requests.HTTPError as e:
                     detail = e.response.text if e.response is not None else ''
                     answer = f'❌ *backend error* ({e.response.status_code}): {detail}'
+                    formatted_trace = {}
 
             st.markdown(answer)
+            # Add trace information in an expander
+            with st.expander("🔍 Trace Information"):
+                st.json(formatted_trace)
+                
         current_chat['chat_history'].append({'role': 'assistant', 'content': answer})
 
         DB_FILE.write_text(

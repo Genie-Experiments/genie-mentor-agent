@@ -24,9 +24,9 @@ logger.setLevel(logging.INFO)
 persist_path = os.getenv('CHROMA_DB_PATH')
 
 class PlannerAgent(RoutedAgent):
-    def __init__(self, query_agent_id: AgentId) -> None:
+    def __init__(self, refiner_agent_id: AgentId) -> None:
         super().__init__('planner_agent')
-        self.query_agent_id = query_agent_id
+        self.refiner_agent_id = refiner_agent_id
         self.evaluation_agent_id = AgentId('evaluation_agent', 'default')
         self.editor_agent_id = AgentId('editor_agent', 'default')
         self.model_client = OpenAIChatCompletionClient(
@@ -103,6 +103,32 @@ class PlannerAgent(RoutedAgent):
             verification_status = eval_result.get('response_verified', 'unknown')
             error = eval_result.get('error')
             
+            # Generate the plan
+            plan = await self.process_query(message.content)
+            plan_dict = json.loads(plan.content)
+            
+            # Send the plan to query agent and get results
+            query_result = await self.send_message(plan, self.refiner_agent_id)
+            
+            # Debug print
+            print(f'[DEBUG] Query result content: {query_result.content}')
+            
+            # Try to parse query result
+            try:
+                query_dict = json.loads(query_result.content)
+                # Add execution results to plan
+                plan_dict['execution_results'] = {
+                    'answer': query_dict['aggregated_results'],
+                    'confidence_score': query_dict['confidence_score']
+                }
+            except json.JSONDecodeError:
+                print(f'[WARNING] Failed to parse query result as JSON: {query_result.content}')
+                plan_dict['execution_results'] = {
+                    'answer': query_result.content,
+                    'confidence_score': 0
+                }
+            
+            return Message(content=json.dumps(plan_dict))
         except Exception as e:
             error = str(e)
             verification_status = "evaluation_failed"

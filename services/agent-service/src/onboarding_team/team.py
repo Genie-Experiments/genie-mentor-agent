@@ -7,6 +7,7 @@ from autogen_core import AgentId, SingleThreadedAgentRuntime
 # Local application imports
 from .message import Message
 from .planner_agent import PlannerAgent
+from .refiner_agent import RefinerAgent
 from .query_agent import QueryAgent
 from .evaluation_agent import EvaluationAgent
 from .editor_agent import EditorAgent
@@ -14,6 +15,7 @@ import os
 # Constants
 RUNTIME = SingleThreadedAgentRuntime()
 PLANNER_AGENT_ID = AgentId('planner_agent', 'default')
+REFINER_AGENT_ID = AgentId('refiner_agent', 'default')
 QUERY_AGENT_ID = AgentId('query_agent', 'default')
 EVALUATION_AGENT_ID = AgentId("evaluation_agent", "default")
 EDITOR_AGENT_ID = AgentId("editor_agent", "default")
@@ -30,7 +32,8 @@ async def initialize_agent() -> None:
             raise EnvironmentError(
                 f"Missing required environment variables: {', '.join(missing)}"
             )
-        await PlannerAgent.register(RUNTIME, 'planner_agent', lambda: PlannerAgent(QUERY_AGENT_ID))
+        await PlannerAgent.register(RUNTIME, 'planner_agent', lambda: PlannerAgent(REFINER_AGENT_ID))
+        await RefinerAgent.register(RUNTIME, 'refiner_agent', lambda: RefinerAgent(QUERY_AGENT_ID))
         await QueryAgent.register(RUNTIME, 'query_agent', lambda: QueryAgent())
         await EvaluationAgent.register(RUNTIME, 'evaluation_agent', lambda: EvaluationAgent())
         await EditorAgent.register(RUNTIME, 'editor_agent', lambda: EditorAgent())
