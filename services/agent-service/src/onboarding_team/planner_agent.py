@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 import os
@@ -21,9 +22,7 @@ persist_path = os.getenv("CHROMA_DB_PATH")
 
 
 class PlannerAgent(RoutedAgent):
-    """Generates a plan, invokes the query/refiner flow, then evaluates & (optionally) edits."""
-
-    MAX_CORRECTIONS = 2 
+    MAX_CORRECTIONS = 2
 
     def __init__(self, refiner_agent_id: AgentId, query_agent_id: AgentId) -> None:
         super().__init__("planner_agent")
@@ -36,42 +35,43 @@ class PlannerAgent(RoutedAgent):
             model="gpt-4o", api_key=os.getenv("OPENAI_API_KEY")
         )
 
-   
     @message_handler
-    async def handle_user_message(
-        self, message: Message, ctx: MessageContext
-    ) -> Message:
+    async def handle_user_message(self, message: Message, ctx: MessageContext) -> Message:
         try:
             plan_msg = await self.process_query(message.content)
-            plan_dict: Dict[str, Any] = json.loads(plan_msg.content)
+            plan_dict = json.loads(plan_msg.content)
 
             query_msg = await self.send_message(plan_msg, self.refiner_agent_id)
-            query_dict: Dict[str, Any] = json.loads(query_msg.content)
+            query_dict = json.loads(query_msg.content)
+
+            # Store execution results
+            plan_dict["execution_results"] = {
+                "answer": query_dict.get("aggregated_results", ""),
+                "confidence_score": query_dict.get("confidence_score", 0)
+            }
+
+            # Handle refiner metadata if present
+            refiner_metadata = query_dict.get("refiner_metadata", {})
+            plan_dict["refiner_metadata"] = {
+                "refined_plan": refiner_metadata.get("refined_plan", "{}"),
+                "feedback": refiner_metadata.get("feedback", ""),
+                "changes_made": refiner_metadata.get("changes_made", [])
+            }
 
             final = await self.process_results(plan_dict, query_dict, ctx)
-
             return Message(content=json.dumps(final))
 
         except Exception as exc:
             logger.exception("PlannerAgent failed:")
             return Message(
-                content=json.dumps(
-                    {
-                        "error": str(exc),
-                        "verification_status": "failed",
-                        "correction_attempts": 0,
-                    }
-                )
+                content=json.dumps({
+                    "error": str(exc),
+                    "verification_status": "failed",
+                    "correction_attempts": 0
+                })
             )
 
-    async def process_results(
-        self,
-        plan: Dict[str, Any],
-        query: Dict[str, Any],
-        ctx: MessageContext,
-    ) -> Dict[str, Any]:
-        """Run UpTrain evaluation and, if needed, route through EditorAgent."""
-
+    async def process_results(self, plan: Dict[str, Any], query: Dict[str, Any], ctx: MessageContext) -> Dict[str, Any]:
         srcs: List[str] = []
         for comp in query.get("individual_results", {}).values():
             srcs.extend(comp.get("sources", []))
@@ -87,42 +87,37 @@ class PlannerAgent(RoutedAgent):
         attempt = 0
 
         while attempt <= self.MAX_CORRECTIONS:
-            eval_resp = await self.send_message(
-                Message(content=json.dumps(eval_payload)), self.evaluation_agent_id
-            )
+            eval_resp = await self.send_message(Message(content=json.dumps(eval_payload)), self.evaluation_agent_id)
             eval_data = json.loads(eval_resp.content)
 
-            history.append(
-                {
-                    "type": "evaluation",
-                    "attempt": attempt,
-                    "score": eval_data.get("factual_accuracy_score", 0.0),
-                    "status": eval_data.get("response_verified", "unknown"),
-                    "explanation": eval_data.get("explanation_factual_accuracy", ""),
-                }
-            )
+            history.append({
+                "type": "evaluation",
+                "attempt": attempt,
+                "score": eval_data.get("factual_accuracy_score", 0.0),
+                "status": eval_data.get("response_verified", "unknown"),
+                "explanation": eval_data.get("explanation_factual_accuracy", ""),
+            })
 
             if eval_data.get("response_verified") == "Correct":
-                break  
+                break
+
             if attempt == self.MAX_CORRECTIONS:
-                break  
+                break
+
             editor_payload = {
-                **eval_payload, 
+                **eval_payload,
                 "explanation": eval_data.get("explanation_factual_accuracy", ""),
                 "correction_attempt": attempt,
             }
-            edit_resp = await self.send_message(
-                Message(content=json.dumps(editor_payload)), self.editor_agent_id
-            )
+
+            edit_resp = await self.send_message(Message(content=json.dumps(editor_payload)), self.editor_agent_id)
             edit_data = json.loads(edit_resp.content)
 
-            history.append(
-                {
-                    "type": "correction",
-                    "attempt": attempt,
-                    "new_answer": edit_data["answer"],
-                }
-            )
+            history.append({
+                "type": "correction",
+                "attempt": attempt,
+                "new_answer": edit_data["answer"],
+            })
 
             eval_payload["answer"] = edit_data["answer"]
             eval_payload["correction_attempt"] += 1
