@@ -15,6 +15,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
 # Local application imports
+from .prompts import PLANNER_PROMPT
 from ..schemas.planner_schema import QueryPlan
 from .message import Message
 
@@ -133,40 +134,11 @@ class PlannerAgent(RoutedAgent):
     async def process_query(self, query: str) -> Message:
         selected_sources = self.determine_data_sources(query)
 
-        prompt = f'''
-You are a Planner Agent responsible for generating a structured query plan based on the user's input.
+        prompt = PLANNER_PROMPT.format(
+            user_query=query,
+            data_sources=selected_sources
+        )
 
-User Query: "{query}"
-
-Define query intent using 2–3 words.
-Use only the following data sources: {selected_sources}
-
-Provide a JSON object with the following structure:
-{{
-  "user_query": "...",
-  "query_intent": "...",
-  "data_sources": ["knowledgebase", "notion"],
-  "query_components": [
-    {{
-      "id": "q1",
-      "sub_query": "...",
-      "source": "knowledgebase"
-    }},
-    {{
-      "id": "q2",
-      "sub_query": "...",
-      "source": "notion"
-    }}
-  ],
-  "execution_order": {{
-    "nodes": ["q1", "q2"],
-    "edges": [],
-    "aggregation": "combine_and_summarize"
-  }}
-}}
-
-Ensure the JSON is properly formatted.
-'''
         response = await self.model_client.create(
             messages=[UserMessage(content=prompt, source='user')],
             json_output=QueryPlan

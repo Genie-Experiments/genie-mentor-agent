@@ -9,9 +9,9 @@ from autogen_core.models import UserMessage
 from autogen_ext.models.openai import OpenAIChatCompletionClient
 
 # Local application imports
+from .prompts import AGGREGATE_RESULTS_PROMPT
 from ..rag.rag import query_knowledgebase
 from .message import Message
-
 
 class QueryAgent(RoutedAgent):
     def __init__(self, workbench_agent_id: AgentId) -> None:
@@ -101,25 +101,11 @@ class QueryAgent(RoutedAgent):
     
 
     async def aggregate_results(self, user_query: str, results: Dict[str, Any], strategy: Optional[str] = None) -> Dict[str, Any]:
-        prompt = f'''
-        You are an assistant tasked with aggregating results fetched from multiple sources in response to a user query.
-        When aggregating the results, ensure they are relevant to the user's query and follow the given aggregation strategy.
-        
-        User Query: "{user_query}"
-        Results: {results}
-        Aggregation Strategy: "{strategy}"
-        
-        Instructions:
-        - Aggregate the provided results into a coherent and concise response.
-        - Assess the relevance of the results to the user's query.
-        - Provide a confidence score (0–100) indicating how relevant and accurate the aggregated answer is.
-        - Return the response as a properly formatted JSON object using the following structure:
-        
-        {{
-            "aggregated_results": "<your aggregated response here>",
-            "confidence_score": <integer between 0 and 100>
-        }}
-        '''
+        prompt = AGGREGATE_RESULTS_PROMPT.format(
+            user_query=user_query,
+            results=results,
+            strategy=strategy
+            )
 
         response = await self.model_client.create(
             messages=[UserMessage(content=prompt, source=self.id.key)],
