@@ -33,6 +33,7 @@ class PlannerAgent(RoutedAgent):
 
     def determine_data_sources(self, query: str) -> List[str]:
         embedding_model = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+        persist_path = os.getenv("CHROMA_DB_PATH")
         print(f"[DEBUG] CHROMA_DB_PATH used = {persist_path}")
         kb_store = Chroma(
             persist_directory=persist_path,

@@ -5,6 +5,7 @@ This service manages document sources, processing, and retrieval for the Genie M
 
 from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
+from rag import query_knowledgebase
 from ingestion import process_uploaded_file
 import os
 
