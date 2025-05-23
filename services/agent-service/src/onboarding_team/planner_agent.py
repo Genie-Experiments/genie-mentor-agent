@@ -1,191 +1,174 @@
+# Standard library imports
 import asyncio
 import json
-import logging
 import os
-from typing import Any, Dict, List
+import sys
+from typing import Any, Dict, List, Optional
 
-from autogen_core import AgentId, MessageContext, RoutedAgent, message_handler
+# Third-party imports
+from autogen_core import AgentId, MessageContext, RoutedAgent, SingleThreadedAgentRuntime, message_handler
 from autogen_core.models import UserMessage
 from autogen_ext.models.openai import OpenAIChatCompletionClient
 from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain_chroma import Chroma
+from langchain_community.vectorstores import Chroma
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
+# Local application imports
 from ..schemas.planner_schema import QueryPlan
 from .message import Message
 
-logger = logging.getLogger("pipeline")
-logger.setLevel(logging.INFO)
-
-persist_path = os.getenv("CHROMA_DB_PATH")
-
+persist_path = os.getenv('CHROMA_DB_PATH')
 
 class PlannerAgent(RoutedAgent):
-    MAX_CORRECTIONS = 2
-
-    def __init__(self, refiner_agent_id: AgentId, query_agent_id: AgentId) -> None:
-        super().__init__("planner_agent")
+    def __init__(self, refiner_agent_id: AgentId) -> None:
+        super().__init__('planner_agent')
         self.refiner_agent_id = refiner_agent_id
-        self.query_agent_id = query_agent_id
-        self.evaluation_agent_id = AgentId("evaluation_agent", "default")
-        self.editor_agent_id = AgentId("editor_agent", "default")
-
         self.model_client = OpenAIChatCompletionClient(
-            model="gpt-4o", api_key=os.getenv("OPENAI_API_KEY")
+            model='gpt-4o',
+            api_key=os.getenv('OPENAI_API_KEY')
         )
 
     @message_handler
     async def handle_user_message(self, message: Message, ctx: MessageContext) -> Message:
         try:
-            plan_msg = await self.process_query(message.content)
-            plan_dict = json.loads(plan_msg.content)
-
-            query_msg = await self.send_message(plan_msg, self.refiner_agent_id)
-            query_dict = json.loads(query_msg.content)
-
-            # Store execution results
-            plan_dict["execution_results"] = {
-                "answer": query_dict.get("aggregated_results", ""),
-                "confidence_score": query_dict.get("confidence_score", 0)
+            # Generate the plan
+            plan = await self.process_query(message.content)
+            plan_dict = json.loads(plan.content)
+            
+            # Send the plan to query agent and get results
+            query_result = await self.send_message(plan, self.refiner_agent_id)
+            
+            # Debug print
+            print(f'[DEBUG] Query result content: {query_result.content}')
+            
+            # Try to parse query result
+            try:
+                query_dict = json.loads(query_result.content)
+                # Add execution results to plan
+                if 'answer' in query_dict:
+                    answer = query_dict['answer']
+                    if isinstance(answer, dict):
+                        plan_dict['execution_results'] = {
+                            'answer': answer.get('aggregated_results', ''),
+                            'confidence_score': answer.get('confidence_score', 0)
+                        }
+                    else:
+                        plan_dict['execution_results'] = {
+                            'answer': str(answer),
+                            'confidence_score': 0
+                        }
+                else:
+                    plan_dict['execution_results'] = {
+                        'answer': str(query_dict),
+                        'confidence_score': 0
+                    }
+                
+                # Add refiner metadata at the top level
+                refiner_metadata = query_dict.get('refiner_metadata', {})
+                if refiner_metadata:
+                    # Use the refined plan directly from the refiner metadata
+                    plan_dict['refiner_metadata'] = {
+                        'refined_plan': refiner_metadata.get('refined_plan', '{}'),
+                        'feedback': refiner_metadata.get('feedback', ''),
+                        'changes_made': refiner_metadata.get('changes_made', [])
+                    }
+                else:
+                    plan_dict['refiner_metadata'] = {}
+            except json.JSONDecodeError:
+                print(f'[WARNING] Failed to parse query result as JSON: {query_result.content}')
+                plan_dict['execution_results'] = {
+                    'answer': query_result.content,
+                    'confidence_score': 0
+                }
+                plan_dict['refiner_metadata'] = {}
+            
+            return Message(content=json.dumps(plan_dict))
+        except Exception as e:
+            print(f'[ERROR] Error in handle_user_message: {str(e)}')
+            # Return error in a structured format
+            error_response = {
+                'error': str(e),
+                'plan': json.dumps(plan_dict) if 'plan_dict' in locals() else None,
+                'query_result': query_result.content if 'query_result' in locals() else None
             }
+            return Message(content=json.dumps(error_response))
 
-            # Handle refiner metadata if present
-            refiner_metadata = query_dict.get("refiner_metadata", {})
-            plan_dict["refiner_metadata"] = {
-                "refined_plan": refiner_metadata.get("refined_plan", "{}"),
-                "feedback": refiner_metadata.get("feedback", ""),
-                "changes_made": refiner_metadata.get("changes_made", [])
-            }
+    def determine_data_sources(self, query: str) -> List[str]:
+        embedding_model = HuggingFaceEmbeddings(model_name='all-MiniLM-L6-v2')
+        persist_path = os.getenv('CHROMA_DB_PATH')
+        print(f'[DEBUG] CHROMA_DB_PATH used = {persist_path}')
+        kb_store = Chroma(
+            persist_directory=persist_path,
+            embedding_function=embedding_model
+        )
+        print('[DEBUG] Chroma loaded docs:', kb_store._collection.count())
 
-            final = await self.process_results(plan_dict, query_dict, ctx)
-            return Message(content=json.dumps(final))
+        results = kb_store.similarity_search_with_score(query, k=3)
+        scores = [1 / (1 + score) for _, score in results if score is not None]
+        kb_score = max(scores) if scores else 0.0
 
-        except Exception as exc:
-            logger.exception("PlannerAgent failed:")
-            return Message(
-                content=json.dumps({
-                    "error": str(exc),
-                    "verification_status": "failed",
-                    "correction_attempts": 0
-                })
-            )
+        print('\n[DEBUG] Top matching KB documents:')
+        for i, (doc, score) in enumerate(results):
+            print(f'KB Match {i+1}: ({score:.3f}) {doc.page_content}...\n')
+        print(f'[DEBUG] Knowledgebase similarity score: {kb_score:.3f}')
 
-    async def process_results(self, plan: Dict[str, Any], query: Dict[str, Any], ctx: MessageContext) -> Dict[str, Any]:
-        srcs: List[str] = []
-        for comp in query.get("individual_results", {}).values():
-            srcs.extend(comp.get("sources", []))
+        # Mock Notion scores (TF-IDF)
+        notion_docs = ['project roadmap', 'meeting notes', 'internal OKRs', 'release timeline']
+        notion_vectorizer = TfidfVectorizer().fit_transform([query] + notion_docs)
+        notion_score = cosine_similarity(notion_vectorizer[0:1], notion_vectorizer[1:]).mean()
+        print(f'[DEBUG] Notion similarity score: {notion_score:.3f}')
 
-        eval_payload = {
-            "question": plan["user_query"],
-            "context": "\n".join(srcs),
-            "answer": query["aggregated_results"],
-            "correction_attempt": 0,
-        }
-
-        history: List[Dict[str, Any]] = []
-        attempt = 0
-
-        while attempt <= self.MAX_CORRECTIONS:
-            eval_resp = await self.send_message(Message(content=json.dumps(eval_payload)), self.evaluation_agent_id)
-            eval_data = json.loads(eval_resp.content)
-
-            history.append({
-                "type": "evaluation",
-                "attempt": attempt,
-                "score": eval_data.get("factual_accuracy_score", 0.0),
-                "status": eval_data.get("response_verified", "unknown"),
-                "explanation": eval_data.get("explanation_factual_accuracy", ""),
-            })
-
-            if eval_data.get("response_verified") == "Correct":
-                break
-
-            if attempt == self.MAX_CORRECTIONS:
-                break
-
-            editor_payload = {
-                **eval_payload,
-                "explanation": eval_data.get("explanation_factual_accuracy", ""),
-                "correction_attempt": attempt,
-            }
-
-            edit_resp = await self.send_message(Message(content=json.dumps(editor_payload)), self.editor_agent_id)
-            edit_data = json.loads(edit_resp.content)
-
-            history.append({
-                "type": "correction",
-                "attempt": attempt,
-                "new_answer": edit_data["answer"],
-            })
-
-            eval_payload["answer"] = edit_data["answer"]
-            eval_payload["correction_attempt"] += 1
-            attempt += 1
-
-        return {
-            "execution_plan": plan,
-            "initial_answer": {
-                "content": query["aggregated_results"],
-                "confidence": query["confidence_score"],
-            },
-            "evaluation_history": history,
-            "correction_attempts": attempt,
-            "final_answer": {
-                "content": eval_payload["answer"],
-                "confidence": eval_data.get("factual_accuracy_score", 0.0),
-                "verification_status": eval_data.get("response_verified", "unknown"),
-            },
-        }
-
-    def determine_data_sources(self, user_query: str) -> List[str]:
-        embedder = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
-        kb = Chroma(persist_directory=persist_path, embedding_function=embedder)
-
-        kb_hits = kb.similarity_search_with_score(user_query, k=3)
-        kb_score = max((1 / (1 + s) for _, s in kb_hits), default=0.0)
-
-        dummy_docs = ["project roadmap", "meeting notes", "internal OKRs", "release"]
-        tfidf = TfidfVectorizer().fit_transform([user_query] + dummy_docs)
-        notion_score = cosine_similarity(tfidf[0:1], tfidf[1:]).mean()
-
-        sources: List[str] = []
+        sources = []
         if kb_score >= 0.5:
-            sources.append("knowledgebase")
+            sources.append('knowledgebase')
         if notion_score >= 0.5:
-            sources.append("notion")
+            sources.append('notion')
+
         if not sources:
-            sources.append("knowledgebase" if kb_score >= notion_score else "notion")
+            return ['knowledgebase' if kb_score > notion_score else 'notion']
+
         return sources
 
-    async def process_query(self, user_query: str) -> Message:
-        sources = self.determine_data_sources(user_query)
+    async def process_query(self, query: str) -> Message:
+        selected_sources = self.determine_data_sources(query)
 
-        prompt = f"""
-You are a Planner Agent. Build a JSON plan for the user's query.
+        prompt = f'''
+You are a Planner Agent responsible for generating a structured query plan based on the user's input.
 
-User Query: "{user_query}"
-Use only these sources: {sources}
+User Query: "{query}"
 
-Return JSON matching this schema:
+Define query intent using 2–3 words.
+Use only the following data sources: {selected_sources}
 
+Provide a JSON object with the following structure:
 {{
   "user_query": "...",
   "query_intent": "...",
-  "data_sources": [...],
+  "data_sources": ["knowledgebase", "notion"],
   "query_components": [
-    {{ "id": "q1", "sub_query": "...", "source": "knowledgebase" }},
-    ...
+    {{
+      "id": "q1",
+      "sub_query": "...",
+      "source": "knowledgebase"
+    }},
+    {{
+      "id": "q2",
+      "sub_query": "...",
+      "source": "notion"
+    }}
   ],
   "execution_order": {{
-      "nodes": ["q1", "q2"],
-      "edges": [],
-      "aggregation": "combine_and_summarize"
+    "nodes": ["q1", "q2"],
+    "edges": [],
+    "aggregation": "combine_and_summarize"
   }}
 }}
-"""
-        llm_resp = await self.model_client.create(
-            messages=[UserMessage(content=prompt, source="user")],
-            json_output=QueryPlan,
+
+Ensure the JSON is properly formatted.
+'''
+        response = await self.model_client.create(
+            messages=[UserMessage(content=prompt, source='user')],
+            json_output=QueryPlan
         )
-        return Message(content=llm_resp.content)
+        return Message(content=response.content)
