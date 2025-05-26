@@ -57,7 +57,8 @@ class QueryAgent(RoutedAgent):
                     "aggregated_results": aggregated["aggregated_results"],
                     "confidence_score": aggregated["confidence_score"]
                 },
-                "refiner_metadata": self._refiner_metadata
+                "refiner_metadata": self._refiner_metadata,
+                "sources_used": self._sources_used  
             }
             
             return Message(content=json.dumps(response))
