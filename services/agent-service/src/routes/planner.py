@@ -58,14 +58,6 @@ async def generate_plan(query: str = Query(...), session_id: str = Query(...)) -
             },
             'total_time_taken': total_time
         }
-        
-        # Store the conversation with trace information
-        crud.store_conversation(
-            session_id=session_id,
-            query=query,
-            response=json.dumps(query_output),
-            trace_info=trace_info
-        )
             
         return {
             'planner_output': planner_output,
@@ -83,13 +75,5 @@ async def generate_plan(query: str = Query(...), session_id: str = Query(...)) -
                 'total_time_taken': total_time
             }
         }
-        
-        # Store the error case
-        crud.store_conversation(
-            session_id=session_id,
-            query=query,
-            response=plan_result,
-            trace_info=error_response['trace_info']
-        )
         
         return error_response

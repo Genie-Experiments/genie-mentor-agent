@@ -8,7 +8,7 @@ class QueryComponent(BaseModel):
 
 class ExecutionOrder(BaseModel):
     nodes: List[str]
-    edges: List[List[str]]  # ✅ This was the bug — you likely had List[Dict] or missing
+    edges: List[List[str]] 
     aggregation: Literal["combine_and_summarize", "sequential", "parallel"]
 
 class QueryPlan(BaseModel):
