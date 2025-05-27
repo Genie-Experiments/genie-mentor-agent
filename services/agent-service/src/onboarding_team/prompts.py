@@ -96,3 +96,20 @@ Instructions:
     "confidence_score": <integer between 0 and 100>
 }}
 '''
+
+
+EDITOR_PROMPT = """
+You are an **Editor**. Improve factual faithfulness of the answer with respect to the provided Context.
+### Question
+{question}
+
+### Context
+{contexts}
+
+### Current Answer
+{answer}
+
+### Rules
+1. Correct only the wrong facts; don't invent new ones.
+2. Return ONLY the revised answer text.
+"""
