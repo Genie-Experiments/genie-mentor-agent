@@ -17,6 +17,8 @@ from .query_agent import QueryAgent
 from .workbench_agent import WorkbenchAgent
 from .eval_agent import EvalAgent
 from .editor_agent import EditorAgent
+from .webrag_agent import WebRAGAgent
+
 # Constants
 RUNTIME = SingleThreadedAgentRuntime()
 PLANNER_AGENT_ID = AgentId('planner_agent', 'default')
@@ -25,6 +27,7 @@ QUERY_AGENT_ID = AgentId('query_agent', 'default')
 WORKBENCH_AGENT_ID = AgentId('workbench_agent', 'default')
 EVAL_AGENT_ID   = AgentId("eval_agent",   "default")
 EDITOR_AGENT_ID = AgentId("editor_agent", "default")
+WEBRAG_AGENT_ID = AgentId("webrag_agent", "default")
 
 # Flag to ensure the agent is only initialized once
 agent_initialized = False
@@ -55,7 +58,15 @@ async def initialize_agent() -> None:
             )
 
             await RefinerAgent.register(RUNTIME, 'refiner_agent', lambda: RefinerAgent(QUERY_AGENT_ID))
-            await QueryAgent.register(RUNTIME, 'query_agent', lambda: QueryAgent(WORKBENCH_AGENT_ID))
+            await QueryAgent.register(
+                RUNTIME,
+                "query_agent",
+                lambda: QueryAgent(
+                    workbench_agent_id = WORKBENCH_AGENT_ID,
+                    webrag_agent_id    = WEBRAG_AGENT_ID    
+                )
+            )
+
             await WorkbenchAgent.register(RUNTIME, 'workbench_agent',
                 factory=lambda: WorkbenchAgent(
 
@@ -65,6 +76,8 @@ async def initialize_agent() -> None:
                     workbench=workbench,
                 ),
             )
+            await WebRAGAgent.register(RUNTIME, 'webrag_agent', WebRAGAgent)
+
             await EvalAgent.register(RUNTIME, 'eval_agent',   EvalAgent)
             await EditorAgent.register(RUNTIME, 'editor_agent', EditorAgent)
 
