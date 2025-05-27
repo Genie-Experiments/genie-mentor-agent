@@ -27,13 +27,19 @@ WORKBENCH_AGENT_ID = AgentId('workbench_agent', 'default')
 agent_initialized = False
 
 notion_mcp_server_params = StdioServerParams(
-                command="npx",
-                args=["-y", "@suekou/mcp-notion-server"],
-                env={
-                    "NOTION_API_TOKEN": os.getenv('NOTION_API_KEY'),
-                    "NOTION_MARKDOWN_CONVERSION": "true"  # Enable markdown conversion for better token usage
-                },
-                read_timeout_seconds=45
+                command="docker",
+    args=[
+        "run",
+        "-i",
+        "--rm",
+        "-e",
+        "GITHUB_PERSONAL_ACCESS_TOKEN",
+        "ghcr.io/github/github-mcp-server"
+    ],
+    env={
+        "GITHUB_PERSONAL_ACCESS_TOKEN": os.getenv('GITHUB_MCP_TOKEN')
+    },
+    read_timeout_seconds=45
             )
 
 async def initialize_agent() -> None:
