@@ -135,25 +135,6 @@ Answer:
 """
 
 
-
-response_generation_prompt = """
-You are an expert AI assistant. You are given a context that is extracted from URLs provided by the Google Search engine with respect to a user query. 
-User Query is given to you as well. 
-Try to answer the query from the given context that may be coming from multiple URLs and pages. Be to the point and specific, replying with respect to the query given to you.
-
-GUIDELINES:
-- A clear and thorough explanation of the topic.
-- Examples or use cases to illustrate your answer.
-- Any relevant code snippets, formulas, or technical details.
-- References or sources from the provided context, if available.
-- Avoid assumptions; stick to the given context.
-- Try to act like a real-time web RAG-based agent. Do not act like you were given a context and you are answering from it.
-
-Context: "{context}"
-User Query: "{query}"
-Answer:
-"""
-
 GITHUB_QUERY_PROMPT = '''
 You are a GitHub Query Agent. Your task is to find relevant information in the 'Genie-Experiments' organization on GitHub based on the user's query.
 User Query: "{sub_query}"
