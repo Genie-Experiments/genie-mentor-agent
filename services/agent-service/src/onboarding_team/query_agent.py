@@ -14,9 +14,10 @@ from ..rag.rag import query_knowledgebase
 from .message import Message
 
 class QueryAgent(RoutedAgent):
-    def __init__(self, workbench_agent_id: AgentId) -> None:
+    def __init__(self, workbench_agent_id: AgentId,webrag_agent_id:AgentId) -> None:
         super().__init__("query_agent")
         self.workbench_agent_id = workbench_agent_id
+        self.webrag_agent_id = webrag_agent_id
         self.model_client = OpenAIChatCompletionClient(
             model="gpt-4o",
             api_key=os.getenv("OPENAI_API_KEY")
@@ -57,7 +58,8 @@ class QueryAgent(RoutedAgent):
                     "aggregated_results": aggregated["aggregated_results"],
                     "confidence_score": aggregated["confidence_score"]
                 },
-                "refiner_metadata": self._refiner_metadata
+                "refiner_metadata": self._refiner_metadata,
+                "sources_used": self._sources_used  
             }
             
             return Message(content=json.dumps(response))
@@ -97,6 +99,17 @@ class QueryAgent(RoutedAgent):
                 self.workbench_agent_id
             )
             response = json.loads(response_message.content)
+
+        elif source == "websearch":
+            print("web Search Agent")
+            response_message = await self.send_message(
+                Message(content=sub_query),
+                self.webrag_agent_id
+            )
+            response = json.loads(response_message.content)
+            
+
+
         else: 
             raise ValueError(f"Unknown source: {source}")
 
