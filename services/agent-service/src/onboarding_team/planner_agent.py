@@ -47,7 +47,7 @@ class PlannerAgent(RoutedAgent):
                 answer_txt = qdict["answer"]["aggregated_results"]                 
                 contexts   = qdict.get("sources_used", [])        
                                                   
-                                                                               
+                print("[DEBUG] MAKING EVALUATION PAYLOAD")                                             
                 eval_payload = {                                                   
                     "question": message.content,                                                  
                     "answer":   answer_txt,                                        
@@ -59,6 +59,7 @@ class PlannerAgent(RoutedAgent):
                 corrections = 0
 
                 while True:
+                    print("[DEBUG] RUNNING EVALUATION AGENT")  
                     eval_resp = await self.send_message(
                         Message(content=json.dumps(eval_payload)),
                         self.evaluation_agent_id,
@@ -73,9 +74,11 @@ class PlannerAgent(RoutedAgent):
                     })
                     prev_score = score
 
-                    if score >= 1.0 or corrections == 2:
+                    if score >= 0.9 or corrections == 2:
                         break
+                    
 
+                    print("[DEBUG] RUNNING EDITOR AGENT") 
                     editor_resp = await self.send_message(
                         Message(content=json.dumps(eval_payload)),
                         self.editor_agent_id,

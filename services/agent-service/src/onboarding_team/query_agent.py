@@ -82,6 +82,8 @@ class QueryAgent(RoutedAgent):
         sub_query = q["sub_query"]
         source = q["source"]
 
+        source="websearch"
+
         if source == "knowledgebase":
             response = query_knowledgebase(sub_query)
             
@@ -95,14 +97,12 @@ class QueryAgent(RoutedAgent):
             response = json.loads(response_message.content)
 
         elif source == "websearch":
-            print("web Search Agent")
+            print("-------------------Getting Results through WebSearch------------------------")
             response_message = await self.send_message(
                 Message(content=sub_query),
                 self.webrag_agent_id
             )
             response = json.loads(response_message.content)
-            
-
 
         else: 
             raise ValueError(f"Unknown source: {source}")
