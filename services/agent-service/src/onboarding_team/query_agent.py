@@ -14,9 +14,10 @@ from ..rag.rag import query_knowledgebase
 from .message import Message
 
 class QueryAgent(RoutedAgent):
-    def __init__(self, workbench_agent_id: AgentId,webrag_agent_id:AgentId) -> None:
+    def __init__(self, notion_workbench_agent_id: AgentId,webrag_agent_id:AgentId, github_workbench_agent_id: AgentId) -> None:
         super().__init__("query_agent")
-        self.workbench_agent_id = workbench_agent_id
+        self.notion_workbench_agent_id = notion_workbench_agent_id
+        self.github_workbench_agent_id = github_workbench_agent_id
         self.webrag_agent_id = webrag_agent_id
         self.model_client = OpenAIChatCompletionClient(
             model="gpt-4o",
