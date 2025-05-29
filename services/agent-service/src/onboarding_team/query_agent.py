@@ -9,7 +9,7 @@ from autogen_core.models import UserMessage
 from autogen_ext.models.openai import OpenAIChatCompletionClient
 
 # Local application imports
-from .prompts import AGGREGATE_RESULTS_PROMPT
+from .prompts import AGGREGATE_RESULTS_PROMPT, GITHUB_QUERY_PROMPT
 from ..rag.rag import query_knowledgebase
 from .message import Message
 
@@ -84,20 +84,15 @@ class QueryAgent(RoutedAgent):
         source = q["source"]
 
         if source == "knowledgebase":
-            response_message = await self.send_message(
-                Message(
-                    content=f"Use Notion to find relevant information about the following query: {sub_query}. Retrieve key information from all the relevant pages, and based on the information retrieved, always answer the user query. The answer should be detailed and include information from all the sources used. Your final response should be a json object, with an 'answer' key, which is the answer to the query based on the information fetched, and a 'sources' key"
-                ), 
-                self.workbench_agent_id
-            )
-            response = json.loads(response_message.content)
+            response = query_knowledgebase(sub_query)
+
             
         elif source == "notion":
             response_message = await self.send_message(
                 Message(
                     content=f"Use Notion to find relevant information about the following query: {sub_query}. Retrieve key information from all the relevant pages, and based on the information retrieved, always answer the user query. The answer should be detailed and include information from all the sources used. Your final response should be a json object, with an 'answer' key, which is the answer to the query based on the information fetched, and a 'sources' key"
                 ), 
-                self.workbench_agent_id
+                self.notion_workbench_agent_id
             )
             response = json.loads(response_message.content)
 
@@ -109,7 +104,14 @@ class QueryAgent(RoutedAgent):
             )
             response = json.loads(response_message.content)
             
-
+        elif source == "github":
+            print("GitHub Query Agent")
+            prompt = GITHUB_QUERY_PROMPT.format(sub_query=sub_query)
+            response_message = await self.send_message(
+                Message(content=prompt),
+                self.github_workbench_agent_id
+            )
+            response = json.loads(response_message.content)
 
         else: 
             raise ValueError(f"Unknown source: {source}")
