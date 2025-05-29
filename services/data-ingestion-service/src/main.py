@@ -6,8 +6,8 @@ This service manages document sources, processing, and retrieval for the Genie M
 from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from .ingestion import process_uploaded_file
+from dotenv import load_dotenv
 import os
-
 app = FastAPI(
     title='Data Ingestion Service',
     description='Document management and RAG for Genie Mentor Agent',
@@ -21,6 +21,9 @@ app.add_middleware(
     allow_methods=['*'],
     allow_headers=['*'],
 )
+
+# Load environment variables
+load_dotenv(override=True)
 
 
 @app.get('/')
@@ -59,7 +62,9 @@ async def upload_file(file: UploadFile = File(...)):
         file_content = await file.read()
         
         # Process the uploaded file
-        result = process_uploaded_file(file_content, file.filename)
+        persist_path = os.getenv('CHROMA_DB_PATH')
+        print(f'[DEBUG] persist_path = {persist_path}')
+        result = process_uploaded_file(file_content, file.filename, persist_directory=persist_path)
         
         return result
     except Exception as e:
