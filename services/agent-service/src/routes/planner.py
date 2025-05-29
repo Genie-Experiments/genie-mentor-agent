@@ -2,30 +2,40 @@ import json
 import time
 from datetime import datetime
 from typing import Any, Dict
+
 # Third-party imports
 from fastapi import APIRouter, Query
+
 # Local application imports
 from ..onboarding_team.message import Message
 from ..onboarding_team.team import send_to_agent
 from ..db import crud
+
 router = APIRouter(prefix='/planner', tags=['planner'])
+
 @router.post('/plan')
 async def generate_plan(query: str = Query(...), session_id: str = Query(...)) -> Dict[str, Any]:
     # Start timing
     start_time = time.time()
+    
     # Get the plan from planner agent
     plan_result = await send_to_agent(Message(content=query))
+    
     # Calculate total time
     total_time = time.time() - start_time
+    
     # Parse the result to separate planner and query outputs
     try:
         # The first part is the planner's output (query plan)
         planner_output = json.loads(plan_result)
+        
         # The second part is the query agent's output (aggregated results)
         query_output = planner_output.get('execution_results', {})
+        
         # Remove the execution results from planner output to avoid duplication
         if 'execution_results' in planner_output:
             del planner_output['execution_results']
+        
         # Create trace information
         trace_info = {
             'timestamp': datetime.now().isoformat(),
@@ -47,6 +57,7 @@ async def generate_plan(query: str = Query(...), session_id: str = Query(...)) -
             },
             'total_time_taken': total_time
         }
+            
         return {
             'planner_output': planner_output,
             'query_output': query_output,
@@ -63,4 +74,5 @@ async def generate_plan(query: str = Query(...), session_id: str = Query(...)) -
                 'total_time_taken': total_time
             }
         }
+        
         return error_response
