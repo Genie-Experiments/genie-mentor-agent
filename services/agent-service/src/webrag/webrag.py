@@ -51,10 +51,10 @@ class RAG:
             docstore=self.index.docstore, similarity_top_k=15
         )
 
-        vector_retriever = self.index.as_retriever(similarity_top_k=15)
+        vector_retriever = self.index.as_retriever(similarity_top_k=5)
         self.retriever = QueryFusionRetriever(
             [vector_retriever, bm25_retriever],
-            similarity_top_k=15,
+            similarity_top_k=5,
             num_queries=4,
             mode="reciprocal_rerank",
             use_async=True,
