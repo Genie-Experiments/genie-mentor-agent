@@ -291,7 +291,7 @@ if st.session_state.current_chat_id:
                 trace = formatted_trace
 
                 # Planner Agent
-                st.markdown("### Planner Agent")
+                st.markdown("### 🧭 Planner Agent")
                 st.markdown("**Input:**")
                 value = trace.get("planner_agent", {}).get("input", "")
                 parsed_value = safe_json_display(value)
@@ -324,7 +324,7 @@ if st.session_state.current_chat_id:
                     st.write(refiner.get("changes_made", []))
 
                 # Query Agent
-                st.markdown("### Query Agent")
+                st.markdown("### 🔎 Query Agent")
                 st.markdown("**Input:**")
                 value = trace.get("query_agent", {}).get("input", {})
                 parsed_value = safe_json_display(value)
@@ -342,7 +342,7 @@ if st.session_state.current_chat_id:
 
                 # Evaluator Agent (if present)
                 if "evaluation_score" in trace.get("planner_agent", {}).get("output", {}):
-                    st.markdown("### Evaluator Agent")
+                    st.markdown("### 🧪 Evaluator Agent")
                     st.markdown("**Evaluation Score:**")
                     value = trace["planner_agent"]["output"].get("evaluation_score")
                     parsed_value = safe_json_display(value)

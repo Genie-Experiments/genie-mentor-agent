@@ -7,6 +7,7 @@ import requests
 import json
 import tempfile
 from pathlib import Path
+from langchain_core.documents import Document
 
 def load_document(file_path: str):
     """
@@ -54,6 +55,8 @@ def ingest_files(file_paths):
     for file_path in file_paths:
         documents = load_document(file_path)
         split_docs = split_documents(documents)
+        for doc in split_docs:
+            doc.metadata = {"source": file_path}
         store_embeddings(split_docs, embedding_model)
         print(f'Processed {file_path} and stored embeddings.')
 
@@ -84,6 +87,9 @@ def process_uploaded_file(file_content, filename, persist_directory='../../share
         
         # Split documents
         split_docs = split_documents(documents)
+        
+        for doc in split_docs:
+            doc.metadata = {"source": filename}
         
         # Store embeddings
         vector_store = store_embeddings(split_docs, embedding_model, persist_directory)

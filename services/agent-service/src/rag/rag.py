@@ -1,6 +1,6 @@
 # Standard library imports
 import os
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 # Third-party imports
 from dotenv import find_dotenv, load_dotenv
@@ -83,10 +83,32 @@ def query_knowledgebase(
     result = qa_chain({'query': query})
     print('[RAG] Retrieved documents:')
     for doc in result['source_documents']:
-        print(doc.page_content[:150])
+        print(f"Source: {doc.metadata.get('source', 'unknown')}")
+        print(f"Content: {doc.page_content[:150]}")
+
+    results = vector_store.similarity_search_with_score(query, k=5)
+    # results: List[Tuple[Document, float]]
+
+    # Create detailed source information
+    source_details = []
+    for doc, score in results:
+        source_info = {
+            'source_file': doc.metadata.get('source', 'unknown'),
+            'score': float(score),
+            'chunk': doc.page_content[:200],
+            'metadata': doc.metadata
+        }
+        source_details.append(source_info)
+
+    # Find best matching source
+    scores = [score for doc, score in results]
+    best_idx = scores.index(min(scores))
+    best_source = source_details[best_idx]
 
     return {
         'answer': result['result'],
+        'source_details': source_details,
+        'best_source': best_source,
         'sources': [doc.page_content for doc in result['source_documents']]
     }
 
