@@ -1,0 +1,363 @@
+# frontend/app.py
+# Standard library imports
+import json
+import os
+import uuid
+import time
+from datetime import datetime
+from pathlib import Path
+
+# Third-party imports
+import requests
+import streamlit as st
+
+# ╭ Configuration 
+DB_FILE        = Path('db.json')
+DEFAULT_BACKEND= os.getenv('BACKEND_URL', 'http://127.0.0.1:8001')
+
+def format_timestamp(timestamp_str: str) -> str:
+    """Format ISO timestamp string to a more readable format."""
+    try:
+        dt = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
+        return dt.strftime('%B %d, %Y at %I:%M:%S %p')
+    except (ValueError, AttributeError):
+        return timestamp_str
+
+def format_trace_info(trace_info: dict) -> dict:
+    """Format timestamps in trace information to be more readable."""
+    formatted_trace = trace_info.copy()
+    
+    # Format main timestamp
+    if 'timestamp' in formatted_trace:
+        formatted_trace['timestamp'] = format_timestamp(formatted_trace['timestamp'])
+    
+    # Format user input timestamp
+    if 'user_input' in formatted_trace and 'time' in formatted_trace['user_input']:
+        formatted_trace['user_input']['time'] = format_timestamp(formatted_trace['user_input']['time'])
+    
+    # Format planner agent timestamps
+    if 'planner_agent' in formatted_trace:
+        if 'timestamp' in formatted_trace['planner_agent']:
+            formatted_trace['planner_agent']['timestamp'] = format_timestamp(formatted_trace['planner_agent']['timestamp'])
+    
+    # Format query agent timestamps
+    if 'query_agent' in formatted_trace:
+        if 'timestamp' in formatted_trace['query_agent']:
+            formatted_trace['query_agent']['timestamp'] = format_timestamp(formatted_trace['query_agent']['timestamp'])
+    
+    return formatted_trace
+
+# ── helper: talk to backend 
+def call_backend(query: str, session_id: str):
+    response = requests.post(
+        f'{DEFAULT_BACKEND}/planner/plan',
+        params={
+            'query': query,
+            'session_id': session_id
+        },
+        timeout=190,
+        stream=True  # Enable streaming
+    )
+    response.raise_for_status()
+    # Read all lines, parse each as JSON, and return the last one (final result)
+    last_result = None
+    for line in response.iter_lines():
+        if line:
+            last_result = json.loads(line)
+    return last_result
+
+def format_response(result: dict) -> str:
+    """Format the API response for display"""
+    planner_output = result['planner_output']
+    query_output = result['query_output']
+    
+    try:
+        if isinstance(query_output, str):
+            # If query_output is a string, try to parse it as JSON
+            query_output = json.loads(query_output)
+        
+        # Extract the actual response and confidence score from the query output
+        if isinstance(query_output, dict):
+            query_response = query_output.get('answer', '')
+            confidence_score = query_output.get('confidence_score', 'N/A')
+        else:
+            query_response = str(query_output)
+            confidence_score = 'N/A'
+    except json.JSONDecodeError:
+        # If parsing fails, return the raw output
+        query_response = str(query_output)
+        confidence_score = 'N/A'
+    
+    # Format refiner output if available
+    refiner_section = ""
+    if isinstance(query_output, dict):
+        refiner_metadata = query_output.get('refiner_metadata', {})
+        if refiner_metadata:
+            refiner_section = f'''
+**Refiner Agent Output**
+```json
+{json.dumps(json.loads(refiner_metadata.get('refined_plan', '{}')), indent=2)}
+```
+
+**Refiner Feedback**
+{refiner_metadata.get('feedback', 'No feedback provided')}
+
+**Changes Made**
+{chr(10).join(f"- {change}" for change in refiner_metadata.get('changes_made', ['No changes made']))}'''
+    
+    return f'''**Planner & Refiner Agent Output**
+```json
+{json.dumps(planner_output, indent=2)}
+```
+
+{refiner_section}
+
+**Query Agent Response**
+{query_response}'''
+
+def safe_json_display(data):
+    try:
+        if isinstance(data, str):
+            return json.loads(data)
+        return data
+    except Exception:
+        return data  # Return as-is if not valid JSON
+
+# ── session‑state bootstrap 
+if 'chats' not in st.session_state:
+    if DB_FILE.exists():
+        try:
+            data = json.loads(DB_FILE.read_text(encoding='utf-8'))
+            if isinstance(data, dict) and 'chat_history' in data:
+                new_chat_id = str(uuid.uuid4())
+                st.session_state.chats = {
+                    new_chat_id: {
+                        'session_id': str(uuid.uuid4()),
+                        'chat_history': data['chat_history'],
+                        'trace_history': [],  # Initialize trace_history
+                        'created_at': datetime.now().isoformat(),
+                        'title': 'Chat 1'
+                    }
+                }
+            else:
+                # Convert existing chats to include trace_history
+                st.session_state.chats = {
+                    chat_id: {
+                        **chat_data,
+                        'trace_history': []  # Add trace_history to existing chats
+                    }
+                    for chat_id, chat_data in data.items()
+                }
+        except json.JSONDecodeError:
+            st.session_state.chats = {}
+    else:
+        st.session_state.chats = {}
+
+if 'current_chat_id' not in st.session_state:
+    st.session_state.current_chat_id = None
+
+if 'editing_chat_id' not in st.session_state:
+    st.session_state.editing_chat_id = None
+
+# ── sidebar 
+# st.sidebar.title('⚙️  Settings')
+# backend_url = st.sidebar.text_input('FastAPI URL', value=DEFAULT_BACKEND)
+
+st.sidebar.markdown('### Chats')
+if st.sidebar.button('➕ New Chat'):
+    new_chat_id = str(uuid.uuid4())
+    st.session_state.chats[new_chat_id] = {
+        'session_id': str(uuid.uuid4()),
+        'chat_history': [],
+        'trace_history': [],  # Initialize trace_history
+        'created_at': datetime.now().isoformat(),
+        'title': f'Chat {len(st.session_state.chats) + 1}'
+    }
+    st.session_state.current_chat_id = new_chat_id
+    st.rerun()
+
+for chat_id, chat_data in st.session_state.chats.items():
+    col1, col2, col3 = st.sidebar.columns([3, 1, 1])
+    with col1:
+        if st.session_state.editing_chat_id == chat_id:
+            new_title = st.text_input(
+                'Edit title',
+                value=chat_data['title'],
+                key=f'edit_input_{chat_id}',
+                label_visibility='collapsed'
+            )
+            if new_title and new_title != chat_data['title']:
+                st.session_state.chats[chat_id]['title'] = new_title
+                st.session_state.editing_chat_id = None
+                DB_FILE.write_text(
+                    json.dumps(st.session_state.chats, indent=2, ensure_ascii=False),
+                    encoding='utf-8'
+                )
+                st.rerun()
+        else:
+            if st.button(
+                f'📝 {chat_data["title"]}', 
+                key=f'chat_{chat_id}',
+                use_container_width=True
+            ):
+                st.session_state.current_chat_id = chat_id
+                st.rerun()
+
+    with col2:
+        if st.button('✏️', key=f'edit_btn_{chat_id}'):
+            st.session_state.editing_chat_id = chat_id
+            st.rerun()
+
+    with col3:
+        if st.button('🗑', key=f'delete_{chat_id}'):
+            del st.session_state.chats[chat_id]
+            if st.session_state.current_chat_id == chat_id:
+                st.session_state.current_chat_id = next(iter(st.session_state.chats.keys())) if st.session_state.chats else None
+            st.rerun()
+
+# st.sidebar.markdown('---')
+
+# st.sidebar.markdown('### 📄 Upload document')
+# uploaded = st.sidebar.file_uploader('Choose PDF, TXT, or DOCX', type=['pdf', 'txt', 'docx'])
+# if uploaded and st.sidebar.button('Upload to agent'):
+#     with st.spinner('Uploading…'):
+#         res = requests.post(
+#             f'{backend_url}/upload/doc',
+#             files={'file': (uploaded.name, uploaded.getvalue())},
+#             timeout=60,
+#         )
+#     if res.ok:
+#         st.sidebar.success('Uploaded!')
+#     else:
+#         st.sidebar.error(f'Error: {res.text}')
+
+# ── main chat interface 
+if not st.session_state.current_chat_id and st.session_state.chats:
+    st.session_state.current_chat_id = next(iter(st.session_state.chats.keys()))
+
+if st.session_state.current_chat_id:
+    current_chat = st.session_state.chats[st.session_state.current_chat_id]
+    st.title(f'💬 {current_chat["title"]}')
+
+    # Display chat history
+    for m in current_chat['chat_history']:
+        with st.chat_message(m['role']):
+            st.markdown(m['content'])
+
+    if prompt := st.chat_input('Type your question …'):
+        with st.chat_message('user'):
+            st.markdown(prompt)
+        current_chat['chat_history'].append({'role': 'user', 'content': prompt})
+
+        with st.chat_message('assistant'):
+            with st.spinner('Thinking…'):
+                try:
+                    # Make a single API call
+                    result = call_backend(prompt, current_chat['session_id'])
+                    
+                    # Format the response
+                    answer = format_response(result)
+                    
+                    # Get and format trace information
+                    trace_info = result.get('trace_info', {})
+                    formatted_trace = format_trace_info(trace_info)
+                    
+                    # Debug print for evaluation score
+                    eval_score = None
+                    try:
+                        eval_score = trace_info.get("planner_agent", {}).get("output", {}).get("evaluation_score")
+                    except Exception:
+                        pass
+                    print("DEBUG: Evaluation Agent Score:", eval_score)
+                    
+                    # Update chat history
+                    if 'trace_history' not in current_chat:
+                        current_chat['trace_history'] = []
+                    current_chat['trace_history'].append(trace_info)
+                    
+                    # Save updated chat history
+                    DB_FILE.write_text(
+                        json.dumps(st.session_state.chats, indent=2, ensure_ascii=False),
+                        encoding='utf-8'
+                    )
+                except requests.HTTPError as e:
+                    detail = e.response.text if e.response is not None else ''
+                    answer = f'❌ *backend error* ({e.response.status_code}): {detail}'
+                    formatted_trace = {}
+
+            st.markdown(answer)
+            # Add trace information in an expander
+            with st.expander("🔍 Trace Information", expanded=False):
+                trace = formatted_trace
+
+                # Planner Agent
+                st.markdown("### 🧭 Planner Agent")
+                st.markdown("**Input:**")
+                value = trace.get("planner_agent", {}).get("input", "")
+                parsed_value = safe_json_display(value)
+                if isinstance(parsed_value, dict):
+                    st.json(parsed_value)
+                else:
+                    st.write(parsed_value)
+                st.markdown("**Output:**")
+                value = trace.get("planner_agent", {}).get("output", {})
+                parsed_value = safe_json_display(value)
+                if isinstance(parsed_value, dict):
+                    st.json(parsed_value)
+                else:
+                    st.write(parsed_value)
+
+                # Refiner Agent (if present)
+                refiner = trace.get("planner_agent", {}).get("output", {}).get("refiner_metadata", {})
+                if refiner:
+                    st.markdown("### 🛠️ Refiner Agent")
+                    st.markdown("**Refined Plan:**")
+                    value = refiner.get("refined_plan", "")
+                    parsed_value = safe_json_display(value)
+                    if isinstance(parsed_value, dict):
+                        st.json(parsed_value)
+                    else:
+                        st.write(parsed_value)
+                    st.markdown("**Feedback:**")
+                    st.write(refiner.get("feedback", ""))
+                    st.markdown("**Changes Made:**")
+                    st.write(refiner.get("changes_made", []))
+
+                # Query Agent
+                st.markdown("### 🔎 Query Agent")
+                st.markdown("**Input:**")
+                value = trace.get("query_agent", {}).get("input", {})
+                parsed_value = safe_json_display(value)
+                if isinstance(parsed_value, dict):
+                    st.json(parsed_value)
+                else:
+                    st.write(parsed_value)
+                st.markdown("**Output:**")
+                value = trace.get("query_agent", {}).get("output", {})
+                parsed_value = safe_json_display(value)
+                if isinstance(parsed_value, dict):
+                    st.json(parsed_value)
+                else:
+                    st.write(parsed_value)
+
+                # Evaluator Agent (if present)
+                if "evaluation_score" in trace.get("planner_agent", {}).get("output", {}):
+                    st.markdown("### 🧪 Evaluator Agent")
+                    st.markdown("**Evaluation Score:**")
+                    value = trace["planner_agent"]["output"].get("evaluation_score")
+                    parsed_value = safe_json_display(value)
+                    if isinstance(parsed_value, dict):
+                        st.json(parsed_value)
+                    else:
+                        st.write(parsed_value)
+                    st.markdown("**Corrections Made:**")
+                    st.write(trace["planner_agent"]["output"].get("corrections_made"))
+                
+        current_chat['chat_history'].append({'role': 'assistant', 'content': answer})
+
+        DB_FILE.write_text(
+            json.dumps(st.session_state.chats, indent=2, ensure_ascii=False),
+            encoding='utf-8'
+        )
+else:
+    st.info('👈 Create a new chat using the sidebar!')
