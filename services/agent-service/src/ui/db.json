@@ -277,105 +277,97 @@
       {
         "role": "assistant",
         "content": "**Planner & Refiner Agent Output**\n```json\n{\n  \"user_query\": \"what is rag in nlp\",\n  \"query_intent\": \"define RAG NLP\",\n  \"data_sources\": [\n    \"knowledgebase\"\n  ],\n  \"query_components\": [\n    {\n      \"id\": \"q1\",\n      \"sub_query\": \"What does RAG stand for in the context of NLP?\",\n      \"source\": \"knowledgebase\"\n    },\n    {\n      \"id\": \"q2\",\n      \"sub_query\": \"Explain the role and application of RAG in NLP systems.\",\n      \"source\": \"knowledgebase\"\n    }\n  ],\n  \"execution_order\": {\n    \"nodes\": [\n      \"q1\",\n      \"q2\"\n    ],\n    \"edges\": [],\n    \"aggregation\": \"combine_and_summarize\"\n  },\n  \"refiner_metadata\": {\n    \"refined_plan\": \"{\\\"user_query\\\":\\\"what is rag in nlp\\\",\\\"query_intent\\\":\\\"define RAG NLP\\\",\\\"data_sources\\\":[\\\"knowledgebase\\\"],\\\"query_components\\\":[{\\\"id\\\":\\\"q1\\\",\\\"sub_query\\\":\\\"What is the definition and expansion of the RAG acronym in NLP?\\\",\\\"source\\\":\\\"knowledgebase\\\"},{\\\"id\\\":\\\"q2\\\",\\\"sub_query\\\":\\\"What are the roles and applications of RAG in NLP systems?\\\",\\\"source\\\":\\\"knowledgebase\\\"}],\\\"execution_order\\\":{\\\"nodes\\\":[\\\"q1\\\",\\\"q2\\\"],\\\"edges\\\":[{\\\"from\\\":\\\"q1\\\",\\\"to\\\":\\\"q2\\\"}],\\\"aggregation\\\":\\\"sequential_story\\\"}}\",\n    \"feedback\": \"Ambiguity in the original subquery for the acronym was clarified, making it explicitly seek both the definition and expansion of RAG. Also, improved aggregation to \\\"sequential_story\\\" for enhanced logical progression in answering the query.\",\n    \"changes_made\": [\n      \"Refined q1 sub_query to clarify it should define and expand RAG.\",\n      \"Improved the aggregation method to \\\"sequential_story\\\" for better logical answer progression.\",\n      \"Added a sequential dependency from q1 to q2 in the execution order for narrative flow.\"\n    ]\n  },\n  \"evaluation_score\": 1.0,\n  \"corrections_made\": 1\n}\n```\n\n\n\n**Query Agent Response**\nIn the context of Natural Language Processing (NLP), RAG stands for Retrieval-Augmented Generation. It is a type of model or system designed to enhance the generation of text by leveraging retrieval mechanisms. This approach involves retrieving relevant information to inform and augment the text generation process. RAG systems enhance relevance and accuracy by using separate encoders for queries and responses and employing techniques like contrastive loss to ensure semantic matching. These systems are scalable for embedding-based retrieval through algorithms such as Approximate Nearest Neighbors (ANN).\n\nThe RAG pipeline includes six components: Pre-Retrieval (pre-processing of queries and documents), Retrieval (embedding models and algorithms for information retrieval), Generation (post-retrieval processing and relevance enhancement), Augmentation (using different retrievals for the augmentation process), RAG Evaluation (methods like RAGAS), and Tools for implementation.\n\nRAG is crucial for advanced NLP tasks involving hybrid and multimodal search systems and in real-world applications where semantic matching and relevance are important. The system's design aims to develop a comprehensive taxonomy for RAG models, enhancing the relevance and accuracy of NLP applications."
+      },
+      {
+        "role": "user",
+        "content": "what is rag in nlp"
+      },
+      {
+        "role": "assistant",
+        "content": "**Planner & Refiner Agent Output**\n```json\n{\n  \"user_query\": \"what is rag in nlp\",\n  \"query_intent\": \"define RAG\",\n  \"data_sources\": [\n    \"knowledgebase\"\n  ],\n  \"query_components\": [\n    {\n      \"id\": \"q1\",\n      \"sub_query\": \"define RAG in NLP\",\n      \"source\": \"knowledgebase\"\n    }\n  ],\n  \"execution_order\": {\n    \"nodes\": [\n      \"q1\"\n    ],\n    \"edges\": [],\n    \"aggregation\": \"combine_and_summarize\"\n  },\n  \"refiner_metadata\": {\n    \"refined_plan\": \"{\\\"user_query\\\":\\\"what is rag in nlp\\\",\\\"query_intent\\\":\\\"define RAG\\\",\\\"data_sources\\\":[\\\"knowledgebase\\\"],\\\"query_components\\\":[{\\\"id\\\":\\\"q1\\\",\\\"sub_query\\\":\\\"define RAG in NLP\\\",\\\"source\\\":\\\"knowledgebase\\\"}],\\\"execution_order\\\":{\\\"nodes\\\":[\\\"q1\\\"],\\\"edges\\\":[],\\\"aggregation\\\":\\\"combine_and_summarize\\\"}}\",\n    \"feedback\": \"No changes needed.\",\n    \"changes_made\": [\n      \"No changes required\"\n    ]\n  },\n  \"evaluation_score\": 1.0,\n  \"corrections_made\": 1\n}\n```\n\n\n\n**Query Agent Response**\nRAG in NLP stands for Retrieval-Augmented Generation. It is a model that combines retrieval-based and generation-based approaches to enhance the relevance and informativeness of responses. RAG retrieves relevant information, often using separate encoders for queries and responses, and uses this information to generate coherent and fluent responses to queries."
       }
     ],
     "trace_history": [
       {
-        "timestamp": "2025-05-29T12:44:04.366567",
+        "timestamp": "2025-05-29T13:11:34.807494",
         "user_input": {
           "query": "what is rag in nlp",
-          "time": "May 29, 2025 at 12:44:04 PM"
+          "time": "May 29, 2025 at 01:11:34 PM"
         },
         "planner_agent": {
           "input": "what is rag in nlp",
           "output": {
             "user_query": "what is rag in nlp",
-            "query_intent": "define RAG NLP",
+            "query_intent": "define RAG",
             "data_sources": [
               "knowledgebase"
             ],
             "query_components": [
               {
                 "id": "q1",
-                "sub_query": "What does RAG stand for in the context of NLP?",
-                "source": "knowledgebase"
-              },
-              {
-                "id": "q2",
-                "sub_query": "Explain the role and application of RAG in NLP systems.",
+                "sub_query": "define RAG in NLP",
                 "source": "knowledgebase"
               }
             ],
             "execution_order": {
               "nodes": [
-                "q1",
-                "q2"
+                "q1"
               ],
               "edges": [],
               "aggregation": "combine_and_summarize"
             },
             "refiner_metadata": {
-              "refined_plan": "{\"user_query\":\"what is rag in nlp\",\"query_intent\":\"define RAG NLP\",\"data_sources\":[\"knowledgebase\"],\"query_components\":[{\"id\":\"q1\",\"sub_query\":\"What is the definition and expansion of the RAG acronym in NLP?\",\"source\":\"knowledgebase\"},{\"id\":\"q2\",\"sub_query\":\"What are the roles and applications of RAG in NLP systems?\",\"source\":\"knowledgebase\"}],\"execution_order\":{\"nodes\":[\"q1\",\"q2\"],\"edges\":[{\"from\":\"q1\",\"to\":\"q2\"}],\"aggregation\":\"sequential_story\"}}",
-              "feedback": "Ambiguity in the original subquery for the acronym was clarified, making it explicitly seek both the definition and expansion of RAG. Also, improved aggregation to \"sequential_story\" for enhanced logical progression in answering the query.",
+              "refined_plan": "{\"user_query\":\"what is rag in nlp\",\"query_intent\":\"define RAG\",\"data_sources\":[\"knowledgebase\"],\"query_components\":[{\"id\":\"q1\",\"sub_query\":\"define RAG in NLP\",\"source\":\"knowledgebase\"}],\"execution_order\":{\"nodes\":[\"q1\"],\"edges\":[],\"aggregation\":\"combine_and_summarize\"}}",
+              "feedback": "No changes needed.",
               "changes_made": [
-                "Refined q1 sub_query to clarify it should define and expand RAG.",
-                "Improved the aggregation method to \"sequential_story\" for better logical answer progression.",
-                "Added a sequential dependency from q1 to q2 in the execution order for narrative flow."
+                "No changes required"
               ]
             },
             "evaluation_score": 1.0,
             "corrections_made": 1
           },
-          "time_taken": 61.080776882171634,
-          "timestamp": "May 29, 2025 at 12:44:04 PM"
+          "time_taken": 19.24176263809204,
+          "timestamp": "May 29, 2025 at 01:11:34 PM"
         },
         "query_agent": {
           "input": {
             "user_query": "what is rag in nlp",
-            "query_intent": "define RAG NLP",
+            "query_intent": "define RAG",
             "data_sources": [
               "knowledgebase"
             ],
             "query_components": [
               {
                 "id": "q1",
-                "sub_query": "What does RAG stand for in the context of NLP?",
-                "source": "knowledgebase"
-              },
-              {
-                "id": "q2",
-                "sub_query": "Explain the role and application of RAG in NLP systems.",
+                "sub_query": "define RAG in NLP",
                 "source": "knowledgebase"
               }
             ],
             "execution_order": {
               "nodes": [
-                "q1",
-                "q2"
+                "q1"
               ],
               "edges": [],
               "aggregation": "combine_and_summarize"
             },
             "refiner_metadata": {
-              "refined_plan": "{\"user_query\":\"what is rag in nlp\",\"query_intent\":\"define RAG NLP\",\"data_sources\":[\"knowledgebase\"],\"query_components\":[{\"id\":\"q1\",\"sub_query\":\"What is the definition and expansion of the RAG acronym in NLP?\",\"source\":\"knowledgebase\"},{\"id\":\"q2\",\"sub_query\":\"What are the roles and applications of RAG in NLP systems?\",\"source\":\"knowledgebase\"}],\"execution_order\":{\"nodes\":[\"q1\",\"q2\"],\"edges\":[{\"from\":\"q1\",\"to\":\"q2\"}],\"aggregation\":\"sequential_story\"}}",
-              "feedback": "Ambiguity in the original subquery for the acronym was clarified, making it explicitly seek both the definition and expansion of RAG. Also, improved aggregation to \"sequential_story\" for enhanced logical progression in answering the query.",
+              "refined_plan": "{\"user_query\":\"what is rag in nlp\",\"query_intent\":\"define RAG\",\"data_sources\":[\"knowledgebase\"],\"query_components\":[{\"id\":\"q1\",\"sub_query\":\"define RAG in NLP\",\"source\":\"knowledgebase\"}],\"execution_order\":{\"nodes\":[\"q1\"],\"edges\":[],\"aggregation\":\"combine_and_summarize\"}}",
+              "feedback": "No changes needed.",
               "changes_made": [
-                "Refined q1 sub_query to clarify it should define and expand RAG.",
-                "Improved the aggregation method to \"sequential_story\" for better logical answer progression.",
-                "Added a sequential dependency from q1 to q2 in the execution order for narrative flow."
+                "No changes required"
               ]
             },
             "evaluation_score": 1.0,
             "corrections_made": 1
           },
           "output": {
-            "answer": "In the context of Natural Language Processing (NLP), RAG stands for Retrieval-Augmented Generation. It is a type of model or system designed to enhance the generation of text by leveraging retrieval mechanisms. This approach involves retrieving relevant information to inform and augment the text generation process. RAG systems enhance relevance and accuracy by using separate encoders for queries and responses and employing techniques like contrastive loss to ensure semantic matching. These systems are scalable for embedding-based retrieval through algorithms such as Approximate Nearest Neighbors (ANN).\n\nThe RAG pipeline includes six components: Pre-Retrieval (pre-processing of queries and documents), Retrieval (embedding models and algorithms for information retrieval), Generation (post-retrieval processing and relevance enhancement), Augmentation (using different retrievals for the augmentation process), RAG Evaluation (methods like RAGAS), and Tools for implementation.\n\nRAG is crucial for advanced NLP tasks involving hybrid and multimodal search systems and in real-world applications where semantic matching and relevance are important. The system's design aims to develop a comprehensive taxonomy for RAG models, enhancing the relevance and accuracy of NLP applications.",
+            "answer": "RAG in NLP stands for Retrieval-Augmented Generation. It is a model that combines retrieval-based and generation-based approaches to enhance the relevance and informativeness of responses. RAG retrieves relevant information, often using separate encoders for queries and responses, and uses this information to generate coherent and fluent responses to queries.",
             "confidence_score": 95
           },
-          "time_taken": 91.62116532325744,
-          "timestamp": "May 29, 2025 at 12:44:04 PM"
+          "time_taken": 28.86264395713806,
+          "timestamp": "May 29, 2025 at 01:11:34 PM"
         },
-        "total_time_taken": 152.70194220542908
+        "total_time_taken": 48.1044065952301
       }
     ],
     "created_at": "2025-05-26T12:09:10.748666",
