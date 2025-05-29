@@ -9,7 +9,7 @@ from autogen_core.models import UserMessage
 from autogen_ext.models.openai import OpenAIChatCompletionClient
 
 # Local application imports
-from .prompts import AGGREGATE_RESULTS_PROMPT, GITHUB_QUERY_PROMPT
+from .prompts import AGGREGATE_RESULTS_PROMPT, GITHUB_QUERY_PROMPT, NOTION_QUERY_PROMPT
 from ..rag.rag import query_knowledgebase
 from .message import Message
 
@@ -83,7 +83,7 @@ class QueryAgent(RoutedAgent):
         sub_query = q["sub_query"]
         source = q["source"]
 
-        source="websearch"
+        source="notion"
 
         if source == "knowledgebase":
             response = query_knowledgebase(sub_query)
@@ -100,9 +100,10 @@ class QueryAgent(RoutedAgent):
 
         elif source == "websearch":
             print("-------------------Getting Results through WebSearch------------------------")
+            prompt = NOTION_QUERY_PROMPT.format(sub_query=sub_query)
             response_message = await self.send_message(
-                Message(content=sub_query),
-                self.webrag_agent_id
+                Message(content=prompt),
+                self.notion_workbench_agent_id
             )
             response = json.loads(response_message.content)
             

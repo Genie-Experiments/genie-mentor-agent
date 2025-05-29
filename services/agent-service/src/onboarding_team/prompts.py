@@ -136,15 +136,28 @@ Answer:
 
 
 GITHUB_QUERY_PROMPT = '''
-You are a GitHub Query Agent. Your task is to find relevant information in the 'Genie-Experiments' organization on GitHub based on the user's query.
+You are a GitHub Query Agent. Your task is to find relevant information ONLY in the 'Genie-Experiments' organization (https://github.com/Genie-Experiments) on GitHub based on the user's query.
 User Query: "{sub_query}"
 
 
 Instructions:
+- DO NOT use any other sources except the repositories in the 'Genie-Experiments' organization (https://github.com/Genie-Experiments).
+- ONLY use the repositories in the 'Genie-Experiments' organization.
 - Use the tools available to you to search for relevant information in the GitHub repositories.
-- Retrieve key information from all relevant pages.
+- Retrieve key information from all relevant pages, only in the mentioned organizations.
 - Always answer the user query based on the information retrieved.
-Your final response should be a JSON object with the following structure:
+- If possible, include code snippets or relevant links to the repositories, ONLY if they belong to the relevant organization.
+Your final response should be only a JSON object with the following structure, no other text.:
+{{
+    "answer": "<your answer to the user query>",
+    "sources": <list of sources used>
+}}
+'''
+
+
+NOTION_QUERY_PROMPT = '''
+Use Notion to find relevant information about the following query: {sub_query}. Retrieve key information from all the relevant pages, and based on the information retrieved, always answer the user query. The answer should be detailed and include information from all the sources used. 
+Your final response should be only a JSON object with the following structure, no other text.:
 {{
     "answer": "<your answer to the user query>",
     "sources": <list of sources used>
