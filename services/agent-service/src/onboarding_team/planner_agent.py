@@ -26,104 +26,100 @@ class PlannerAgent(RoutedAgent):
     @message_handler
     async def handle_user_message(self, message: Message, ctx: MessageContext) -> Message:
         try:
+            # Get original plan
             plan = await self.process_query(message.content)
             plan_dict = json.loads(plan.content)
+            print("\n[PLANNER AGENT] Original Plan:")
+            print(json.dumps(plan_dict, indent=2))
 
+            # Get refiner output
             query_result = await self.send_message(plan, self.refiner_agent_id)
-            print(f'[DEBUG] Query result content: {query_result.content}')
+            print(f'\n[REFINER AGENT] Refiner Metadata:')
+            try:
+                qdict = json.loads(query_result.content)
+                refiner_metadata = qdict.get('refiner_metadata', {})
+                print(json.dumps(refiner_metadata, indent=2))
+            except json.JSONDecodeError:
+                print("Failed to parse refiner metadata")
 
             try:                                                                   
                 qdict = json.loads(query_result.content)                           
-                # pull answer + contexts (contexts list could come from QueryAgent)
+                # Get query agent results
                 answer_txt = qdict["answer"]["aggregated_results"]                 
-                contexts   = qdict.get("sources_used", [])        
+                contexts = qdict.get("sources_used", [])        
                                                   
-                print("[DEBUG] MAKING EVALUATION PAYLOAD")                                             
-                eval_payload = {                                                   
-                    "question": message.content,                                                  
-                    "answer":   answer_txt,                                        
-                    "contexts": contexts                                           
-                }                                                                  
+                print("\n[QUERY AGENT] Results:")
+                print(f"Answer: {answer_txt}")
+                print(f"Confidence Score: {qdict['answer'].get('confidence_score', 'N/A')}")
                                                                                
                 attempts = []               
                 prev_score = None
                 corrections = 0
 
                 while True:
-                    print("[DEBUG] RUNNING EVALUATION AGENT")  
+                    print("\n[EVALUATION AGENT] Running evaluation")  
                     eval_resp = await self.send_message(
-                        Message(content=json.dumps(eval_payload)),
+                        Message(content=json.dumps({
+                            "question": message.content,                                                  
+                            "answer": answer_txt,                                        
+                            "contexts": contexts                                           
+                        })),
                         self.evaluation_agent_id,
                     )
                     score = float(json.loads(eval_resp.content)["score"])
 
                     delta = None if prev_score is None else round(score - prev_score, 4)
                     attempts.append({
-                        "answer": eval_payload["answer"],
-                        "score":  round(score, 4),
-                        "delta":  delta
+                        "answer": answer_txt,
+                        "score": round(score, 4),
+                        "delta": delta
                     })
                     prev_score = score
 
-                    if score >= 0.7 or corrections == 2:
+                    if score >= 1.0 or corrections == 1:
                         break
                     
-
-                    print("[DEBUG] RUNNING EDITOR AGENT") 
+                    print("\n[EDITOR AGENT] Running editor") 
                     editor_resp = await self.send_message(
-                        Message(content=json.dumps(eval_payload)),
+                        Message(content=json.dumps({
+                            "question": message.content,
+                            "answer": answer_txt,
+                            "contexts": contexts
+                        })),
                         self.editor_agent_id,
                     )
-                    eval_payload["answer"] = json.loads(editor_resp.content)["answer"]
+                    edited_answer = json.loads(editor_resp.content)["answer"]
+                    print(f"Edited Answer: {edited_answer}")
+                    answer_txt = edited_answer
                     corrections += 1
-                final_answer = eval_payload["answer"]
-                final_score  = prev_score                                  
+
+                final_answer = answer_txt
+                final_score = prev_score                                  
                                                                                
-                qdict["attempts"]         = attempts
-                qdict["final_answer"]     = final_answer
-                qdict["evaluation_score"] = final_score
-                qdict["corrections_made"] = corrections
-                qdict["answer"]["aggregated_results"] = final_answer
+                print("\n[EVALUATION AGENT] Final Results:")
+                print(f"Final Score: {final_score}")
+                print(f"Corrections Made: {corrections}")
+                print("Attempts:", json.dumps(attempts, indent=2))
 
-                       
-                                                                               
-                query_result = Message(content=json.dumps(qdict))                  
-            except Exception as ex:                                                
-                print("[WARNING] Eval loop failed:", ex)                           
-
-            try:
-                query_dict = json.loads(query_result.content)
-                if 'answer' in query_dict:
-                    answer = query_dict['answer']
-                    if isinstance(answer, dict):
-                        plan_dict['execution_results'] = {
-                            'answer': answer.get('aggregated_results', ''),
-                            'confidence_score': answer.get('confidence_score', 0)
-                        }
-                    else:
-                        plan_dict['execution_results'] = {
-                            'answer': str(answer),
-                            'confidence_score': 0
-                        }
-                else:
-                    plan_dict['execution_results'] = {
-                        'answer': str(query_dict),
-                        'confidence_score': 0
-                    }
-
-                refiner_metadata = query_dict.get('refiner_metadata', {})
-                plan_dict['refiner_metadata'] = {
-                    'refined_plan':  refiner_metadata.get('refined_plan', '{}'),
-                    'feedback':      refiner_metadata.get('feedback', ''),
-                    'changes_made':  refiner_metadata.get('changes_made', [])
+                # Structure the final output
+                plan_dict['refiner_metadata'] = refiner_metadata
+                plan_dict['query_results'] = {
+                    'answer': answer_txt,
+                    'confidence_score': qdict['answer'].get('confidence_score', 0)
                 }
-                # add evaluation info if present                                
-                if "evaluation_score" in query_dict:                             
-                    plan_dict['evaluation_score'] = query_dict['evaluation_score']
-                    plan_dict['corrections_made'] = query_dict['corrections_made']
-            except json.JSONDecodeError:
-                print(f'[WARNING] Failed to parse query result as JSON: {query_result.content}')
-                plan_dict['execution_results'] = {
+                plan_dict['evaluation_results'] = {
+                    'final_answer': final_answer,
+                    'evaluation_score': final_score,
+                    'corrections_made': corrections,
+                    'attempts': attempts
+                }
+
+                print("\n[FINAL COMBINED OUTPUT]")
+                print(json.dumps(plan_dict, indent=2))
+
+            except json.JSONDecodeError as e:
+                print(f'[WARNING] Failed to parse query result as JSON: {e}')
+                plan_dict['query_results'] = {
                     'answer': query_result.content,
                     'confidence_score': 0
                 }
