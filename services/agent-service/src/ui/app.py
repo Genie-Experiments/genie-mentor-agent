@@ -48,23 +48,19 @@ def format_trace_info(trace_info: dict) -> dict:
     return formatted_trace
 
 # ── helper: talk to backend 
-def call_backend(query: str, session_id: str):
+def call_backend(query: str, session_id: str) -> tuple:
+    """POST /planner/plan and return both planner and query results"""
+    # Call planner endpoint which now returns both planner and query results
     response = requests.post(
         f'{DEFAULT_BACKEND}/planner/plan',
         params={
             'query': query,
             'session_id': session_id
         },
-        timeout=190,
-        stream=True  # Enable streaming
+        timeout=190
     )
     response.raise_for_status()
-    # Read all lines, parse each as JSON, and return the last one (final result)
-    last_result = None
-    for line in response.iter_lines():
-        if line:
-            last_result = json.loads(line)
-    return last_result
+    return response.json()
 
 def format_response(result: dict) -> str:
     """Format the API response for display"""
@@ -113,15 +109,9 @@ def format_response(result: dict) -> str:
 {refiner_section}
 
 **Query Agent Response**
-{query_response}'''
+{query_response}
 
-def safe_json_display(data):
-    try:
-        if isinstance(data, str):
-            return json.loads(data)
-        return data
-    except Exception:
-        return data  # Return as-is if not valid JSON
+**Confidence Score**: {confidence_score}'''
 
 # ── session‑state bootstrap 
 if 'chats' not in st.session_state:
@@ -160,10 +150,10 @@ if 'editing_chat_id' not in st.session_state:
     st.session_state.editing_chat_id = None
 
 # ── sidebar 
-# st.sidebar.title('⚙️  Settings')
-# backend_url = st.sidebar.text_input('FastAPI URL', value=DEFAULT_BACKEND)
+st.sidebar.title('⚙️  Settings')
+backend_url = st.sidebar.text_input('FastAPI URL', value=DEFAULT_BACKEND)
 
-st.sidebar.markdown('### Chats')
+st.sidebar.markdown('### 💬 Chats')
 if st.sidebar.button('➕ New Chat'):
     new_chat_id = str(uuid.uuid4())
     st.session_state.chats[new_chat_id] = {
@@ -215,21 +205,21 @@ for chat_id, chat_data in st.session_state.chats.items():
                 st.session_state.current_chat_id = next(iter(st.session_state.chats.keys())) if st.session_state.chats else None
             st.rerun()
 
-# st.sidebar.markdown('---')
+st.sidebar.markdown('---')
 
-# st.sidebar.markdown('### 📄 Upload document')
-# uploaded = st.sidebar.file_uploader('Choose PDF, TXT, or DOCX', type=['pdf', 'txt', 'docx'])
-# if uploaded and st.sidebar.button('Upload to agent'):
-#     with st.spinner('Uploading…'):
-#         res = requests.post(
-#             f'{backend_url}/upload/doc',
-#             files={'file': (uploaded.name, uploaded.getvalue())},
-#             timeout=60,
-#         )
-#     if res.ok:
-#         st.sidebar.success('Uploaded!')
-#     else:
-#         st.sidebar.error(f'Error: {res.text}')
+st.sidebar.markdown('### 📄 Upload document')
+uploaded = st.sidebar.file_uploader('Choose PDF, TXT, or DOCX', type=['pdf', 'txt', 'docx'])
+if uploaded and st.sidebar.button('Upload to agent'):
+    with st.spinner('Uploading…'):
+        res = requests.post(
+            f'{backend_url}/upload/doc',
+            files={'file': (uploaded.name, uploaded.getvalue())},
+            timeout=60,
+        )
+    if res.ok:
+        st.sidebar.success('Uploaded!')
+    else:
+        st.sidebar.error(f'Error: {res.text}')
 
 # ── main chat interface 
 if not st.session_state.current_chat_id and st.session_state.chats:
@@ -262,14 +252,6 @@ if st.session_state.current_chat_id:
                     trace_info = result.get('trace_info', {})
                     formatted_trace = format_trace_info(trace_info)
                     
-                    # Debug print for evaluation score
-                    eval_score = None
-                    try:
-                        eval_score = trace_info.get("planner_agent", {}).get("output", {}).get("evaluation_score")
-                    except Exception:
-                        pass
-                    print("DEBUG: Evaluation Agent Score:", eval_score)
-                    
                     # Update chat history
                     if 'trace_history' not in current_chat:
                         current_chat['trace_history'] = []
@@ -287,71 +269,8 @@ if st.session_state.current_chat_id:
 
             st.markdown(answer)
             # Add trace information in an expander
-            with st.expander("🔍 Trace Information", expanded=False):
-                trace = formatted_trace
-
-                # Planner Agent
-                st.markdown("### Planner Agent")
-                st.markdown("**Input:**")
-                value = trace.get("planner_agent", {}).get("input", "")
-                parsed_value = safe_json_display(value)
-                if isinstance(parsed_value, dict):
-                    st.json(parsed_value)
-                else:
-                    st.write(parsed_value)
-                st.markdown("**Output:**")
-                value = trace.get("planner_agent", {}).get("output", {})
-                parsed_value = safe_json_display(value)
-                if isinstance(parsed_value, dict):
-                    st.json(parsed_value)
-                else:
-                    st.write(parsed_value)
-
-                # Refiner Agent (if present)
-                refiner = trace.get("planner_agent", {}).get("output", {}).get("refiner_metadata", {})
-                if refiner:
-                    st.markdown("### 🛠️ Refiner Agent")
-                    st.markdown("**Refined Plan:**")
-                    value = refiner.get("refined_plan", "")
-                    parsed_value = safe_json_display(value)
-                    if isinstance(parsed_value, dict):
-                        st.json(parsed_value)
-                    else:
-                        st.write(parsed_value)
-                    st.markdown("**Feedback:**")
-                    st.write(refiner.get("feedback", ""))
-                    st.markdown("**Changes Made:**")
-                    st.write(refiner.get("changes_made", []))
-
-                # Query Agent
-                st.markdown("### Query Agent")
-                st.markdown("**Input:**")
-                value = trace.get("query_agent", {}).get("input", {})
-                parsed_value = safe_json_display(value)
-                if isinstance(parsed_value, dict):
-                    st.json(parsed_value)
-                else:
-                    st.write(parsed_value)
-                st.markdown("**Output:**")
-                value = trace.get("query_agent", {}).get("output", {})
-                parsed_value = safe_json_display(value)
-                if isinstance(parsed_value, dict):
-                    st.json(parsed_value)
-                else:
-                    st.write(parsed_value)
-
-                # Evaluator Agent (if present)
-                if "evaluation_score" in trace.get("planner_agent", {}).get("output", {}):
-                    st.markdown("### Evaluator Agent")
-                    st.markdown("**Evaluation Score:**")
-                    value = trace["planner_agent"]["output"].get("evaluation_score")
-                    parsed_value = safe_json_display(value)
-                    if isinstance(parsed_value, dict):
-                        st.json(parsed_value)
-                    else:
-                        st.write(parsed_value)
-                    st.markdown("**Corrections Made:**")
-                    st.write(trace["planner_agent"]["output"].get("corrections_made"))
+            with st.expander("🔍 Trace Information"):
+                st.json(formatted_trace)
                 
         current_chat['chat_history'].append({'role': 'assistant', 'content': answer})
 

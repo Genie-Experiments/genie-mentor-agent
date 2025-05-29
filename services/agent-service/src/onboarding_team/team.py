@@ -32,55 +32,57 @@ WEBRAG_AGENT_ID = AgentId("webrag_agent", "default")
 # Flag to ensure the agent is only initialized once
 agent_initialized = False
 
-# notion_mcp_server_params = StdioServerParams(
-#     command="npx",
-#     args=["-y", "@suekou/mcp-notion-server"],
-#     env={
-#         "NOTION_API_TOKEN": os.getenv('NOTION_API_KEY'),
-#         "NOTION_MARKDOWN_CONVERSION": "true"  # Enable markdown conversion for better token usage
-#     },
-#     read_timeout_seconds=45
-# )
+notion_mcp_server_params = StdioServerParams(
+                command="npx",
+                args=["-y", "@suekou/mcp-notion-server"],
+                env={
+                    "NOTION_API_TOKEN": os.getenv('NOTION_API_KEY'),
+                    "NOTION_MARKDOWN_CONVERSION": "true"  # Enable markdown conversion for better token usage
+                },
+                read_timeout_seconds=45
+            )
 
 async def initialize_agent() -> None:
     global agent_initialized
-    # Notion/MCP integration is disabled for Windows compatibility
-    # async with McpWorkbench(notion_mcp_server_params) as workbench:
-    if not agent_initialized:
-        await PlannerAgent.register(
-            RUNTIME,
-            'planner_agent',
-            lambda: PlannerAgent(
-                refiner_agent_id = REFINER_AGENT_ID,
-                editor_agent_id  = EDITOR_AGENT_ID,
-                evaluation_agent_id = EVAL_AGENT_ID
+    async with McpWorkbench(notion_mcp_server_params) as workbench:
+        
+        if not agent_initialized:
+            await PlannerAgent.register(
+                RUNTIME,
+                'planner_agent',
+                lambda: PlannerAgent(
+                    refiner_agent_id = REFINER_AGENT_ID,
+                    editor_agent_id  = EDITOR_AGENT_ID,
+                    evaluation_agent_id = EVAL_AGENT_ID
+                )
             )
-        )
 
-        await RefinerAgent.register(RUNTIME, 'refiner_agent', lambda: RefinerAgent(QUERY_AGENT_ID))
-        await QueryAgent.register(
-            RUNTIME,
-            "query_agent",
-            lambda: QueryAgent(
-                workbench_agent_id = WORKBENCH_AGENT_ID,
-                webrag_agent_id    = WEBRAG_AGENT_ID    
+            await RefinerAgent.register(RUNTIME, 'refiner_agent', lambda: RefinerAgent(QUERY_AGENT_ID))
+            await QueryAgent.register(
+                RUNTIME,
+                "query_agent",
+                lambda: QueryAgent(
+                    workbench_agent_id = WORKBENCH_AGENT_ID,
+                    webrag_agent_id    = WEBRAG_AGENT_ID    
+                )
             )
-        )
 
-        await WorkbenchAgent.register(RUNTIME, 'workbench_agent',
-            factory=lambda: WorkbenchAgent(
-                model_client=OpenAIChatCompletionClient(model="gpt-4.1-nano"),
-                model_context=BufferedChatCompletionContext(buffer_size=10),
-                workbench=None,  # Notion/MCP disabled
-            ),
-        )
-        await WebRAGAgent.register(RUNTIME, 'webrag_agent', WebRAGAgent)
+            await WorkbenchAgent.register(RUNTIME, 'workbench_agent',
+                factory=lambda: WorkbenchAgent(
 
-        await EvalAgent.register(RUNTIME, 'eval_agent',   EvalAgent)
-        await EditorAgent.register(RUNTIME, 'editor_agent', EditorAgent)
 
-        RUNTIME.start()
-        agent_initialized = True
+                    model_client=OpenAIChatCompletionClient(model="gpt-4.1-nano"),
+                    model_context=BufferedChatCompletionContext(buffer_size=10),
+                    workbench=workbench,
+                ),
+            )
+            await WebRAGAgent.register(RUNTIME, 'webrag_agent', WebRAGAgent)
+
+            await EvalAgent.register(RUNTIME, 'eval_agent',   EvalAgent)
+            await EditorAgent.register(RUNTIME, 'editor_agent', EditorAgent)
+
+            RUNTIME.start()
+            agent_initialized = True
 
 async def send_to_agent(user_message: Message) -> str:
     print(f"[INFO] Sending message to agent: {user_message.content}")
