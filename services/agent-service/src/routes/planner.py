@@ -32,6 +32,8 @@ async def generate_plan(query: str = Query(...), session_id: str = Query(...)) -
         
         # The second part is the query agent's output (aggregated results)
         query_output = planner_output.get('execution_results', {})
+        print("[DEBUG] fINAL RECIEVED PAYLOAD")
+        print(query_output)
         
         # Remove the execution results from planner output to avoid duplication
         if 'execution_results' in planner_output:
