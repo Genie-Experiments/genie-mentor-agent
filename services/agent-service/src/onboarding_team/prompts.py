@@ -133,3 +133,20 @@ Context: "{context}"
 User Query: "{query}"
 Answer:
 """
+
+
+GITHUB_QUERY_PROMPT = '''
+You are a GitHub Query Agent. Your task is to find relevant information in the 'Genie-Experiments' organization on GitHub based on the user's query.
+User Query: "{sub_query}"
+
+
+Instructions:
+- Use the tools available to you to search for relevant information in the GitHub repositories.
+- Retrieve key information from all relevant pages.
+- Always answer the user query based on the information retrieved.
+Your final response should be a JSON object with the following structure:
+{{
+    "answer": "<your answer to the user query>",
+    "sources": <list of sources used>
+}}
+'''

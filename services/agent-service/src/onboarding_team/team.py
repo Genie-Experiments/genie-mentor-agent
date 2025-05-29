@@ -4,7 +4,7 @@ import os
 
 # Third-party imports
 from autogen_core import AgentId, SingleThreadedAgentRuntime
-from autogen_ext.tools.mcp import StdioServerParams, McpWorkbench
+from autogen_ext.tools.mcp import  McpWorkbench, SseServerParams
 
 from autogen_ext.models.openai import OpenAIChatCompletionClient
 from autogen_core.model_context import BufferedChatCompletionContext
@@ -24,7 +24,8 @@ RUNTIME = SingleThreadedAgentRuntime()
 PLANNER_AGENT_ID = AgentId('planner_agent', 'default')
 REFINER_AGENT_ID = AgentId('refiner_agent', 'default')
 QUERY_AGENT_ID = AgentId('query_agent', 'default')
-WORKBENCH_AGENT_ID = AgentId('workbench_agent', 'default')
+NOTION_WORKBENCH_AGENT_ID = AgentId('notion_workbench_agent', 'default')
+GITHUB_WORKBENCH_AGENT_ID = AgentId('github_workbench_agent', 'default')
 EVAL_AGENT_ID   = AgentId("eval_agent",   "default")
 EDITOR_AGENT_ID = AgentId("editor_agent", "default")
 WEBRAG_AGENT_ID = AgentId("webrag_agent", "default")
@@ -32,57 +33,62 @@ WEBRAG_AGENT_ID = AgentId("webrag_agent", "default")
 # Flag to ensure the agent is only initialized once
 agent_initialized = False
 
-notion_mcp_server_params = StdioServerParams(
-                command="npx",
-                args=["-y", "@suekou/mcp-notion-server"],
-                env={
-                    "NOTION_API_TOKEN": os.getenv('NOTION_API_KEY'),
-                    "NOTION_MARKDOWN_CONVERSION": "true"  # Enable markdown conversion for better token usage
-                },
-                read_timeout_seconds=45
-            )
+notion_mcp_server_params = SseServerParams(
+    url="http://localhost:8009/sse",
+)
+
+github_mcp_server_params = SseServerParams(
+    url="http://localhost:8010/sse",
+)
 
 async def initialize_agent() -> None:
     global agent_initialized
-    async with McpWorkbench(notion_mcp_server_params) as workbench:
+    async with McpWorkbench(notion_mcp_server_params) as notion_workbench:
+        async with McpWorkbench(github_mcp_server_params) as github_workbench:
         
-        if not agent_initialized:
-            await PlannerAgent.register(
-                RUNTIME,
-                'planner_agent',
-                lambda: PlannerAgent(
-                    refiner_agent_id = REFINER_AGENT_ID,
-                    editor_agent_id  = EDITOR_AGENT_ID,
-                    evaluation_agent_id = EVAL_AGENT_ID
+            if not agent_initialized:
+                await PlannerAgent.register(
+                    RUNTIME,
+                    'planner_agent',
+                    lambda: PlannerAgent(
+                        refiner_agent_id = REFINER_AGENT_ID,
+                        editor_agent_id  = EDITOR_AGENT_ID,
+                        evaluation_agent_id = EVAL_AGENT_ID
+                    )
                 )
-            )
 
-            await RefinerAgent.register(RUNTIME, 'refiner_agent', lambda: RefinerAgent(QUERY_AGENT_ID))
-            await QueryAgent.register(
-                RUNTIME,
-                "query_agent",
-                lambda: QueryAgent(
-                    workbench_agent_id = WORKBENCH_AGENT_ID,
-                    webrag_agent_id    = WEBRAG_AGENT_ID    
+                await RefinerAgent.register(RUNTIME, 'refiner_agent', lambda: RefinerAgent(QUERY_AGENT_ID))
+                await QueryAgent.register(
+                    RUNTIME,
+                    "query_agent",
+                    lambda: QueryAgent(
+                        notion_workbench_agent_id = NOTION_WORKBENCH_AGENT_ID,
+                        github_workbench_agent_id = GITHUB_WORKBENCH_AGENT_ID,
+                        webrag_agent_id    = WEBRAG_AGENT_ID    
+                    )
                 )
-            )
 
-            await WorkbenchAgent.register(RUNTIME, 'workbench_agent',
-                factory=lambda: WorkbenchAgent(
+                await WorkbenchAgent.register(RUNTIME, 'notion_workbench_agent',
+                    factory=lambda: WorkbenchAgent(
+                        model_client=OpenAIChatCompletionClient(model="gpt-4.1-nano"),
+                        model_context=BufferedChatCompletionContext(buffer_size=10),
+                        workbench=notion_workbench,
+                    ),
+                )
+                await WorkbenchAgent.register(RUNTIME, 'github_workbench_agent',
+                    factory=lambda: WorkbenchAgent(
+                        model_client=OpenAIChatCompletionClient(model="gpt-4.1-nano"),
+                        model_context=BufferedChatCompletionContext(buffer_size=10),
+                        workbench=github_workbench,
+                    ),
+                )
+                await WebRAGAgent.register(RUNTIME, 'webrag_agent', WebRAGAgent)
 
+                await EvalAgent.register(RUNTIME, 'eval_agent',   EvalAgent)
+                await EditorAgent.register(RUNTIME, 'editor_agent', EditorAgent)
 
-                    model_client=OpenAIChatCompletionClient(model="gpt-4.1-nano"),
-                    model_context=BufferedChatCompletionContext(buffer_size=10),
-                    workbench=workbench,
-                ),
-            )
-            await WebRAGAgent.register(RUNTIME, 'webrag_agent', WebRAGAgent)
-
-            await EvalAgent.register(RUNTIME, 'eval_agent',   EvalAgent)
-            await EditorAgent.register(RUNTIME, 'editor_agent', EditorAgent)
-
-            RUNTIME.start()
-            agent_initialized = True
+                RUNTIME.start()
+                agent_initialized = True
 
 async def send_to_agent(user_message: Message) -> str:
     print(f"[INFO] Sending message to agent: {user_message.content}")

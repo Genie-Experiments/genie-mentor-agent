@@ -9,14 +9,15 @@ from autogen_core.models import UserMessage
 from autogen_ext.models.openai import OpenAIChatCompletionClient
 
 # Local application imports
-from .prompts import AGGREGATE_RESULTS_PROMPT
+from .prompts import AGGREGATE_RESULTS_PROMPT, GITHUB_QUERY_PROMPT
 from ..rag.rag import query_knowledgebase
 from .message import Message
 
 class QueryAgent(RoutedAgent):
-    def __init__(self, workbench_agent_id: AgentId,webrag_agent_id:AgentId) -> None:
+    def __init__(self, notion_workbench_agent_id: AgentId,webrag_agent_id:AgentId, github_workbench_agent_id: AgentId) -> None:
         super().__init__("query_agent")
-        self.workbench_agent_id = workbench_agent_id
+        self.notion_workbench_agent_id = notion_workbench_agent_id
+        self.github_workbench_agent_id = github_workbench_agent_id
         self.webrag_agent_id = webrag_agent_id
         self.model_client = OpenAIChatCompletionClient(
             model="gpt-4o",
@@ -86,13 +87,14 @@ class QueryAgent(RoutedAgent):
 
         if source == "knowledgebase":
             response = query_knowledgebase(sub_query)
+
             
         elif source == "notion":
             response_message = await self.send_message(
                 Message(
                     content=f"Use Notion to find relevant information about the following query: {sub_query}. Retrieve key information from all the relevant pages, and based on the information retrieved, always answer the user query. The answer should be detailed and include information from all the sources used. Your final response should be a json object, with an 'answer' key, which is the answer to the query based on the information fetched, and a 'sources' key"
                 ), 
-                self.workbench_agent_id
+                self.notion_workbench_agent_id
             )
             response = json.loads(response_message.content)
 
@@ -101,6 +103,15 @@ class QueryAgent(RoutedAgent):
             response_message = await self.send_message(
                 Message(content=sub_query),
                 self.webrag_agent_id
+            )
+            response = json.loads(response_message.content)
+            
+        elif source == "github":
+            print("GitHub Query Agent")
+            prompt = GITHUB_QUERY_PROMPT.format(sub_query=sub_query)
+            response_message = await self.send_message(
+                Message(content=prompt),
+                self.github_workbench_agent_id
             )
             response = json.loads(response_message.content)
 

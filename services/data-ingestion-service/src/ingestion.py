@@ -57,7 +57,7 @@ def ingest_files(file_paths):
         store_embeddings(split_docs, embedding_model)
         print(f'Processed {file_path} and stored embeddings.')
 
-def process_uploaded_file(file_content, filename, persist_directory='../../shared-lib/chroma_db'):
+def process_uploaded_file(file_content, filename, persist_directory=os.getenv('CHROMA_DB_PATH')):
     """
     Process an uploaded file by saving it temporarily, loading it, splitting it,
     and storing embeddings in the vector store.

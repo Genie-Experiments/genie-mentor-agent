@@ -1,0 +1,23 @@
+version: '3.3'
+
+services:
+  notion-mcp-gateway:
+    image: node:18-alpine
+    ports:
+      - "8009:8009"
+    environment:
+      NOTION_API_TOKEN: "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"
+      NOTION_MARKDOWN_CONVERSION: "true"
+    command: sh -c "npx -y supergateway --stdio 'npx -y @suekou/mcp-notion-server' --port 8009 --baseUrl http://0.0.0.0:8009 --ssePath /sse --messagePath /message --cors --logLevel info"
+    restart: unless-stopped
+
+  github-mcp-gateway:
+    image: node:18-alpine
+    ports:
+      - "8010:8010"
+    environment:
+      GITHUB_PERSONAL_ACCESS_TOKEN: "${GITHUB_MCP_TOKEN}"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: sh -c "apk add --no-cache docker-cli && npx -y supergateway --stdio 'docker run -i --rm -e GITHUB_PERSONAL_ACCESS_TOKEN=$$GITHUB_PERSONAL_ACCESS_TOKEN ghcr.io/github/github-mcp-server' --port 8010 --baseUrl http://0.0.0.0:8010 --ssePath /sse --messagePath /message --cors --logLevel info"
+    restart: unless-stopped
