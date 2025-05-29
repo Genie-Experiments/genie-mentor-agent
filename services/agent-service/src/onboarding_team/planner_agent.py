@@ -1,19 +1,10 @@
-# Standard library imports
-import asyncio
 import json
 import os
-import sys
 from typing import Any, Dict, List, Optional
 
-# Third-party imports
-from autogen_core import AgentId, MessageContext, RoutedAgent, SingleThreadedAgentRuntime, message_handler
+from autogen_core import AgentId, MessageContext, RoutedAgent,  message_handler
 from autogen_core.models import UserMessage
 from autogen_ext.models.openai import OpenAIChatCompletionClient
-from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain_community.vectorstores import Chroma
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
-# Local application imports
 from .prompts import PLANNER_PROMPT
 from ..schemas.planner_schema import QueryPlan
 from .message import Message
@@ -74,7 +65,7 @@ class PlannerAgent(RoutedAgent):
                     })
                     prev_score = score
 
-                    if score >= 0.9 or corrections == 2:
+                    if score >= 0.7 or corrections == 2:
                         break
                     
 
@@ -149,52 +140,16 @@ class PlannerAgent(RoutedAgent):
             }))
 
 
-    def determine_data_sources(self, query: str) -> List[str]:
-        embedding_model = HuggingFaceEmbeddings(model_name='all-MiniLM-L6-v2')
-        persist_path = os.getenv('CHROMA_DB_PATH')
-        print(f'[DEBUG] CHROMA_DB_PATH used = {persist_path}')
-        kb_store = Chroma(
-            persist_directory=persist_path,
-            embedding_function=embedding_model
-        )
-        print('[DEBUG] Chroma loaded docs:', kb_store._collection.count())
-
-        results = kb_store.similarity_search_with_score(query, k=3)
-        scores = [1 / (1 + score) for _, score in results if score is not None]
-        kb_score = max(scores) if scores else 0.0
-
-        print('\n[DEBUG] Top matching KB documents:')
-        for i, (doc, score) in enumerate(results):
-            print(f'KB Match {i+1}: ({score:.3f}) {doc.page_content}...\n')
-        print(f'[DEBUG] Knowledgebase similarity score: {kb_score:.3f}')
-
-        # Mock Notion scores (TF-IDF)
-        notion_docs = ['project roadmap', 'meeting notes', 'internal OKRs', 'release timeline']
-        notion_vectorizer = TfidfVectorizer().fit_transform([query] + notion_docs)
-        notion_score = cosine_similarity(notion_vectorizer[0:1], notion_vectorizer[1:]).mean()
-        print(f'[DEBUG] Notion similarity score: {notion_score:.3f}')
-
-        sources = []
-        if kb_score >= 0.5:
-            sources.append('knowledgebase')
-        if notion_score >= 0.5:
-            sources.append('notion')
-
-        if not sources:
-            return ['knowledgebase' if kb_score > notion_score else 'notion']
-
-        return sources
-
     async def process_query(self, query: str) -> Message:
-        selected_sources = self.determine_data_sources(query)
 
         prompt = PLANNER_PROMPT.format(
-            user_query=query,
-            data_sources=selected_sources
+            user_query=query
         )
 
         response = await self.model_client.create(
             messages=[UserMessage(content=prompt, source='user')],
             json_output=QueryPlan
         )
+        print("lllllllllllllllllllllllllllllllllll")
+        print(response)
         return Message(content=response.content)

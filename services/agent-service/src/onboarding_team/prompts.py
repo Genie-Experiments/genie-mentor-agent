@@ -1,26 +1,61 @@
 PLANNER_PROMPT = '''
-You are a Planner Agent responsible for generating a structured query plan based on the user's input.
+You are a Planner Agent responsible for generating a structured query plan from the user's input. Your job is to decompose the user query into a maximum of **two sub-queries**, and assign each sub-query to one of the supported data sources based on its nature.
 
-User Query: "{user_query}"
+---
+USER QUERY:
+{user_query}
+---
 
-Define query intent using 2–3 words.
-Use only the following data sources: {data_sources}
+### Your Tasks:
 
-Provide a JSON object with the following structure:
+1. **Define the Query Intent** in 2–3 words (e.g., "rag techniques", "poc explanation").
+2. **Decompose** the query into no more than **two (2)** sub-queries. Each sub-query must be self-contained and specific.
+3. **Assign a source** to each sub-query based on the following rules:
+
+   - `"knowledgebase"`:
+     - Use for technical concepts or implementation approaches involving:
+       - Advanced RAG techniques (e.g., document indexing, reranking, context expansion).
+       - Embedding models, LLM behavior, and hallucination metrics.
+       - General architecture or design methodologies.
+
+   - `"github"`:
+     - Use **only** for sub-queries related to:
+       - Code-level details, logic, architecture, or structure.
+       - Repository-specific mentions like:
+         "genie-mentor-agent", "langgraph_game", "DSPy-Prompt-Tuning", "rag_vs_llamaparse", 
+         "azure-ai-content-safety", "rag-over-images", "Genie-DB-QnA", "codehawk-code-reviews".
+
+   - `"notion"`:
+     - Use for high-level documentation, planning docs, experimental summaries, and internal notes.
+
+   - `"webrag"`:
+     - Use **only** when the user explicitly asks for an external web search or uses phrases like:
+       "search the web", "look online", "get latest papers", etc.
+
+4. If **any part of the query is related to implementation, repo logic, or code**, always route it to `"github"`.
+
+5. **Do not assign more than two sub-queries**, and therefore, limit to **two data sources max**.
+
+---
+
+### Format:
+
+Respond ONLY with a well-formatted JSON object using the schema below:
+
 {{
   "user_query": "...",
   "query_intent": "...",
-  "data_sources": ["knowledgebase", "notion"],
+  "data_sources": ["knowledgebase", "github"],  // max 2
   "query_components": [
     {{
       "id": "q1",
       "sub_query": "...",
-      "source": "knowledgebase"
+      "source": "knowledgebase" | "notion" | "github" | "webrag"
     }},
     {{
       "id": "q2",
       "sub_query": "...",
-      "source": "notion"
+      "source": "..."
     }}
   ],
   "execution_order": {{
@@ -30,8 +65,17 @@ Provide a JSON object with the following structure:
   }}
 }}
 
-Ensure the JSON is properly formatted.
+---
+
+### Rules:
+
+- Do not generate more than two sub-queries.
+- Do not include more than two data sources.
+- Route any code-related or repo-specific question to `"github"`.
+- Always ensure valid JSON formatting.
+- Do not invent new sources or fields.
 '''
+
 
 
 REFINEMENT_NEEDED_PROMPT = """
@@ -56,7 +100,22 @@ You are a Refiner Agent responsible for reviewing and optimizing a query plan ge
 Here is the input plan (as JSON):
 {plan_json}
 
-Available data sources: {selected_sources}
+Available data sources: ["knowledgebase", "notion", "github", "webrag"]
+
+Sources are defined on following basis
+- Use `"knowledgebase"` for anything related to:
+     - Advanced RAG techniques (e.g., document indexing, embedding models, reranking, LLM behavior, context expansion).
+     - Evaluation methods (e.g., hallucination metrics, benchmark results).
+   - Use `"github"` for:
+     - Specific POC code logic, implementation details, or repo-specific questions.
+     - Any sub-query mentioning repository names such as:
+       - "genie-mentor-agent", "langgraph_game", "DSPy-Prompt-Tuning", "rag_vs_llamaparse", "azure-ai-content-safety", "rag-over-images","Genie-DB-QnA","codehawk-code-reviews"
+   - Use `"notion"` for:
+     - High-level documentation or POC descriptions not directly tied to code.
+     - Experimental setups, internal notes, or strategy overviews.
+   - Use `"webrag"` for:
+     - User explicitly asking for a web search or external exploration.
+     - Phrases like "search online", "check on web", "get latest info".
 
 Check for:
 - redundant sources (only use the available sources listed above)

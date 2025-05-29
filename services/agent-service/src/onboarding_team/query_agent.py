@@ -83,13 +83,16 @@ class QueryAgent(RoutedAgent):
         sub_query = q["sub_query"]
         source = q["source"]
 
-        source="notion"
+        #source="notion"
 
         if source == "knowledgebase":
+            print("-------------------Getting Results through KnowledgeBase------------------------")
+
             response = query_knowledgebase(sub_query)
 
             
         elif source == "notion":
+            print("-------------------Getting Results through Notion------------------------")
             response_message = await self.send_message(
                 Message(
                     content=f"Use Notion to find relevant information about the following query: {sub_query}. Retrieve key information from all the relevant pages, and based on the information retrieved, always answer the user query. The answer should be detailed and include information from all the sources used. Your final response should be a json object, with an 'answer' key, which is the answer to the query based on the information fetched, and a 'sources' key"
@@ -98,7 +101,7 @@ class QueryAgent(RoutedAgent):
             )
             response = json.loads(response_message.content)
 
-        elif source == "websearch":
+        elif source == "webrag":
             print("-------------------Getting Results through WebSearch------------------------")
             prompt = NOTION_QUERY_PROMPT.format(sub_query=sub_query)
             response_message = await self.send_message(
@@ -108,7 +111,7 @@ class QueryAgent(RoutedAgent):
             response = json.loads(response_message.content)
             
         elif source == "github":
-            print("GitHub Query Agent")
+            print("-------------------Getting Results through Github------------------------")
             prompt = GITHUB_QUERY_PROMPT.format(sub_query=sub_query)
             response_message = await self.send_message(
                 Message(content=prompt),
