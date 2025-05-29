@@ -4,7 +4,7 @@ import os
 
 # Third-party imports
 from autogen_core import AgentId, SingleThreadedAgentRuntime
-from autogen_ext.tools.mcp import StdioServerParams, McpWorkbench
+from autogen_ext.tools.mcp import  McpWorkbench, SseServerParams
 
 from autogen_ext.models.openai import OpenAIChatCompletionClient
 from autogen_core.model_context import BufferedChatCompletionContext
@@ -26,20 +26,9 @@ WORKBENCH_AGENT_ID = AgentId('workbench_agent', 'default')
 # Flag to ensure the agent is only initialized once
 agent_initialized = False
 
-notion_mcp_server_params = StdioServerParams(
-                command="docker",
-    args=[
-        "run",
-        "-i",
-        "--rm",
-        "-e",
-        "GITHUB_PERSONAL_ACCESS_TOKEN",
-        "ghcr.io/github/github-mcp-server"
-    ],
-    env={
-        "GITHUB_PERSONAL_ACCESS_TOKEN": os.getenv('GITHUB_MCP_TOKEN')
-    },
-    read_timeout_seconds=45
+notion_mcp_server_params = SseServerParams(
+    url="http://localhost:8009/sse",
+                
             )
 
 async def initialize_agent() -> None:
