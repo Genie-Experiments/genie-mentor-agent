@@ -83,7 +83,8 @@ class ExecutorAgent(RoutedAgent):
         q = query_components[qid]
         sub_query = q["sub_query"]
         source = q.get("source")  
-        source = "github"
+        """ if source == "knowledgebase":
+            source = "github" """
 
         logging.info(f"Executing sub-query from source: {source}")
        
@@ -100,6 +101,8 @@ class ExecutorAgent(RoutedAgent):
                     Message(content=prompt),
                     self.notion_workbench_agent_id
                 )
+                content = response_message.content.replace('\n', '\\n').replace('\r', '\\r')
+
                 response = json.loads(response_message.content)
 
             elif source == "websearch":
