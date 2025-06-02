@@ -4,16 +4,23 @@ from pydantic import BaseModel
 class QueryComponent(BaseModel):
     id: str
     sub_query: str
-    source: Literal["knowledgebase", "notion"]
+    source: Literal["knowledgebase", "notion", "github", "websearch"]
 
 class ExecutionOrder(BaseModel):
     nodes: List[str]
     edges: List[List[str]] 
     aggregation: Literal["combine_and_summarize", "sequential", "parallel"]
 
+class Think(BaseModel):
+    query_analysis: str
+    sub_query_reasoning: str
+    source_selection: str
+    execution_strategy: str
+
 class QueryPlan(BaseModel):
     user_query: str
     query_intent: str
-    data_sources: List[Literal["knowledgebase", "notion"]]
+    data_sources: List[Literal["knowledgebase", "notion", "github", "websearch"]]
     query_components: List[QueryComponent]
     execution_order: ExecutionOrder
+    think: Think
