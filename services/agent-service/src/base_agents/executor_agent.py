@@ -7,7 +7,7 @@ from autogen_core.models import UserMessage
 
 from ..prompts.prompts import GITHUB_QUERY_PROMPT, NOTION_QUERY_PROMPT
 from ..prompts.dummy_data import dummy_data_1
-from ..rag.rag import query_knowledgebase
+from ..source_agents.knowledgebaserag.knowledgebaserag import query_knowledgebase
 from ..protocols.message import Message
 from ..prompts.prompts import GENERATE_AGGREAGATED_ANSWER
 from ..utils.parsing import _extract_json_with_regex
@@ -83,16 +83,16 @@ class ExecutorAgent(RoutedAgent):
         q = query_components[qid]
         sub_query = q["sub_query"]
         source = q.get("source", "websearch")  
-        source = "websearch"
+        source = "knowledgebase"
 
         logging.info(f"Executing sub-query from source: {source}")
        
         try:
-            '''
+            
             if source == "knowledgebase":
                 logging.info(f"[{qid}] Querying Knowledgebase: {sub_query}")
-                response_message = query_knowledgebase(sub_query)
-
+                response = query_knowledgebase(sub_query)
+            '''
             elif source == "notion":
                 logging.info(f"[{qid}] Querying Notion")
                 prompt = f"Use Notion to find relevant info: {sub_query}"
@@ -108,6 +108,7 @@ class ExecutorAgent(RoutedAgent):
                     Message(content=sub_query),
                     self.webrag_agent_id
                 )
+                response = json.loads(response_message.content)
 
             elif source == "github":
                 logging.info(f"[{qid}] Querying GitHub")
@@ -119,19 +120,19 @@ class ExecutorAgent(RoutedAgent):
                 #response = json.loads(response_message.content)
 
             else:
-                raise ValueError(f"Unknown source: {source}")
+                raise ValueError(f"Unknown source: {source}")'''
 
           
-            response = json.loads(response_message.content)
             if "sources" in response:
                 self._sources_used.extend(response["sources"])
-            '''
+            
 
 
-            if "_sources_used" in dummy_data_1:
-               self._sources_used.extend(dummy_data_1["_sources_used"])
-            return dummy_data_1
-            #return response
+            #if "_sources_used" in dummy_data_1:
+            #  self._sources_used.extend(dummy_data_1["sources"])
+           
+            # return dummy_data_1
+            return response
 
         except Exception as e:
             logging.exception(f"Error during execution of sub-query {qid} - {e}")

@@ -35,37 +35,16 @@ async def root():
 async def health_check():
     return {'status': 'healthy'}
 
-
-# Knowledgebase management endpoints will be implemented here
-# Document processing endpoints will be implemented here
-# RAG query endpoints will be implemented here
-
-
-
 @app.post('/api/documents')
 async def upload_file(file: UploadFile = File(...)):
-    """
-    Endpoint for uploading PDF files for ingestion into the knowledge base.
-    
-    Args:
-        file: The PDF file to be uploaded and ingested
-        
-    Returns:
-        Information about the ingestion process
-    """
-    # Check if the file is a PDF
     if not file.filename.lower().endswith('.pdf'):
         raise HTTPException(status_code=400, detail='Only PDF files are currently supported')
     
     try:
-        # Read the file content
         file_content = await file.read()
-        
-        # Process the uploaded file
         persist_path = os.getenv('CHROMA_DB_PATH')
         print(f'[DEBUG] persist_path = {persist_path}')
         result = process_uploaded_file(file_content, file.filename, persist_directory=persist_path)
-        
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
