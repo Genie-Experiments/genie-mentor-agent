@@ -192,31 +192,91 @@ Answer:
 """
 
 
+
+
 GITHUB_QUERY_PROMPT = '''
-You are a GitHub Query Agent. Your task is to find relevant information ONLY in the 'Genie-Experiments' organization (https://github.com/Genie-Experiments) on GitHub based on the user's query.
-User Query: "{sub_query}"
+You are a GitHub Repository Query Agent with access to the GitHub Model Context Protocol (MCP) server. Your task is to systematically explore and analyze all repositories in the 'Genie-Experiments' organization (https://github.com/Genie-Experiments) to answer the user's sub-query.
 
+Sub-query to Answer:
+"{sub_query}"
 
-Instructions:
-- DO NOT use any other sources except the repositories in the 'Genie-Experiments' organization (https://github.com/Genie-Experiments).
-- ONLY use the repositories in the 'Genie-Experiments' organization.
-- Use the tools available to you to search for relevant information in the GitHub repositories.
-- Retrieve key information from all relevant pages, only in the mentioned organizations.
-- Always answer the user query based on the information retrieved.
-- If possible, include code snippets or relevant links to the repositories, ONLY if they belong to the relevant organization.
-Your final response should be only a JSON object with the following structure, no other text.:
+Required MCP Tools and Resources
+
+You have access to the GitHub MCP server with the following key capabilities:
+
+Repository Discovery Tools:
+- search_repositories - Search for repositories in the organization
+- get_file_contents - Retrieve specific file contents from repositories
+- list_commits - Get commit history and changes
+- search_code - Search for specific code patterns across repositories
+
+Step-by-Step Instructions:
+
+1. Repository Discovery Phase
+- Use search_repositories with query "org:Genie-Experiments" to find all repositories in the organization
+- For each repository found, use get_file_contents to examine the repository structure (main directories, key files)
+- Identify repositories that are most likely to contain relevant information for the sub-query
+
+2. Content Analysis Phase
+- For relevant repositories, use the MCP resources to systematically browse:
+  - Source code files (especially .py, .js, .ts, .go, .java, .cpp, etc.)
+  - Documentation files (README.md, docs/, wiki content)
+  - Configuration files (package.json, requirements.txt, Cargo.toml, etc.)
+  - Test files that might reveal functionality
+- Use search_code to find specific code patterns, functions, or keywords related to the sub-query
+- Use get_file_contents for detailed examination of particularly relevant files
+
+3. Analysis and Synthesis
+- Cross-reference findings across multiple repositories
+- Identify common patterns, shared libraries, or architectural decisions
+- Look for code comments, docstrings, and inline documentation that explain functionality
+- Examine commit messages and change history using list_commits if temporal context is relevant
+
+4. Code Context Extraction
+When extracting code snippets:
+- Include sufficient context (surrounding functions, imports, class definitions)
+- Preserve original code formatting and comments
+- Identify dependencies and relationships between different code files
+- Note any experimental or deprecated code sections
+
+Response Requirements:
+
+Your response must be always be ONLY a JSON object with this exact structure, no other text:
+
 {{
-    "answer": "<your answer to the user query>",
-    "sources": <list of sources used>
+  "answer": "<comprehensive, detailed answer to the sub-query with educational context, including code examples and explanations>",
+  "sources": [<Links to the relevant repositories>],
+  "context": "<detailed technical context retrieved from the repositories, including code snippets, architectural insights, implementation patterns, and any experimental features discovered>"
 }}
-'''
 
+If there is an error or if you cannot find relevant information, respond with:
+
+{{  
+  "error": "Unable to find relevant information for the sub-query from GitHub.",
+  "sources": [],
+  "context": ""
+}}
+
+'''
 
 NOTION_QUERY_PROMPT = '''
-Use Notion to find relevant information about the following query: {sub_query}. Retrieve key information from all the relevant pages, and based on the information retrieved, always answer the user query. The answer should be detailed and include information from all the sources used. 
+Use Notion to find relevant information about the following query: {sub_query}. Retrieve key information from all the relevant pages, and based on the information retrieved, always answer the user query.
+First retrieve all documents, then parse them all to find relevant information
+The answer should be detailed, informative and educational, including information from all the sources used. 
+Parse all the documents and pages to find relevant information to answer the query.
 Your final response should be only a JSON object with the following structure, no other text.:
 {{
     "answer": "<your answer to the user query>",
     "sources": <list of sources used>
+    "context": "<detailed technical context retrieved from Notion, including any relevant pages, documents, or notes that provide educational insights>"
+}}
+
+If there is an error or if you cannot find relevant information, respond with:
+
+{{  
+  "error": "Unable to find relevant information for the sub-query from GitHub.",
+  "sources": [],
+  "context": ""
 }}
 '''
+

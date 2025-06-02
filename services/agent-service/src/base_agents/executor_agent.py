@@ -82,8 +82,8 @@ class ExecutorAgent(RoutedAgent):
     async def execute_query(self, qid: str, query_components: Dict[str, Any]) -> Dict[str, Any]:
         q = query_components[qid]
         sub_query = q["sub_query"]
-        source = q.get("source", "websearch")  
-        source = "knowledgebase"
+        source = q.get("source")  
+        source = "github"
 
         logging.info(f"Executing sub-query from source: {source}")
        
@@ -92,15 +92,15 @@ class ExecutorAgent(RoutedAgent):
             if source == "knowledgebase":
                 logging.info(f"[{qid}] Querying Knowledgebase: {sub_query}")
                 response = query_knowledgebase(sub_query)
-            '''
+            
             elif source == "notion":
                 logging.info(f"[{qid}] Querying Notion")
-                prompt = f"Use Notion to find relevant info: {sub_query}"
+                prompt = NOTION_QUERY_PROMPT.format(sub_query=sub_query)
                 response_message = await self.send_message(
                     Message(content=prompt),
                     self.notion_workbench_agent_id
                 )
-               # response = json.loads(response_message.content)
+                response = json.loads(response_message.content)
 
             elif source == "websearch":
                 logging.info(f"[{qid}] Querying WebRAG")
@@ -117,10 +117,10 @@ class ExecutorAgent(RoutedAgent):
                     Message(content=prompt),
                     self.github_workbench_agent_id
                 )
-                #response = json.loads(response_message.content)
+                response = json.loads(response_message.content)
 
             else:
-                raise ValueError(f"Unknown source: {source}")'''
+                raise ValueError(f"Unknown source: {source}")
 
           
             if "sources" in response:
