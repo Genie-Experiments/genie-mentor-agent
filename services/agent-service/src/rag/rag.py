@@ -81,9 +81,6 @@ def query_knowledgebase(
     
     # Run the query
     result = qa_chain({'query': query})
-    print('[RAG] Retrieved documents:')
-    for doc in result['source_documents']:
-        print(doc.page_content[:150])
 
     return {
         'answer': result['result'],

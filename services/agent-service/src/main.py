@@ -1,26 +1,14 @@
-"""
-Agent Service - Main Entry Point
-This service implements the core agent orchestration for both Learning Bot and Onboarding Bot.
-"""
-
-# Standard library imports
 import uvicorn
-
-# Third-party imports
 from dotenv import load_dotenv
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
-# Local application imports
 from .db.database import Base, engine
 from .onboarding_team.team import initialize_agent, shutdown_agent
-from .routes import planner
-
-# Load environment variables
+from .routes import route
 load_dotenv(override=True)
 
 app = FastAPI(
-    title='Bot Service',
+    title='Genie Mentor Agent Swagger',
     description='Agent orchestration service for Genie Mentor Agent',
 )
 
@@ -32,16 +20,16 @@ app.add_middleware(
     allow_headers=['*'],
 )
 
-app.include_router(planner.router)
+app.include_router(route.router)
 
 @app.on_event('startup')
 async def on_startup():
     Base.metadata.create_all(bind=engine)
-    await initialize_agent()  # Initialize agent once at startup
+    await initialize_agent()  
 
 @app.on_event('shutdown')
 async def on_shutdown():
-    await shutdown_agent()  # shut down agent runtime
+    await shutdown_agent()  
 
 @app.get('/')
 async def root():

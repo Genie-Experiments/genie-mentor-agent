@@ -28,5 +28,5 @@ class TraceInfo(BaseModel):
     timestamp: str
     user_input: Dict[str, Any]
     planner_agent: Dict[str, Any]
-    query_agent: Dict[str, Any]
+    executor_agent_agent: Dict[str, Any]
     total_time_taken: float
