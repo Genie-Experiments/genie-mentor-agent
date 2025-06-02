@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import Any, List
+from typing import Any, List, Dict
 from autogen_core import AgentId, MessageContext, RoutedAgent, message_handler
 from ..protocols.message import Message
 import time
@@ -29,13 +29,54 @@ class ManagerAgent(RoutedAgent):
         
         self.trace_info = {}
         self.attempts = []
+        # Store conversation history per session
+        self.conversation_history: Dict[str, List[Dict[str, str]]] = {}
+
+    def _get_context(self, session_id: str) -> str:
+        """Get conversation context for the current session."""
+        if session_id not in self.conversation_history:
+            return ""
+        
+        history = self.conversation_history[session_id]
+        if not history:
+            return ""
+            
+        # Get only the last Q&A pair for context
+        last_qa = history[-1]
+        context = "\nPrevious conversation:\n"
+        context += f"Q: {last_qa['question']}\nA: {last_qa['answer']}\n"
+        return context
+
+    def _update_history(self, session_id: str, question: str, answer: str):
+        """Update conversation history for the session."""
+        if session_id not in self.conversation_history:
+            self.conversation_history[session_id] = []
+        
+        self.conversation_history[session_id].append({
+            "question": question,
+            "answer": answer
+        })
+        
+        # Keep only last 5 conversations to manage memory
+        if len(self.conversation_history[session_id]) > 5:
+            self.conversation_history[session_id] = self.conversation_history[session_id][-5:]
 
     @message_handler
     async def handle_user_message(self, message: Message, ctx: MessageContext) -> Message:
         start_time = time.time()
+        session_id = ctx.session_id if hasattr(ctx, 'session_id') else 'default'
+        
+        # Get conversation context
+        context = self._get_context(session_id)
+        user_query = message.content
+        
+        # If there's context, prepend it to the query
+        if context:
+            user_query = f"{context}\nCurrent question: {user_query}"
+        
         self.trace_info = {
             'start_time': start_time,
-            'user_query': message.content,
+            'user_query': user_query,
             'planner_output': None,
             'refiner_output': None,
             'executor_output': None,
@@ -47,8 +88,8 @@ class ManagerAgent(RoutedAgent):
         }
         
         try:
-            logging.info(f"[PlannerAgent] Input: {message.content}")
-            plan = await self.send_message(message, self.planner_agent_id)
+            logging.info(f"[PlannerAgent] Input: {user_query}")
+            plan = await self.send_message(Message(content=user_query), self.planner_agent_id)
             logging.info(f"[PlannerAgent] Output: {plan.content}")
             self.trace_info['planner_output'] = self.safe_json_parse(plan.content)
             
@@ -70,7 +111,7 @@ class ManagerAgent(RoutedAgent):
             documents = q_output.get("top_documents", [])
             
             final_answer, eval_history, editor_history = await self.run_evaluation_loop(
-                question=message.content,
+                question=user_query,
                 initial_answer=answer,
                 contexts=documents
             )
@@ -79,6 +120,9 @@ class ManagerAgent(RoutedAgent):
             self.trace_info['editor_history'] = editor_history
             self.trace_info['final_answer'] = final_answer
             self.trace_info['total_time'] = time.time() - start_time
+            
+            # Update conversation history
+            self._update_history(session_id, message.content, final_answer)
             
             return Message(content=json.dumps({
                 'answer': final_answer,
