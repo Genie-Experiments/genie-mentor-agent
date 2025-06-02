@@ -37,10 +37,10 @@ class ManagerAgent(RoutedAgent):
             'start_time': start_time,
             'user_query': message.content,
             'planner_output': None,
-            'refiner_output': None,
-            'query_output': None,
+            'planner_refiner_output': None,
             'evaluation_history': [],
             'editor_history': [],
+            'executor_output':None,
             'final_answer': None,
             'errors': [],
             'total_time': None
@@ -128,7 +128,7 @@ class ManagerAgent(RoutedAgent):
             })
             
             score = float(eval_result.get("score", 0))
-            if score >= 0.7:
+            if score >= 0.5:
                 return current_answer, eval_history, editor_history
                 
             logging.info(f"[EditorAgent] Input (Attempt {attempts + 1}): {json.dumps(eval_payload)}")

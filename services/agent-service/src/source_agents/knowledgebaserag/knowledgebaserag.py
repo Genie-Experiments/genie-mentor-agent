@@ -22,7 +22,7 @@ def query_knowledgebase(
     persist_directory: Optional[str] = None, 
     model_name: str = 'meta-llama/llama-4-scout-17b-16e-instruct', 
     temperature: float = 0.1, 
-    k: int = 5
+    k: int = 3
 ) -> Dict[str, Any]:
     try:
         if persist_directory is None:
@@ -33,14 +33,14 @@ def query_knowledgebase(
         
         embedding_model = get_embedding_model()
         from pathlib import Path
-        logging.info(f"persist_directory = {Path(persist_directory).resolve()}")
+        #logging.info(f"persist_directory = {Path(persist_directory).resolve()}")
 
         
         vector_store = Chroma(
             persist_directory=persist_directory,
             embedding_function=embedding_model
         )
-        logging.info('Total documents in store:', vector_store._collection.count())
+        #logging.info('Total documents in store:', vector_store._collection.count())
 
         retriever = vector_store.as_retriever(search_kwargs={'k': k})
         
