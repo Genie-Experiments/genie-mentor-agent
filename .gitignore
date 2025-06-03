@@ -136,3 +136,6 @@ yarn-error.log
 credentials.json
 *.pem
 *.key
+
+#temp
+!frontend-js/src/lib/
