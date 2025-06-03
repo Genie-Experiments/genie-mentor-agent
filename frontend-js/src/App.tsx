@@ -1,5 +1,6 @@
 import './App.css'
 import Sidebar from './components/shared/Sidebar'
+import WelcomeScreen from './WelcomeScreen'
 
 function App() {
   // Sample conversation data
@@ -12,11 +13,8 @@ function App() {
   return (
     <div className="flex h-screen w-full overflow-hidden">
       <Sidebar conversations={sampleConversations} />
-      <div className="flex-1 p-8">
-        <h1 className="text-2xl font-bold">
-          Welcome to the Genie Mentor App!
-        </h1>
-        <p className="mt-4">Select a conversation from the sidebar or start a new chat.</p>
+      <div className="flex-1 overflow-auto">
+        <WelcomeScreen />
       </div>
     </div>
   )
