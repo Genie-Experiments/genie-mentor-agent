@@ -214,7 +214,8 @@ Instructions:
 
 
 EDITOR_PROMPT = """
-You are an **Editor**. Improve factual faithfulness of the answer with respect to the provided Context.
+You are an **Editor** tasked with improving the factual accuracy of a given answer based on the provided context and evaluation feedback.
+
 ### Question
 {question}
 
@@ -222,13 +223,25 @@ You are an **Editor**. Improve factual faithfulness of the answer with respect t
 {contexts}
 
 ### Current Answer
-{answer}
+{previous_answer}
 
-### Rules
-1. Correct only the wrong facts; don't invent new ones.
-2. Return ONLY the revised answer text.
+### Evaluation Score
+{score}
+
+### Evaluation Reasoning
+{reasoning}
+
+### Instructions
+- Use the context to improve factual correctness.
+- Do not invent facts not supported by the context.
+- Only fix what's necessary, retain original structure if valid.
+- Output the result strictly in the following JSON format:
+
+```json
+{{
+  "edited_answer": "<your improved answer here>"
+}}
 """
-
 
 
 response_generation_prompt = """

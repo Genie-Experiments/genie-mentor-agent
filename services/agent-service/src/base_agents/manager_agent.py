@@ -82,7 +82,6 @@ class ManagerAgent(RoutedAgent):
             'executor_output': None,
             'evaluation_history': [],
             'editor_history': [],
-            'final_answer': None,
             'errors': [],
             'total_time': None
         }
@@ -125,7 +124,7 @@ class ManagerAgent(RoutedAgent):
             self._update_history(session_id, message.content, final_answer)
             
             return Message(content=json.dumps({
-                'answer': final_answer,
+                
                 'trace_info': self.trace_info
             }))
             
@@ -149,7 +148,7 @@ class ManagerAgent(RoutedAgent):
         attempts = 0
         eval_history = []
         editor_history = []
-        
+
         while attempts < max_attempts:
             eval_payload = {
                 "question": question,
@@ -158,38 +157,51 @@ class ManagerAgent(RoutedAgent):
             }
 
             logging.info(f"[EvaluationAgent] Input (Attempt {attempts + 1}): {json.dumps(eval_payload)}")
-            eval_resp = await self.send_message(
-                Message(content=json.dumps(eval_payload)),
-                self.eval_agent_id
-            )
+            eval_resp = await self.send_message(Message(content=json.dumps(eval_payload)), self.eval_agent_id)
             logging.info(f"[EvaluationAgent] Output (Attempt {attempts + 1}): {eval_resp.content}")
-            
+
             eval_result = self.safe_json_parse(eval_resp.content)
-            eval_history.append({
-                "input": eval_payload,
-                "output": eval_result,
-                "attempt": attempts + 1
-            })
-            
             score = float(eval_result.get("score", 0))
-            if score >= 0.7:
-                return current_answer, eval_history, editor_history
-                
-            logging.info(f"[EditorAgent] Input (Attempt {attempts + 1}): {json.dumps(eval_payload)}")
-            editor_resp = await self.send_message(
-                Message(content=json.dumps(eval_payload)),
-                self.editor_agent_id
-            )
-            logging.info(f"[EditorAgent] Output (Attempt {attempts + 1}): {editor_resp.content}")
-            
-            edit_result = self.safe_json_parse(editor_resp.content)
-            editor_history.append({
-                "input": eval_payload,
-                "output": edit_result,
+            reasoning = eval_result.get("reasoning", "")
+            error = eval_result.get("error", None)
+
+            eval_history.append({
+                "output": {
+                    "score": score,
+                    "reasoning": reasoning,
+                    "error": error
+                },
                 "attempt": attempts + 1
             })
-            current_answer = edit_result.get("answer", current_answer)
-            
+
+            if error is None and score >= 1.0 or attempts == max_attempts - 1:
+                break
+
+            editor_payload = {
+                "question": question,
+                "previous_answer": current_answer,
+                "contexts": contexts,
+                "score": score,
+                "reasoning": reasoning
+            }
+
+            logging.info(f"[EditorAgent] Input (Attempt {attempts + 1}): {json.dumps(editor_payload)}")
+            editor_resp = await self.send_message(Message(content=json.dumps(editor_payload)), self.editor_agent_id)
+            logging.info(f"[EditorAgent] Output (Attempt {attempts + 1}): {editor_resp.content}")
+
+            editor_result = self.safe_json_parse(editor_resp.content)
+            new_answer = editor_result.get("answer", current_answer)
+            editor_error = editor_result.get("error", None)
+
+            editor_history.append({
+                "output": {
+                    "answer": new_answer,
+                    "error": editor_error
+                },
+                "attempt": attempts + 1
+            })
+
+            current_answer = new_answer
             attempts += 1
-        
+
         return current_answer, eval_history, editor_history

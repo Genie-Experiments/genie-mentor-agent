@@ -6,7 +6,7 @@ from autogen_ext.models.openai import OpenAIChatCompletionClient
 from autogen_core.models import UserMessage
 
 from ..prompts.prompts import GITHUB_QUERY_PROMPT, NOTION_QUERY_PROMPT
-from ..prompts.dummy_data import dummy_data_1
+from ..prompts.dummy_data import dummy_data_1,dummy_data_2
 from ..source_agents.knowledgebaserag.knowledgebaserag import query_knowledgebase
 from ..protocols.message import Message
 from ..prompts.prompts import GENERATE_AGGREAGATED_ANSWER
@@ -83,8 +83,7 @@ class ExecutorAgent(RoutedAgent):
         q = query_components[qid]
         sub_query = q["sub_query"]
         source = q.get("source")  
-        """ if source == "knowledgebase":
-            source = "github" """
+        source = "knowledgebase"
 
         logging.info(f"Executing sub-query from source: {source}")
        
@@ -92,10 +91,14 @@ class ExecutorAgent(RoutedAgent):
             
             if source == "knowledgebase":
                 logging.info(f"[{qid}] Querying Knowledgebase: {sub_query}")
-                response = query_knowledgebase(sub_query)
+                '''
+                response = query_knowledgebase(sub_query)'''
+                response=dummy_data_1
+
             
             elif source == "notion":
                 logging.info(f"[{qid}] Querying Notion")
+                '''
                 prompt = NOTION_QUERY_PROMPT.format(sub_query=sub_query)
                 response_message = await self.send_message(
                     Message(content=prompt),
@@ -104,23 +107,36 @@ class ExecutorAgent(RoutedAgent):
                 content = response_message.content.replace('\n', '\\n').replace('\r', '\\r')
 
                 response = json.loads(response_message.content)
+                '''
+                response=dummy_data_1
+
 
             elif source == "websearch":
                 logging.info(f"[{qid}] Querying WebRAG")
+                
+                
+                '''
                 response_message = await self.send_message(
                     Message(content=sub_query),
                     self.webrag_agent_id
                 )
                 response = json.loads(response_message.content)
+                '''
+               
+                response=dummy_data_1
+                
 
             elif source == "github":
                 logging.info(f"[{qid}] Querying GitHub")
+                '''
                 prompt = GITHUB_QUERY_PROMPT.format(sub_query=sub_query)
                 response_message = await self.send_message(
                     Message(content=prompt),
                     self.github_workbench_agent_id
                 )
                 response = json.loads(response_message.content)
+                '''
+                response=dummy_data_2
 
             else:
                 raise ValueError(f"Unknown source: {source}")
@@ -129,12 +145,6 @@ class ExecutorAgent(RoutedAgent):
             if "sources" in response:
                 self._sources_used.extend(response["sources"])
             
-
-
-            #if "_sources_used" in dummy_data_1:
-            #  self._sources_used.extend(dummy_data_1["sources"])
-           
-            # return dummy_data_1
             return response
 
         except Exception as e:
