@@ -28,18 +28,22 @@ const WelcomeScreen: React.FC = () => {
             Welcome to
           </p>
           <h1 className="text-[#002835] font-['Inter'] text-[54px] font-bold">
+            Genie AI Mentor Agent
           </h1>
         </div>
-        
+
+        {/* Start text */}
         <p className="text-[#002835] text-center font-['Inter'] text-[22px] font-normal mb-8">
           Start by asking a question
         </p>
 
+        {/* Input field */}
         <div className="mt-[34px]">
           <InputField onSubmit={handleQuestionSubmit} />
         </div>
       </div>
 
+      {/* Predefined questions at the bottom */}
       <div className="w-full mt-auto">
         <p className="text-[#002835] text-center font-['Inter'] text-[18px] font-normal mb-6">
           Or try predefined questions provided below
