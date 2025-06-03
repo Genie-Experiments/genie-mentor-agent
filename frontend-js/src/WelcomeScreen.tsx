@@ -14,10 +14,9 @@ const WelcomeScreen: React.FC = () => {
     "What concepts should I start with?",
     "Show me the learning path"
   ];  return (    <div className="flex flex-col items-center justify-between h-full py-8 pb-12">     
-      {/* Empty space at the top - smaller than before */}
+  
       <div className="flex-grow-0 h-16"></div>
-      
-      {/* Logo section */}
+z
       <div className="w-full flex justify-center">
         <div className="w-40 h-40 flex items-center justify-center">
           <img src={genieLogo} alt="Genie Logo" className="w-full h-full object-contain" />
