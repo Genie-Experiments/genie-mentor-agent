@@ -1,11 +1,9 @@
-import './App.css'
-import Sidebar from './components/shared/Sidebar'
-import WelcomeScreen from './WelcomeScreen'
+import './App.css';
+import Sidebar from './components/shared/Sidebar';
+import WelcomeScreen from './WelcomeScreen';
 
 function App() {
-  const sampleConversations = [
-    { id: '1', title: 'Machine learning algorithms' },
-  ]
+  const sampleConversations = [{ id: '1', title: 'Machine learning algorithms' }];
 
   return (
     <div className="flex h-screen w-full overflow-hidden">
@@ -14,7 +12,7 @@ function App() {
         <WelcomeScreen />
       </div>
     </div>
-  )
+  );
 }
 
-export default App
+export default App;

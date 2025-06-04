@@ -8,9 +8,11 @@ Currently, two official plugins are available:
 - [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
 
 ## Professional Enhancements
+
 This project uses industry-standard tools such as ESLint with type-checked configurations, Fast Refresh via [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react) or [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc), ensuring quality and efficiency in development.
 
 ## Node Setup
+
 Ensure you have Node.js (version 14 or later) installed. Download it from [nodejs.org](https://nodejs.org) and verify the installation with `node -v`.
 
 ## Expanding the ESLint configuration
@@ -34,15 +36,15 @@ export default tseslint.config({
       tsconfigRootDir: import.meta.dirname,
     },
   },
-})
+});
 ```
 
 You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
 
 ```js
 // eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+import reactX from 'eslint-plugin-react-x';
+import reactDom from 'eslint-plugin-react-dom';
 
 export default tseslint.config({
   plugins: {
@@ -56,16 +58,19 @@ export default tseslint.config({
     ...reactX.configs['recommended-typescript'].rules,
     ...reactDom.configs.recommended.rules,
   },
-})
+});
 ```
 
 ## Getting Started
+
 1. Install dependencies: `npm install`
 2. Run the development server: `npm run dev`
 3. Build for production: `npm run build`
 
 ## Contributing
+
 We welcome contributions. Please ensure:
+
 - Code follows our style guidelines.
 - All tests pass.
 - Relevant documentation is updated.
