@@ -61,14 +61,14 @@ async def initialize_agent() -> None:
                 )
                 await WorkbenchAgent.register(RUNTIME, 'notion_workbench_agent',
                     factory=lambda: WorkbenchAgent(
-                        model_client=OpenAIChatCompletionClient(model="gpt-4.1-nano"),
+                        model_client=OpenAIChatCompletionClient(model="gpt-4o"),
                         model_context=BufferedChatCompletionContext(buffer_size=10),
                         workbench=notion_workbench,
                     ),
                 )
                 await WorkbenchAgent.register(RUNTIME, 'github_workbench_agent',
                     factory=lambda: WorkbenchAgent(
-                        model_client=OpenAIChatCompletionClient(model="gpt-4.1-nano"),
+                        model_client=OpenAIChatCompletionClient(model="gpt-4o"),
                         model_context=BufferedChatCompletionContext(buffer_size=10),
                         workbench=github_workbench,
                     ),
