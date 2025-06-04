@@ -1,71 +1,94 @@
 import json
 import os
+import time
 from autogen_core import MessageContext, RoutedAgent, message_handler
 from autogen_core.models import UserMessage
-from autogen_ext.models.openai import OpenAIChatCompletionClient
+from groq import Groq
 from pydantic import ValidationError
-from ..protocols.planner_schema import QueryPlan
-from ..protocols.message import Message, RefinerOutput
-from ..prompts.prompts import REFINEMENT_NEEDED_PROMPT, REFINE_PLAN_PROMPT
+from ..protocols.planner_schema import QueryPlan, RefinerOutput
+from ..protocols.message import Message
+from ..prompts.prompts import REFINEMENT_NEEDED_PROMPT
+from ..utils.parsing import _extract_json_with_regex
+import logging
 
 class PlannerRefinerAgent(RoutedAgent):
     def __init__(self) -> None:  
         super().__init__('planner_refiner_agent')
-        self.model_client = OpenAIChatCompletionClient(
-            model='gpt-4o',
-            api_key=os.getenv('OPENAI_API_KEY')
-        )
+        self.client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+        self.model = "meta-llama/llama-4-scout-17b-16e-instruct"
+
     @message_handler
     async def handle_plan_message(self, message: Message, ctx: MessageContext) -> Message:
-        # Step 1: Validate incoming JSON
+        start_time = time.time()
         try:
-            parsed_plan = QueryPlan.model_validate_json(message.content)
+            # Parse the incoming message content
+            content = json.loads(message.content)
+            plan = content.get('plan', content)  # Handle both direct plan and wrapped plan
+            
+            # Validate the plan
+            parsed_plan = QueryPlan.model_validate(plan)
+            
+            # Get feedback on the plan
+            feedback = await self.get_plan_feedback(json.dumps(plan))
+            
+            # Calculate execution time
+            execution_time_ms = int((time.time() - start_time) * 1000)
+            
+            # Create refiner output
+            refiner_output = RefinerOutput(
+                execution_time_ms=execution_time_ms,
+                refinement_required=feedback["refinement_required"],
+                feedback_summary=feedback["feedback_summary"],
+                feedback_reasoning=feedback["feedback_reasoning"],
+                error=None
+            )
+            
+            return Message(content=refiner_output.model_dump_json())
+            
         except ValidationError as e:
             error_msg = f"Invalid QueryPlan format: {e}"
-            print("[ERROR]", error_msg)
-            return Message(content=json.dumps({"error": error_msg}))
+            logging.error(error_msg)
+            return Message(content=json.dumps({
+                "execution_time_ms": int((time.time() - start_time) * 1000),
+                "refinement_required": "no",
+                "feedback_summary": "Invalid plan format",
+                "feedback_reasoning": [str(e)],
+                "error": error_msg
+            }))
+        except Exception as e:
+            logging.error(f"Error processing plan: {str(e)}")
+            return Message(content=json.dumps({
+                "execution_time_ms": int((time.time() - start_time) * 1000),
+                "refinement_required": "no",
+                "feedback_summary": "Error processing plan",
+                "feedback_reasoning": [str(e)],
+                "error": str(e)
+            }))
 
-        # Step 2: Determine if refinement is needed
-        refinement_needed = await self.check_if_refinement_needed(message.content)
-        if refinement_needed:
-            print("[INFO] Refinement needed. Proceeding to refine.")
-            raw_str = await self.refine_plan(message.content)
-            result = RefinerOutput.model_validate_json(raw_str)
-        else:
-            print("[INFO] No refinement needed.")
-            result = RefinerOutput(
-                refined_plan=message.content,
-                feedback="No changes needed.",
-                original_plan=message.content,
-                changes_made=["No changes required"]
-            )
-        
-        print(f"[DEBUG] Refined plan: {result.refined_plan}")
-        
-        
-        return Message(content=json.dumps({
-            "refined_plan": result.refined_plan,
-            "original_plan": result.original_plan,
-            "feedback": result.feedback,
-            "changes_made": result.changes_made
-        }))
-
-    async def check_if_refinement_needed(self, plan_json: str) -> bool:
+    async def get_plan_feedback(self, plan_json: str) -> dict:
         prompt = REFINEMENT_NEEDED_PROMPT.format(plan_json=plan_json)
-
-        response = await self.model_client.create(
-            messages=[UserMessage(content=prompt, source="planner_agent")],
-        )
-        content = response.content.strip().lower()
-        return content.startswith("yes")
-
-    async def refine_plan(self, plan_json: str) -> RefinerOutput:
-      
         
-        prompt = REFINE_PLAN_PROMPT.format(plan_json=plan_json)
-
-        response = await self.model_client.create(
-            messages=[UserMessage(content=prompt, source="planner_agent")],
-            json_output=RefinerOutput
+        response = self.client.chat.completions.create(
+            messages=[{"role": "user", "content": prompt}],
+            model=self.model
         )
-        return response.content
+        
+        try:
+            # Parse the response to get feedback
+            content = response.choices[0].message.content
+            logging.debug(f"Debug groq feedback: {content}")
+            feedback = _extract_json_with_regex(content)
+            return {
+                "refinement_required": feedback.get("refinement_required", "no"),
+                "feedback_summary": feedback.get("feedback_summary", ""),
+                "feedback_reasoning": feedback.get("feedback_reasoning", [])
+            }
+        except Exception as e:
+            logging.error(f"Failed to parse feedback: {e}")
+            # If response is not JSON, try to parse yes/no from text
+            content = response.choices[0].message.content.strip().lower()
+            return {
+                "refinement_required": "yes" if content.startswith("yes") else "no",
+                "feedback_summary": "Basic feedback based on yes/no response",
+                "feedback_reasoning": [content]
+            }

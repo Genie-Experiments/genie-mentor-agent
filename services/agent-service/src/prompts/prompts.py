@@ -4,6 +4,9 @@ You are a Planner Agent responsible for generating a structured query plan from 
 ---
 USER QUERY:
 {user_query}
+
+FEEDBACK:
+{feedback}
 ---
 
 ### Your Tasks:
@@ -69,19 +72,33 @@ USER QUERY:
 
 5. **Do not assign more than two sub-queries**, and therefore, limit to **two data sources max**.
 
+### Feedback Incorporation:
+
+If feedback is provided, You MUST make concrete changes to the plan based on the feedback
+1. Review each feedback point and make necessary adjustments
+2. Always explain how you incorporated the feedback in the "feedback_incorporation" field
+
 ### Chain of Thought Process:
 
 Before generating the final output, think through these steps:
 
 1. Analyze the user query to understand its main components and requirements
-2. Determine if the query can be answered by a single data source
-3. Only if necessary, consider if the query has two distinct aspects that require different data sources
-4. For each potential sub-query:
+2. Consider any feedback provided and incorporate it into your analysis
+3. Determine if the query can be answered by a single data source
+4. Only if necessary, consider if the query has two distinct aspects that require different data sources
+5. For each potential sub-query:
    - Evaluate which data source would be most appropriate
    - Explain why that source is the best choice
    - Consider if any other sources could provide complementary information
-5. Determine the execution order and aggregation strategy
-6. Document your reasoning process in the "think" field
+6. Determine the execution order and aggregation strategy
+7. Document your reasoning process in the "think" field
+
+### Aggregation Strategies:
+
+The execution_order.aggregation field must be one of these three values:
+1. "combine_and_summarize": Use when you want to merge and summarize results from multiple sources
+2. "sequential": Use when sub-queries need to be executed in a specific order
+3. "parallel": Use when sub-queries can be executed independently
 
 ---
 
@@ -108,13 +125,14 @@ Respond ONLY with a well-formatted JSON object using the schema below:
   "execution_order": {{
     "nodes": ["q1", "q2"],
     "edges": [],
-    "aggregation": "combine_and_summarize"
+    "aggregation": "combine_and_summarize" | "sequential" | "parallel"  // Only these three values are allowed
   }},
   "think": {{
     "query_analysis": "Analysis of the main query components and requirements",
     "sub_query_reasoning": "Explanation of why sub-queries are needed or not needed",
     "source_selection": "Detailed reasoning for each data source selection",
-    "execution_strategy": "Explanation of the chosen execution order and aggregation strategy"
+    "execution_strategy": "Explanation of the chosen execution order and aggregation strategy",
+    
   }}
 }}
 
@@ -131,23 +149,38 @@ Respond ONLY with a well-formatted JSON object using the schema below:
 - Do not invent new sources or fields
 - Always include detailed reasoning in the "think" field
 - Match the query type with the appropriate data source based on the examples provided
+- If feedback is provided, carefully consider and incorporate it into your plan
 '''
 
 
 
 REFINEMENT_NEEDED_PROMPT = """
 You are a refinement detector. A query plan is given below.
-
-Determine whether it needs refinement in terms of:
-- redundant or missing data sources (only use 'knowledgebase' or 'notion')
-- ambiguous execution order
-- unclear intent or subqueries
-- inappropriate aggregation strategy
-
 Plan:
 {plan_json}
+Available data sources: ["knowledgebase", "notion", "github", "websearch"]
+Analyze the plan and determine if it needs refinement in terms of:
+- data sources (should only use the available data sources listed above)
+- unnecessary subqueries
 
-Respond with one word only: "Yes" or "No"
+
+
+
+Respond with a JSON object in this exact format:
+{{
+    "refinement_required": "yes" or "no",
+    "feedback_summary": "Brief summary of the main issues found",
+    "feedback_reasoning": "Detailed reason for why the plan needs refinement."
+      
+    
+}}
+If refinement is not needed, respond with:
+{{
+    "refinement_required": "no",
+    "feedback_summary": "No issues found with the plan.",
+    "feedback_reasoning": "Why you think refinement is not needed"
+}}
+
 """
 
 
@@ -194,6 +227,8 @@ Reply with a JSON object:
 """
 
 
+
+
 GENERATE_AGGREAGATED_ANSWER = '''
 You are an assistant tasked with aggregating results fetched from multiple sources in response to a user query.
 When aggregating the results, ensure they are relevant to the user's query and follow the given aggregation strategy.
@@ -213,35 +248,6 @@ Instructions:
 '''
 
 
-EDITOR_PROMPT = """
-You are an **Editor** tasked with improving the factual accuracy of a given answer based on the provided context and evaluation feedback.
-
-### Question
-{question}
-
-### Context
-{contexts}
-
-### Current Answer
-{previous_answer}
-
-### Evaluation Score
-{score}
-
-### Evaluation Reasoning
-{reasoning}
-
-### Instructions
-- Use the context to improve factual correctness.
-- Do not invent facts not supported by the context.
-- Only fix what's necessary, retain original structure if valid.
-- Output the result strictly in the following JSON format:
-
-```json
-{{
-  "edited_answer": "<your improved answer here>"
-}}
-"""
 
 
 response_generation_prompt = """
@@ -333,31 +339,32 @@ If there is an error or if you cannot find relevant information, respond with:
 
 SHORT_GITHUB_PROMPT = '''
 You are a GitHub Query Agent tasked with exploring repositories in the 'Genie-Experiments' organization to answer the user's sub-query.
+
 Sub-query:
 "{sub_query}"
-Only use the following repos: 
-https://github.com/Genie-Experiments/rag_vs_llamaparse,
-https://github.com/Genie-Experiments/Ragas-agentic-testing
-https://github.com/Genie-Experiments/agentic-rag
 
-First analyze and decide which repository would be relevant to answer the user query. Using the 'get_file_contents' tool with a "/" for path will get you files in root dir. Use this information to get repo structure. If you get a 404 error, ignore that repository
- Then for each selected one:
-Carefully analyze the repository structure, code files, and documentation to extract relevant information.
-Include code in your final response, in the "answer" key.
-Extract content from relevant files, maintaining file path first, and then use the content to answer the sub-query.
-\Your response must be always be ONLY a JSON object with this exact structure, no other text:
+Goal:
+- Get all repositories from the organization. They will always include relevant code snippets in them. Use repo names to identify which repos to search in.
+- Provide a comprehensive, educational answer with examples and explanations, and code snippets.
+- Prioritize searching code. Mention the files you attempt to retrieve in the response trace
+
+Response Format:
+Always respond with a JSON object in this structure:
 
 {{
-  "answer": "<comprehensive, detailed answer to the sub-query with educational context, including code examples and explanations>",
-  "sources": [<Links to the relevant repositories>],
-  "context": "<detailed technical context retrieved from the repositories, including code snippets, architectural insights, implementation patterns, and any experimental features discovered>"
+  "answer": "<detailed answer to the sub-query with examples and explanations>",
+  "sources": [<Links to relevant repositories>],
+  "context": "<technical context retrieved from repositories>"
 }}
-Error Response:
+
+If error, respond with:
 
 {{  
   "answer": "Unable to find relevant information for the sub-query from GitHub.",
+  "error": reason for failure,
   "sources": [],
-  "context": <any data retrieved from tools>,
+  "context": "",
+  "trace": "<steps taken, list of code_search calls, file retrieval attempts, and their responses>"
 }}
 '''
 

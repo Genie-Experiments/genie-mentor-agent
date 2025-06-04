@@ -2,7 +2,7 @@ import json
 import os
 from typing import Any, Dict,Optional
 from autogen_core import AgentId, MessageContext, RoutedAgent, message_handler
-from autogen_ext.models.openai import OpenAIChatCompletionClient
+from groq import Groq
 from autogen_core.models import UserMessage
 
 from ..prompts.prompts import GITHUB_QUERY_PROMPT, NOTION_QUERY_PROMPT, SHORT_GITHUB_PROMPT
@@ -31,16 +31,14 @@ class ExecutorAgent(RoutedAgent):
         self.github_workbench_agent_id = github_workbench_agent_id
         self.webrag_agent_id = webrag_agent_id
         self.kb_agent_id = kb_agent_id
-        self.model_client = OpenAIChatCompletionClient(
-            model="gpt-4o",
-            api_key=os.getenv("OPENAI_API_KEY")
-        )
+        self.client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+        self.model = "meta-llama/llama-4-scout-17b-16e-instruct"
 
     @message_handler
     async def handle_query_plan(self, message: Message, ctx: MessageContext) -> Message:
         try:
             content = json.loads(message.content)
-            plan = json.loads(content.get('refined_plan', message.content))
+            plan = content.get('plan', content)  # Handle both direct plan and wrapped plan
 
             query_components = {q["id"]: q for q in plan["query_components"]}
             execution_order = plan["execution_order"]
@@ -135,7 +133,7 @@ class ExecutorAgent(RoutedAgent):
                         "sources": []
                     }
                 '''
-                response=dummy_data_1
+               # response = dummy_data_1
 
             elif source == "websearch":
               
@@ -145,8 +143,6 @@ class ExecutorAgent(RoutedAgent):
                     self.webrag_agent_id
                 )
                 response = json.loads(response_message.content)
-                
-                #response=dummy_data_1
                 
 
             elif source == "github":
@@ -167,7 +163,7 @@ class ExecutorAgent(RoutedAgent):
                         "sources": []
                     }
                 '''
-                response=dummy_data_2
+                #response = dummy_data_2
 
             else:
                 raise ValueError(f"Unknown source: {source}")
@@ -196,14 +192,15 @@ class ExecutorAgent(RoutedAgent):
         )
 
         logging.info("Sending aggregation prompt to model.")
-        response = await self.model_client.create(
-            messages=[UserMessage(content=prompt, source=self.id.key)],
+        response = self.client.chat.completions.create(
+            messages=[{"role": "user", "content": prompt}],
+            model=self.model
         )
 
-        response_text = response.content.strip()
+        content = response.choices[0].message.content
 
         try:
-            result = _extract_json_with_regex(response_text)
+            result = _extract_json_with_regex(content)
             logging.info("Extracted and parsed aggregated answer successfully.")
             return {
                 "combined_answer_of_sources": result["answer"],
@@ -211,5 +208,5 @@ class ExecutorAgent(RoutedAgent):
         except Exception as e:
             logging.warning(f"Failed to parse structured JSON: {e}")
             return {
-                "combined_answer_of_sources": response.content,
+                "combined_answer_of_sources": content,
             }

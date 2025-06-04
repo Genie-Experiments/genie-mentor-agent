@@ -1,4 +1,4 @@
-from typing import List, Literal
+from typing import List, Literal, Optional
 from pydantic import BaseModel
 
 class QueryComponent(BaseModel):
@@ -24,3 +24,16 @@ class QueryPlan(BaseModel):
     query_components: List[QueryComponent]
     execution_order: ExecutionOrder
     think: Think
+
+class RefinerFeedback(BaseModel):
+    refinement_required: Literal["yes", "no"]
+    feedback_summary: str
+    feedback_reasoning: List[str]
+    error: Optional[str] = None
+
+class RefinerOutput(BaseModel):
+    execution_time_ms: int
+    refinement_required: Literal["yes", "no"]
+    feedback_summary: str
+    feedback_reasoning: List[str]
+    error: Optional[str] = None

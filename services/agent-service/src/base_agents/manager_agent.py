@@ -87,18 +87,69 @@ class ManagerAgent(RoutedAgent):
         }
         
         try:
+            # Initial plan generation
             logging.info(f"[PlannerAgent] Input: {user_query}")
             plan = await self.send_message(Message(content=user_query), self.planner_agent_id)
             logging.info(f"[PlannerAgent] Output: {plan.content}")
-            self.trace_info['planner_output'] = self.safe_json_parse(plan.content)
+            plan_data = self.safe_json_parse(plan.content)
+            self.trace_info['planner_output'] = plan_data
             
-            logging.info(f"[PlannerRefinerAgent] Input: {plan.content}")
-            refined = await self.send_message(plan, self.planner_refiner_agent_id)
-            logging.info(f"[PlannerRefinerAgent] Output: {refined.content}")
-            self.trace_info['refiner_output'] = self.safe_json_parse(refined.content)
+            # Feedback loop between planner and refiner
+            max_retries = 3
+            retry_count = 0
+            current_plan = plan_data.get('plan')
             
-            logging.info(f"[ExecutorAgent] Input: {refined.content}")
-            query_result = await self.send_message(refined, self.executor_agent_id)
+            while retry_count < max_retries:
+                # Get feedback from refiner
+                logging.info(f"[PlannerRefinerAgent] Input: {current_plan}")
+                refined = await self.send_message(Message(content=json.dumps(current_plan)), self.planner_refiner_agent_id)
+                logging.info(f"[PlannerRefinerAgent] Output: {refined.content}")
+                refiner_data = self.safe_json_parse(refined.content)
+                self.trace_info['refiner_output'] = refiner_data
+                
+                # If no refinement needed, break the loop
+                if refiner_data.get('refinement_required') == 'no':
+                    break
+                
+                # Get refined plan from planner with feedback
+                logging.info(f"[PlannerAgent] Refining with feedback: {refiner_data}")
+                feedback_payload = {
+                    'query': user_query,
+                    'feedback': {
+                        'refinement_required': refiner_data.get('refinement_required', 'no'),
+                        'feedback_summary': refiner_data.get('feedback_summary', ''),
+                        'feedback_reasoning': refiner_data.get('feedback_reasoning', []),
+                        'current_plan': current_plan
+                    }
+                }
+                
+                # Send feedback to planner and get refined plan
+                plan = await self.send_message(
+                    Message(content=json.dumps(feedback_payload)), 
+                    self.planner_agent_id
+                )
+                logging.info(f"[PlannerAgent] Refined output: {plan.content}")
+                
+                # Parse the new plan
+                plan_data = self.safe_json_parse(plan.content)
+                if 'error' in plan_data:
+                    logging.error(f"Error in planner refinement: {plan_data['error']}")
+                    break
+                    
+                current_plan = plan_data.get('plan')
+                if not current_plan:
+                    logging.error("No plan returned from planner after refinement")
+                    break
+                    
+                retry_count += 1
+                logging.info(f"Refinement attempt {retry_count}/{max_retries}")
+                
+                # Log the refined plan for debugging
+                logging.info(f"Refined plan: {json.dumps(current_plan, indent=2)}")
+            
+            # Execute the final plan
+            logging.info(f"[ExecutorAgent] Input: {current_plan}")
+            query_result = await self.send_message(Message(content=json.dumps(current_plan)), self.executor_agent_id)
             logging.info(f"[ExcutorAgent] Output: {query_result.content}")
             self.trace_info['executor_output'] = self.safe_json_parse(query_result.content)
             
@@ -124,7 +175,6 @@ class ManagerAgent(RoutedAgent):
             self._update_history(session_id, message.content, final_answer)
             
             return Message(content=json.dumps({
-                
                 'trace_info': self.trace_info
             }))
             
