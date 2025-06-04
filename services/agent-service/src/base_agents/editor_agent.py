@@ -1,7 +1,7 @@
 import json
 import os
 from autogen_core import RoutedAgent, MessageContext, message_handler
-from ..prompts.prompts import EDITOR_PROMPT
+from ..prompts.editor_agent_prompt import EDITOR_PROMPT
 from ..protocols.message import Message
 import logging
 from ..utils.parsing import _extract_json_with_regex
@@ -12,7 +12,7 @@ class EditorAgent(RoutedAgent):
     def __init__(self) -> None:
         super().__init__("editor_agent")
         self.client = Groq(api_key=os.getenv("WEBRAG_GROQ_API_KEY"))
-        self.model = "llama3-70b-8192" 
+        self.model = "llama-3.3-70b-versatile" 
 
     @message_handler
     async def fix_answer(self, message: Message, ctx: MessageContext) -> Message:
