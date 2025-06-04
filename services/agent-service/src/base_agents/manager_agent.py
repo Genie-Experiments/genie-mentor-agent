@@ -174,7 +174,7 @@ class ManagerAgent(RoutedAgent):
                 "attempt": attempts + 1
             })
 
-            if error is None and score >= 1.0 or attempts == max_attempts - 1:
+            if error is None and score >= 2.0 or attempts == max_attempts - 1:
                 break
 
             editor_payload = {

@@ -4,7 +4,8 @@ import logging
 from typing import List
 from autogen_core import RoutedAgent, MessageContext, message_handler
 from ..protocols.message import Message
-from uptrain import Evals, EvalLLM
+from uptrain import Evals, EvalLLM, Settings
+
 
 logging.basicConfig(
     level=logging.INFO,  
@@ -18,7 +19,8 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 class EvalAgent(RoutedAgent):
     def __init__(self) -> None:
         super().__init__("eval_agent")
-        self.eval_llm = EvalLLM(openai_api_key=OPENAI_API_KEY)
+        settings = Settings(model="gpt-4o", openai_api_key=OPENAI_API_KEY)
+        self.eval_llm = EvalLLM(settings)
 
     @staticmethod
     def _prepare_input(question: str, answer: str, contexts: List[str]) -> dict:
