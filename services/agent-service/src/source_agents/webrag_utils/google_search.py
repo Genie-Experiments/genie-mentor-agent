@@ -34,6 +34,7 @@ class GoogleSearch:
                 for item in items:
                     title = item.get('title')
                     url = item.get('link')
+                    description = item.get('snippet', '')
                     image_url = None
                     if 'pagemap' in item and 'cse_image' in item['pagemap']:
                         image_data = item['pagemap']['cse_image']
@@ -43,7 +44,8 @@ class GoogleSearch:
                     results.append({
                             'title': title,
                             'url': url,
-                            'image_url': image_url
+                            'image_url': image_url,
+                            'description':description
                         })
             except requests.RequestException as e:
                 print(f"Google Search API call failed: {e}")
@@ -58,6 +60,7 @@ class GoogleSearch:
             results.append({
                 'title': item['title'],
                 'url': item['url'],
+                'description':item['description'],
                 'image_url': item['image_url'],
                 'type': 'general'
             })

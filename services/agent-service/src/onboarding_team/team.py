@@ -13,6 +13,7 @@ from ..source_agents.workbench_agent import WorkbenchAgent
 from ..base_agents.eval_agent import EvalAgent
 from ..base_agents.editor_agent import EditorAgent
 from ..source_agents.webrag_agent import WebRAGAgent
+from ..source_agents.knowledgebase_agent import KBAgent
 from ..base_agents.manager_agent import ManagerAgent
 import logging
 logging.basicConfig(
@@ -29,6 +30,7 @@ GITHUB_WORKBENCH_AGENT_ID = AgentId('github_workbench_agent', 'default')
 EVAL_AGENT_ID   = AgentId("eval_agent",   "default")
 EDITOR_AGENT_ID = AgentId("editor_agent", "default")
 WEBRAG_AGENT_ID = AgentId("webrag_agent", "default")
+KB_AGENT_ID = AgentId("kb_agent", "default")
 MANAGER_AGENT_ID = AgentId('manager_agent', 'default')
 
 agent_initialized = False
@@ -56,7 +58,8 @@ async def initialize_agent() -> None:
                     lambda: ExecutorAgent(
                         notion_workbench_agent_id=NOTION_WORKBENCH_AGENT_ID,
                         github_workbench_agent_id=GITHUB_WORKBENCH_AGENT_ID,
-                        webrag_agent_id=WEBRAG_AGENT_ID
+                        webrag_agent_id=WEBRAG_AGENT_ID,
+                        kb_agent_id=KB_AGENT_ID
                     )
                 )
                 await WorkbenchAgent.register(RUNTIME, 'notion_workbench_agent',
@@ -74,6 +77,7 @@ async def initialize_agent() -> None:
                     ),
                 )
                 await WebRAGAgent.register(RUNTIME, 'webrag_agent', WebRAGAgent)
+                await KBAgent.register(RUNTIME, 'kb_agent', KBAgent)
 
                 await EvalAgent.register(RUNTIME, 'eval_agent',   EvalAgent)
                 await EditorAgent.register(RUNTIME, 'editor_agent', EditorAgent)

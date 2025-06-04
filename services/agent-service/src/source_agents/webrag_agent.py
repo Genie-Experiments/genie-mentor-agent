@@ -7,7 +7,7 @@ from .webrag_utils.data_scrapper import DataScraper
 from .webrag_utils.google_search import GoogleSearch
 from .webrag_utils.config import (
     GROQ_API_KEY, GOOGLE_API_KEY, GOOGLE_CX,
-    LLM_DEFAULT_MODEL, TOP_K_URLS
+    LLM_DEFAULT_MODEL, TOP_K
 )
 from ..prompts.prompts import response_generation_prompt
 import logging
@@ -27,11 +27,12 @@ class WebRAGAgent(RoutedAgent):
     def fetch_urls(self, query):
         results = self.google_search.search(
             query=query,
-            max_general_results=TOP_K_URLS,
+            max_general_results=TOP_K,
             max_video_results=0,
             include_videos=False
         )
-        return [result['url'] for result in results[:TOP_K_URLS]]
+        return results[:TOP_K]
+
 
     def rag_pipeline(self, query, urls):
         logging.info("SCRAPPING DATA FROM URLS")
@@ -56,19 +57,26 @@ class WebRAGAgent(RoutedAgent):
         try:
             loop = asyncio.get_event_loop()
             logging.info("Fetching URLs")
-            urls = await loop.run_in_executor(None, self.fetch_urls, query)
+            metadata = await loop.run_in_executor(None, self.fetch_urls, query)
+            urls = [item.get("url") for item in metadata if item.get("url")]
             logging.info("BUILDING RAG OVER WEB URLS")
             answer, context = await loop.run_in_executor(None, self.rag_pipeline, query, urls)
             return Message(content=json.dumps({
                 "answer": answer,
                 "sources": [context],
-                "web_search_urls":urls,
-                "error":None
+                "metadata": [
+                    {
+                        "title": item.get("title"),
+                        "url": item.get("url"),
+                        "description": item.get("description")
+                    } for item in metadata
+                ],
+                "error": None
             }))
         except Exception as e:
             return Message(content=json.dumps({
                 "answer": "An error occured while processing Query from WebSearch",
                 "sources": [],
-                "web_search_urls":[],
+                "metadata":[],
                 "error":str(e)
             }))

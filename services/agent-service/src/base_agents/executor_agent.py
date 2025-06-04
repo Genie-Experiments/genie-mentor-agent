@@ -7,7 +7,6 @@ from autogen_core.models import UserMessage
 
 from ..prompts.prompts import GITHUB_QUERY_PROMPT, NOTION_QUERY_PROMPT, SHORT_GITHUB_PROMPT
 from ..prompts.dummy_data import dummy_data_1,dummy_data_2
-from ..source_agents.knowledgebaserag.knowledgebaserag import query_knowledgebase
 from ..protocols.message import Message
 from ..prompts.prompts import GENERATE_AGGREAGATED_ANSWER
 from ..utils.parsing import _extract_json_with_regex, extract_json_with_brace_counting
@@ -25,11 +24,13 @@ logging.getLogger("autogen_core.events").setLevel(logging.WARNING)
 class ExecutorAgent(RoutedAgent):
     def __init__(self, notion_workbench_agent_id: AgentId, 
                  github_workbench_agent_id: AgentId, 
-                 webrag_agent_id: AgentId) -> None:
+                 webrag_agent_id: AgentId,
+                 kb_agent_id:AgentId) -> None:
         super().__init__("executor_agent")
         self.notion_workbench_agent_id = notion_workbench_agent_id
         self.github_workbench_agent_id = github_workbench_agent_id
         self.webrag_agent_id = webrag_agent_id
+        self.kb_agent_id = kb_agent_id
         self.model_client = OpenAIChatCompletionClient(
             model="gpt-4o",
             api_key=os.getenv("OPENAI_API_KEY")
@@ -44,6 +45,7 @@ class ExecutorAgent(RoutedAgent):
             query_components = {q["id"]: q for q in plan["query_components"]}
             execution_order = plan["execution_order"]
             self._sources_used = []
+            self._sources_documents = {}
             results = {}
 
             for qid in execution_order["nodes"]:
@@ -52,26 +54,43 @@ class ExecutorAgent(RoutedAgent):
                 results[qid] = result
                 logging.info(f"Result for {qid}: {result}")
 
+            if len(execution_order["nodes"]) == 1:
+                single_result = results[execution_order["nodes"][0]]
+                top_documents = []
+                for source, docs in self._sources_documents.items():
+                    top_documents.extend(docs[:5])
+
+                return Message(content=json.dumps({
+                    "combined_answer_of_sources": single_result["answer"],
+                    "top_documents": top_documents,
+                    "all_documents": [
+                        doc for docs in self._sources_documents.values() for doc in docs
+                    ],
+                    "documents_by_source": self._sources_documents
+                }))
+
             logging.info("Combining answers from all data sources.")
             combined_execution_results = await self._combine_answer_from_sources(
                 plan["user_query"],
                 results,
                 strategy=execution_order.get("aggregation")
             )
-            web_urls = []
-            for result in results.values():
-                if isinstance(result, dict):
-                    web_urls.extend(result.get("web_search_urls", []))
-           
+
+            top_documents = []
+            for source, docs in self._sources_documents.items():
+                top_documents.extend(docs[:5])  
+            all_documents = [
+                doc 
+                for docs in self._sources_documents.values() 
+                for doc in docs
+            ]
+
             logging.info("Returning combined results.")
-
-
             return Message(content=json.dumps({
                 "combined_answer_of_sources": combined_execution_results["combined_answer_of_sources"],
-                "top_documents": self._sources_used,
-                "web_search_urls": web_urls
-
-
+                "top_documents": top_documents,
+                "all_documents": all_documents,
+                "documents_by_source": self._sources_documents
             }))
 
         except Exception as e:
@@ -83,17 +102,20 @@ class ExecutorAgent(RoutedAgent):
         q = query_components[qid]
         sub_query = q["sub_query"]
         source = q.get("source")  
-        #source = "knowledgebase"
 
         logging.info(f"Executing sub-query from source: {source}")
        
         try:
             
             if source == "knowledgebase":
+                
                 logging.info(f"[{qid}] Querying Knowledgebase: {sub_query}")
-                '''
-                response = query_knowledgebase(sub_query)'''
-                response=dummy_data_1
+                response_message = await self.send_message(
+                    Message(content=sub_query),
+                    self.kb_agent_id
+                )
+                response = json.loads(response_message.content)
+                #response=dummy_data_1
 
             
             elif source == "notion":
@@ -116,18 +138,15 @@ class ExecutorAgent(RoutedAgent):
                 response=dummy_data_1
 
             elif source == "websearch":
+              
                 logging.info(f"[{qid}] Querying WebRAG")
-                
-                
-                '''
                 response_message = await self.send_message(
                     Message(content=sub_query),
                     self.webrag_agent_id
                 )
                 response = json.loads(response_message.content)
-                '''
-               
-                response=dummy_data_1
+                
+                #response=dummy_data_1
                 
 
             elif source == "github":
@@ -155,7 +174,12 @@ class ExecutorAgent(RoutedAgent):
 
           
             if "sources" in response:
-                self._sources_used.extend(response["sources"])
+                source_docs = response["sources"]
+                
+                if source not in self._sources_documents:
+                    self._sources_documents[source] = []
+                
+                self._sources_documents[source].extend(source_docs)
             
             return response
 
