@@ -83,7 +83,7 @@ class ExecutorAgent(RoutedAgent):
         q = query_components[qid]
         sub_query = q["sub_query"]
         source = q.get("source")  
-        source = "knowledgebase"
+        #source = "knowledgebase"
 
         logging.info(f"Executing sub-query from source: {source}")
        
@@ -98,7 +98,7 @@ class ExecutorAgent(RoutedAgent):
             
             elif source == "notion":
                 logging.info(f"[{qid}] Querying Notion")
-                
+                '''
                 prompt = NOTION_QUERY_PROMPT.format(sub_query=sub_query)
                 response_message = await self.send_message(
                     Message(content=prompt),
@@ -112,6 +112,8 @@ class ExecutorAgent(RoutedAgent):
                         "answer": response_message.content.strip(),
                         "sources": []
                     }
+                '''
+                response=dummy_data_1
 
             elif source == "websearch":
                 logging.info(f"[{qid}] Querying WebRAG")
@@ -129,7 +131,9 @@ class ExecutorAgent(RoutedAgent):
                 
 
             elif source == "github":
+                
                 logging.info(f"[{qid}] Querying GitHub")
+                '''
                 prompt = SHORT_GITHUB_PROMPT.format(sub_query=sub_query)
                 response_message = await self.send_message(
                     Message(content=prompt),
@@ -143,6 +147,8 @@ class ExecutorAgent(RoutedAgent):
                         "answer": response_message.content.strip(),
                         "sources": []
                     }
+                '''
+                response=dummy_data_2
 
             else:
                 raise ValueError(f"Unknown source: {source}")
