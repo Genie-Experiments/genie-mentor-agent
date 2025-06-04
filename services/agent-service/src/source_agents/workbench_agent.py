@@ -47,9 +47,9 @@ class WorkbenchAgent(RoutedAgent):
         while isinstance(create_result.content, list) and all(
             isinstance(call, FunctionCall) for call in create_result.content
         ):
-            #print("---------Function Calls-----------")
-            #for call in create_result.content:
-             #   print(call)
+            print("---------Function Calls-----------")
+            for call in create_result.content:
+                print(call)
 
             # Add the function calls to the model context.
             await self._model_context.add_message(AssistantMessage(content=create_result.content, source="assistant"))
@@ -62,7 +62,7 @@ class WorkbenchAgent(RoutedAgent):
                     call.name, arguments=json.loads(call.arguments), cancellation_token=ctx.cancellation_token
                 )
                 results.append(result)
-               # print(result)
+                print(result)
 
             # Add the function execution results to the model context.
             await self._model_context.add_message(

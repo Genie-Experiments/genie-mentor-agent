@@ -5,12 +5,12 @@ from autogen_core import AgentId, MessageContext, RoutedAgent, message_handler
 from autogen_ext.models.openai import OpenAIChatCompletionClient
 from autogen_core.models import UserMessage
 
-from ..prompts.prompts import GITHUB_QUERY_PROMPT, NOTION_QUERY_PROMPT
+from ..prompts.prompts import GITHUB_QUERY_PROMPT, NOTION_QUERY_PROMPT, SHORT_GITHUB_PROMPT
 from ..prompts.dummy_data import dummy_data_1,dummy_data_2
 from ..source_agents.knowledgebaserag.knowledgebaserag import query_knowledgebase
 from ..protocols.message import Message
 from ..prompts.prompts import GENERATE_AGGREAGATED_ANSWER
-from ..utils.parsing import _extract_json_with_regex
+from ..utils.parsing import _extract_json_with_regex, extract_json_with_brace_counting
 
 import logging
 logging.basicConfig(
@@ -98,18 +98,20 @@ class ExecutorAgent(RoutedAgent):
             
             elif source == "notion":
                 logging.info(f"[{qid}] Querying Notion")
-                '''
+                
                 prompt = NOTION_QUERY_PROMPT.format(sub_query=sub_query)
                 response_message = await self.send_message(
                     Message(content=prompt),
                     self.notion_workbench_agent_id
                 )
-                content = response_message.content.replace('\n', '\\n').replace('\r', '\\r')
-
-                response = json.loads(response_message.content)
-                '''
-                response=dummy_data_1
-
+                try:
+                    response = extract_json_with_brace_counting(response_message.content.strip())
+                except Exception as e:
+                    logging.warning(f"Failed to parse structured JSON from GitHub response: {e}")
+                    response = {
+                        "answer": response_message.content.strip(),
+                        "sources": []
+                    }
 
             elif source == "websearch":
                 logging.info(f"[{qid}] Querying WebRAG")
@@ -128,15 +130,19 @@ class ExecutorAgent(RoutedAgent):
 
             elif source == "github":
                 logging.info(f"[{qid}] Querying GitHub")
-                '''
-                prompt = GITHUB_QUERY_PROMPT.format(sub_query=sub_query)
+                prompt = SHORT_GITHUB_PROMPT.format(sub_query=sub_query)
                 response_message = await self.send_message(
                     Message(content=prompt),
                     self.github_workbench_agent_id
                 )
-                response = json.loads(response_message.content)
-                '''
-                response=dummy_data_2
+                try:
+                    response = extract_json_with_brace_counting(response_message.content.strip())
+                except Exception as e:
+                    logging.warning(f"Failed to parse structured JSON from GitHub response: {e}")
+                    response = {
+                        "answer": response_message.content.strip(),
+                        "sources": []
+                    }
 
             else:
                 raise ValueError(f"Unknown source: {source}")
