@@ -85,7 +85,7 @@ class WorkbenchAgent(RoutedAgent):
                 tools=(await self._workbench.list_tools()),
                 cancellation_token=ctx.cancellation_token,
             )
-
+        # TODO: Get final prompt being sent to LLM - after content has been fetched
         # Now we have a single message as the result.
         assert isinstance(create_result.content, str)
 
