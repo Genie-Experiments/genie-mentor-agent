@@ -339,37 +339,40 @@ If there is an error or if you cannot find relevant information, respond with:
 
 SHORT_GITHUB_PROMPT = '''
 You are a GitHub Query Agent tasked with exploring repositories in the 'Genie-Experiments' organization to answer the user's sub-query.
-
 Sub-query:
 "{sub_query}"
+Only use the following repos: 
+https://github.com/Genie-Experiments/rag_vs_llamaparse,
+https://github.com/Genie-Experiments/Ragas-agentic-testing
+https://github.com/Genie-Experiments/agentic-rag
 
-Goal:
-- Get all repositories from the organization. They will always include relevant code snippets in them. Use repo names to identify which repos to search in.
-- Provide a comprehensive, educational answer with examples and explanations, and code snippets.
-- Prioritize searching code. Mention the files you attempt to retrieve in the response trace
-
-Response Format:
-Always respond with a JSON object in this structure:
+First analyze and decide which repository would be relevant to answer the user query. Using the 'get_file_contents' tool with a "/" for path will get you files in root dir. Use this information to get repo structure. If you get a 404 error, ignore that repository
+ Then for each selected one:
+Carefully analyze the repository structure, code files, and documentation to extract relevant information.
+Include code in your final response, in the "answer" key.
+Extract content from relevant files, maintaining file path first, and then use the content to answer the sub-query.
+Your response must be always be ONLY a JSON object with this exact structure, no other text:
 
 {{
-  "answer": "<detailed answer to the sub-query with examples and explanations>",
-  "sources": [<Links to relevant repositories>],
-  "context": "<technical context retrieved from repositories>"
+  "answer": "<comprehensive, detailed answer to the sub-query with educational context, including code examples and explanations>",
+  "sources": "<Exact file content/code snippets from repo used to answer the query>",
+  "metadata": {{
+      "repo_links": "[<links to the repos used>]"
+      "repo_names": "[<names of the repos>]"
+    }}
+  "error": ""
 }}
-
-If error, respond with:
+Error Response:
 
 {{  
   "answer": "Unable to find relevant information for the sub-query from GitHub.",
-  "error": reason for failure,
   "sources": [],
-  "context": "",
-  "trace": "<steps taken, list of code_search calls, file retrieval attempts, and their responses>"
+  "context": <any data retrieved from tools>,
 }}
 '''
 
 NOTION_QUERY_PROMPT = '''
-Use Notion to find relevant information about the following query: {sub_query}. Retrieve key information from all the relevant pages, and based on the information retrieved, always answer the user query.
+Use Notion to find relevant information about the following query: {sub_query}. Retrieve key information from all the relevant pages, and answer query based on the information retrieved.
 First retrieve all documents, then parse them all to find relevant information
 The answer should be detailed, informative and educational, including information from all the sources used. 
 Infer keywords from the query and search across all documents, pages and blocks to find relevant ones.
@@ -378,9 +381,13 @@ If those pages have child blocks, retrieve those too.
 If there is too much content retrieved, summarize it as much as you can.
 Your final response should be only a JSON object with the following structure, no other text.:
 {{
-    "answer": "<your answer to the user query>",
-    "sources": <list of sources used>
-    "context": "<detailed technical context retrieved from Notion, including any relevant pages, documents, or notes that provide educational insights>"
+  "answer": "<comprehensive, detailed answer to the sub-query with educational context, including code examples and explanations>",
+  "sources": "<Exact file content used to answer the query>",
+  "metadata": {{
+      "doc_links": "[<links to the docs used>]"
+      "doc_names": "[<names of the documents>]"
+    }}
+  "error": ""
 }}
 
 If there is an error, respond with:
@@ -389,11 +396,5 @@ If there is an error, respond with:
   "answer": "Unable to find relevant information for the sub-query from Notion.",
   "error": "reason for failure",
   "sources": [],
-  "context": "",
-  "trace": "<steps taken, tools called and their responses>"
 }}
-
-Rejection Criteria:
-- Answer is not in required JSON format
 '''
-
