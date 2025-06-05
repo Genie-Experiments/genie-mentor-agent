@@ -34,12 +34,17 @@ class PlannerRefinerAgent(RoutedAgent):
             # Calculate execution time
             execution_time_ms = int((time.time() - start_time) * 1000)
             
+            # Ensure feedback_reasoning is a list
+            feedback_reasoning = feedback.get("feedback_reasoning", [])
+            if isinstance(feedback_reasoning, str):
+                feedback_reasoning = [feedback_reasoning]
+            
             # Create refiner output
             refiner_output = RefinerOutput(
                 execution_time_ms=execution_time_ms,
                 refinement_required=feedback["refinement_required"],
                 feedback_summary=feedback["feedback_summary"],
-                feedback_reasoning=feedback["feedback_reasoning"],
+                feedback_reasoning=feedback_reasoning,
                 error=None
             )
             
@@ -78,10 +83,16 @@ class PlannerRefinerAgent(RoutedAgent):
             content = response.choices[0].message.content
             logging.debug(f"Debug groq feedback: {content}")
             feedback = _extract_json_with_regex(content)
+            
+            # Ensure feedback_reasoning is a list
+            feedback_reasoning = feedback.get("feedback_reasoning", [])
+            if isinstance(feedback_reasoning, str):
+                feedback_reasoning = [feedback_reasoning]
+            
             return {
                 "refinement_required": feedback.get("refinement_required", "no"),
                 "feedback_summary": feedback.get("feedback_summary", ""),
-                "feedback_reasoning": feedback.get("feedback_reasoning", [])
+                "feedback_reasoning": feedback_reasoning
             }
         except Exception as e:
             logging.error(f"Failed to parse feedback: {e}")
