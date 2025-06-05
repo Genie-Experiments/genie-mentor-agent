@@ -1,16 +1,12 @@
 import json
-import logging
 from typing import Any, List, Dict
 from autogen_core import AgentId, MessageContext, RoutedAgent, message_handler
 from ..protocols.message import Message
 import time
-import logging
-logging.basicConfig(
-    level=logging.INFO,  
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
-logging.getLogger("autogen_core").setLevel(logging.WARNING)
-logging.getLogger("autogen_core.events").setLevel(logging.WARNING)
+from ..utils.logging import setup_logger, get_logger
+
+setup_logger()
+logger = get_logger("my_module")
 
 class ManagerAgent(RoutedAgent):
     def __init__(
@@ -108,13 +104,13 @@ class ManagerAgent(RoutedAgent):
             for skip_source in skip_sources:
                 for source in sources_lower:
                     if skip_source in source:
-                        logging.info(f"Found {skip_source} in sources. Skipping evaluation and editing.")
+                        logger.info(f"Found {skip_source} in sources. Skipping evaluation and editing.")
                         return True
             
             return False
             
         except Exception as e:
-            logging.warning(f"Error checking sources for evaluation skip: {e}")
+            logger.warning(f"Error checking sources for evaluation skip: {e}")
             return False
 
     @message_handler
@@ -146,9 +142,9 @@ class ManagerAgent(RoutedAgent):
         
         try:
             # Initial plan generation
-            logging.info(f"[PlannerAgent] Input: {user_query}")
+            logger.info(f"[PlannerAgent] Input: {user_query}")
             plan = await self.send_message(Message(content=user_query), self.planner_agent_id)
-            logging.info(f"[PlannerAgent] Output: {plan.content}")
+            logger.info(f"[PlannerAgent] Output: {plan.content}")
             plan_data = self.safe_json_parse(plan.content)
             self.trace_info['planner_agent'] = plan_data
             
@@ -159,9 +155,9 @@ class ManagerAgent(RoutedAgent):
             
             while retry_count < max_retries:
                 # Get feedback from refiner
-                logging.info(f"[PlannerRefinerAgent] Input: {current_plan}")
+                logger.info(f"[PlannerRefinerAgent] Input: {current_plan}")
                 refined = await self.send_message(Message(content=json.dumps(current_plan)), self.planner_refiner_agent_id)
-                logging.info(f"[PlannerRefinerAgent] Output: {refined.content}")
+                logger.info(f"[PlannerRefinerAgent] Output: {refined.content}")
                 refiner_data = self.safe_json_parse(refined.content)
                 self.trace_info['planner_refiner_agent'] = refiner_data
                 
@@ -170,7 +166,7 @@ class ManagerAgent(RoutedAgent):
                     break
                 
                 # Get refined plan from planner with feedback
-                logging.info(f"[PlannerAgent] Refining with feedback: {refiner_data}")
+                logger.info(f"[PlannerAgent] Refining with feedback: {refiner_data}")
                 feedback_payload = {
                     'query': user_query,
                     'feedback': {
@@ -186,27 +182,27 @@ class ManagerAgent(RoutedAgent):
                     Message(content=json.dumps(feedback_payload)), 
                     self.planner_agent_id
                 )
-                logging.info(f"[PlannerAgent] Refined output: {plan.content}")
+                logger.info(f"[PlannerAgent] Refined output: {plan.content}")
                 
                 # Parse the new plan
                 plan_data = self.safe_json_parse(plan.content)
                 if 'error' in plan_data:
-                    logging.error(f"Error in planner refinement: {plan_data['error']}")
+                    logger.error(f"Error in planner refinement: {plan_data['error']}")
                     break
                     
                 current_plan = plan_data.get('plan')
                 if not current_plan:
-                    logging.error("No plan returned from planner after refinement")
+                    logger.error("No plan returned from planner after refinement")
                     break
                     
                 retry_count += 1
-                logging.info(f"Refinement attempt {retry_count}/{max_retries}")
+                logger.info(f"Refinement attempt {retry_count}/{max_retries}")
                 
-                logging.info(f"Refined plan: {json.dumps(current_plan, indent=2)}")
+                logger.info(f"Refined plan: {json.dumps(current_plan, indent=2)}")
             
-            logging.info(f"[ExecutorAgent] Input: {current_plan}")
+            logger.info(f"[ExecutorAgent] Input: {current_plan}")
             query_result = await self.send_message(Message(content=json.dumps(current_plan)), self.executor_agent_id)
-            logging.info(f"[ExecutorAgent] Output: {query_result.content}")
+            logger.info(f"[ExecutorAgent] Output: {query_result.content}")
             self.trace_info['executor_agent'] = self.safe_json_parse(query_result.content)
             
             q_output = self.trace_info['executor_agent']
@@ -226,7 +222,7 @@ class ManagerAgent(RoutedAgent):
                 editor_agent = []
                 self.trace_info['evaluation_skipped'] = True
                 self.trace_info['skip_reason'] = "GitHub or Notion source detected"
-                logging.info("Skipping evaluation and editing due to GitHub/Notion source selection")
+                logger.info("Skipping evaluation and editing due to GitHub/Notion source selection")
             else:
                 # Run normal evaluation loop
                 final_answer, eval_history, editor_agent = await self.run_evaluation_loop(
@@ -275,9 +271,9 @@ class ManagerAgent(RoutedAgent):
                 "contexts": contexts
             }
 
-            logging.info(f"[EvaluationAgent] Input (Attempt {attempts + 1}): {json.dumps(eval_payload)}")
+            logger.info(f"[EvaluationAgent] Input (Attempt {attempts + 1}): {json.dumps(eval_payload)}")
             eval_resp = await self.send_message(Message(content=json.dumps(eval_payload)), self.eval_agent_id)
-            logging.info(f"[EvaluationAgent] Output (Attempt {attempts + 1}): {eval_resp.content}")
+            logger.info(f"[EvaluationAgent] Output (Attempt {attempts + 1}): {eval_resp.content}")
 
             eval_result = self.safe_json_parse(eval_resp.content)
             score = float(eval_result.get("score", 0))
@@ -304,9 +300,9 @@ class ManagerAgent(RoutedAgent):
                 "reasoning": reasoning
             }
 
-            logging.info(f"[EditorAgent] Input (Attempt {attempts + 1}): {json.dumps(editor_payload)}")
+            logger.info(f"[EditorAgent] Input (Attempt {attempts + 1}): {json.dumps(editor_payload)}")
             editor_resp = await self.send_message(Message(content=json.dumps(editor_payload)), self.editor_agent_id)
-            logging.info(f"[EditorAgent] Output (Attempt {attempts + 1}): {editor_resp.content}")
+            logger.info(f"[EditorAgent] Output (Attempt {attempts + 1}): {editor_resp.content}")
 
             editor_result = self.safe_json_parse(editor_resp.content)
             new_answer = editor_result.get("answer", current_answer)

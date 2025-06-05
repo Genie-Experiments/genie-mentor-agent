@@ -11,14 +11,10 @@ from ..protocols.message import Message
 from ..prompts.prompts import GENERATE_AGGREAGATED_ANSWER
 from ..utils.parsing import _extract_json_with_regex, extract_json_with_brace_counting
 
-import logging
-logging.basicConfig(
-    level=logging.INFO,  
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
-logging.getLogger("autogen_core").setLevel(logging.WARNING)
-logging.getLogger("autogen_core.events").setLevel(logging.WARNING)
+from ..utils.logging import setup_logger, get_logger
 
+setup_logger()
+logger = get_logger("my_module")
 
 
 class ExecutorAgent(RoutedAgent):
@@ -47,10 +43,10 @@ class ExecutorAgent(RoutedAgent):
             results = {}
 
             for qid in execution_order["nodes"]:
-                logging.info(f"Executing query ID: {qid}")
+                logger.info(f"Executing query ID: {qid}")
                 result = await self.execute_query(qid, query_components)
                 results[qid] = result
-                logging.info(f"Result for {qid}: {result}")
+                logger.info(f"Result for {qid}: {result}")
 
             if len(execution_order["nodes"]) == 1:
                 single_result = results[execution_order["nodes"][0]]
@@ -68,7 +64,7 @@ class ExecutorAgent(RoutedAgent):
                     "error":None
                 }))
 
-            logging.info("Combining answers from all data sources.")
+            logger.info("Combining answers from all data sources.")
             combined_execution_results = await self._combine_answer_from_sources(
                 plan["user_query"],
                 results,
@@ -84,7 +80,7 @@ class ExecutorAgent(RoutedAgent):
                 for doc in docs
             ]
 
-            logging.info("Returning combined results.")
+            logger.info("Returning combined results.")
             return Message(content=json.dumps({
                 "combined_answer_of_sources": combined_execution_results["combined_answer_of_sources"],
                 "top_documents": top_documents,
@@ -94,7 +90,7 @@ class ExecutorAgent(RoutedAgent):
             }))
 
         except Exception as e:
-            logging.exception("Error while executing query plan.")
+            logger.exception("Error while executing query plan.")
             return Message(content=json.dumps({"error": str(e)}))
 
     
@@ -103,13 +99,13 @@ class ExecutorAgent(RoutedAgent):
         sub_query = q["sub_query"]
         source = q.get("source")  
 
-        logging.info(f"Executing sub-query from source: {source}")
+        logger.info(f"Executing sub-query from source: {source}")
        
         try:
             
             if source == "knowledgebase":
                 
-                logging.info(f"[{qid}] Querying Knowledgebase: {sub_query}")
+                logger.info(f"[{qid}] Querying Knowledgebase: {sub_query}")
                 response_message = await self.send_message(
                     Message(content=sub_query),
                     self.kb_agent_id
@@ -119,7 +115,7 @@ class ExecutorAgent(RoutedAgent):
 
             
             elif source == "notion":
-                logging.info(f"[{qid}] Querying Notion")
+                logger.info(f"[{qid}] Querying Notion")
                 '''
                 prompt = NOTION_QUERY_PROMPT.format(sub_query=sub_query)
                 response_message = await self.send_message(
@@ -129,7 +125,7 @@ class ExecutorAgent(RoutedAgent):
                 try:
                     response = extract_json_with_brace_counting(response_message.content.strip())
                 except Exception as e:
-                    logging.warning(f"Failed to parse structured JSON from GitHub response: {e}")
+                    logger.warning(f"Failed to parse structured JSON from GitHub response: {e}")
                     response = {
                         "answer": response_message.content.strip(),
                         "sources": []
@@ -139,7 +135,7 @@ class ExecutorAgent(RoutedAgent):
 
             elif source == "websearch":
               
-                logging.info(f"[{qid}] Querying WebRAG")
+                logger.info(f"[{qid}] Querying WebRAG")
                 response_message = await self.send_message(
                     Message(content=sub_query),
                     self.webrag_agent_id
@@ -149,7 +145,7 @@ class ExecutorAgent(RoutedAgent):
 
             elif source == "github":
                 
-                logging.info(f"[{qid}] Querying GitHub")
+                logger.info(f"[{qid}] Querying GitHub")
                 '''
                 prompt = SHORT_GITHUB_PROMPT.format(sub_query=sub_query)
                 response_message = await self.send_message(
@@ -159,7 +155,7 @@ class ExecutorAgent(RoutedAgent):
                 try:
                     response = extract_json_with_brace_counting(response_message.content.strip())
                 except Exception as e:
-                    logging.warning(f"Failed to parse structured JSON from GitHub response: {e}")
+                    logger.warning(f"Failed to parse structured JSON from GitHub response: {e}")
                     response = {
                         "answer": response_message.content.strip(),
                         "sources": []
@@ -182,7 +178,7 @@ class ExecutorAgent(RoutedAgent):
             return response
 
         except Exception as e:
-            logging.exception(f"Error during execution of sub-query {qid} - {e}")
+            logger.exception(f"Error during execution of sub-query {qid} - {e}")
             raise
 
 
@@ -193,7 +189,7 @@ class ExecutorAgent(RoutedAgent):
             strategy=strategy
         )
 
-        logging.info("Sending aggregation prompt to model.")
+        logger.info("Sending aggregation prompt to model.")
         response = self.client.chat.completions.create(
             messages=[{"role": "user", "content": prompt}],
             model=self.model
@@ -203,12 +199,12 @@ class ExecutorAgent(RoutedAgent):
 
         try:
             result = _extract_json_with_regex(content)
-            logging.info("Extracted and parsed aggregated answer successfully.")
+            logger.info("Extracted and parsed aggregated answer successfully.")
             return {
                 "combined_answer_of_sources": result["answer"],
             }
         except Exception as e:
-            logging.warning(f"Failed to parse structured JSON: {e}")
+            logger.warning(f"Failed to parse structured JSON: {e}")
             return {
                 "combined_answer_of_sources": content,
             }

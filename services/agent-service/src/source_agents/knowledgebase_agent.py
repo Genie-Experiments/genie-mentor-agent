@@ -7,14 +7,11 @@ from langchain.chains import RetrievalQA
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
 from langchain_groq import ChatGroq
-import logging
 from typing import Dict,Any
-logging.basicConfig(
-    level=logging.INFO,  
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
-logging.getLogger("autogen_core").setLevel(logging.WARNING)
-logging.getLogger("autogen_core.events").setLevel(logging.WARNING)
+from ..utils.logging import setup_logger, get_logger
+
+setup_logger()
+logger = get_logger("my_module")
 
 def get_embedding_model() -> HuggingFaceEmbeddings:
     return HuggingFaceEmbeddings(model_name='all-MiniLM-L6-v2')
@@ -79,7 +76,7 @@ class KBAgent(RoutedAgent):
             }
 
         except Exception as e:
-            logging.exception("Error querying knowledge base")
+            logger.exception("Error querying knowledge base")
             return {
                 'answer': "Knowledge Base is currently unavailable",
                 'sources': [],
@@ -102,7 +99,7 @@ class KBAgent(RoutedAgent):
             }))
             
         except Exception as e:
-            logging.exception("Error in KnowledgeBaseAgent handler")
+            logger.exception("Error in KnowledgeBaseAgent handler")
             return Message(content=json.dumps({
                 "answer": "An error occurred while processing your request",
                 "sources": [],

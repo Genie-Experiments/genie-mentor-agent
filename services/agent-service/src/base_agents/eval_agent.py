@@ -1,18 +1,13 @@
 import json
 import os
-import logging
 from typing import List
 from autogen_core import RoutedAgent, MessageContext, message_handler
 from ..protocols.message import Message
 from uptrain import Evals, EvalLLM, Settings
+from ..utils.logging import setup_logger, get_logger
 
-
-logging.basicConfig(
-    level=logging.INFO,  
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
-logging.getLogger("autogen_core").setLevel(logging.WARNING)
-logging.getLogger("autogen_core.events").setLevel(logging.WARNING)
+setup_logger()
+logger = get_logger("my_module")
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
@@ -47,7 +42,7 @@ class EvalAgent(RoutedAgent):
             }))
 
         except Exception as e:
-            logging.exception("Evaluation failed")
+            logger.exception("Evaluation failed")
             return Message(content=json.dumps({
                 "score": 0,
                 "reasoning": "",

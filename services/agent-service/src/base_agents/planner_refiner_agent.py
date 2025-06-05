@@ -9,7 +9,9 @@ from ..protocols.planner_schema import QueryPlan, RefinerOutput
 from ..protocols.message import Message
 from ..prompts.prompts import REFINEMENT_NEEDED_PROMPT
 from ..utils.parsing import _extract_json_with_regex
-import logging
+from ..utils.logging import setup_logger, get_logger
+setup_logger()
+logger = get_logger("my_module")
 
 class PlannerRefinerAgent(RoutedAgent):
     def __init__(self) -> None:  
@@ -52,7 +54,7 @@ class PlannerRefinerAgent(RoutedAgent):
             
         except ValidationError as e:
             error_msg = f"Invalid QueryPlan format: {e}"
-            logging.error(error_msg)
+            logger.error(error_msg)
             return Message(content=json.dumps({
                 "execution_time_ms": int((time.time() - start_time) * 1000),
                 "refinement_required": "no",
@@ -61,7 +63,7 @@ class PlannerRefinerAgent(RoutedAgent):
                 "error": error_msg
             }))
         except Exception as e:
-            logging.error(f"Error processing plan: {str(e)}")
+            logger.error(f"Error processing plan: {str(e)}")
             return Message(content=json.dumps({
                 "execution_time_ms": int((time.time() - start_time) * 1000),
                 "refinement_required": "no",
@@ -81,7 +83,7 @@ class PlannerRefinerAgent(RoutedAgent):
         try:
             # Parse the response to get feedback
             content = response.choices[0].message.content
-            logging.debug(f"Debug groq feedback: {content}")
+            logger.debug(f"Debug groq feedback: {content}")
             feedback = _extract_json_with_regex(content)
             
             # Ensure feedback_reasoning is a list
@@ -95,7 +97,7 @@ class PlannerRefinerAgent(RoutedAgent):
                 "feedback_reasoning": feedback_reasoning
             }
         except Exception as e:
-            logging.error(f"Failed to parse feedback: {e}")
+            logger.error(f"Failed to parse feedback: {e}")
             # If response is not JSON, try to parse yes/no from text
             content = response.choices[0].message.content.strip().lower()
             return {

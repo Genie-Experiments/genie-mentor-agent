@@ -8,8 +8,11 @@ from groq import Groq
 from ..prompts.prompts import PLANNER_PROMPT
 from ..protocols.planner_schema import QueryPlan
 from ..protocols.message import Message
-import logging
 from ..utils.parsing import _extract_json_with_regex
+from ..utils.logging import setup_logger, get_logger
+
+setup_logger()
+logger = get_logger("my_module")
 
 class PlannerAgent(RoutedAgent):
     def __init__(self) -> None:
@@ -35,7 +38,7 @@ class PlannerAgent(RoutedAgent):
             return await self.process_query(message.content)
             
         except Exception as e:
-            logging.error(f"Error in handle_user_message: {str(e)}")
+            logger.error(f"Error in handle_user_message: {str(e)}")
             return Message(content=json.dumps({
                 'error': str(e),
                 'execution_time_ms': int((time.time() - start_time) * 1000)
@@ -57,7 +60,7 @@ class PlannerAgent(RoutedAgent):
                         "feedback_reasoning": feedback.get("feedback_reasoning", []),
                         "current_plan": current_plan if current_plan else "No previous plan"
                     }, indent=2)
-                    logging.info(f"Processing query with feedback: {feedback_str}")
+                    logger.info(f"Processing query with feedback: {feedback_str}")
 
                 prompt = PLANNER_PROMPT.format(
                     user_query=query,
@@ -71,7 +74,7 @@ class PlannerAgent(RoutedAgent):
                 )
                 
                 content = response.choices[0].message.content
-                logging.info(f"Raw planner response: {content}")
+                logger.info(f"Raw planner response: {content}")
                 
                 # Extract and validate the plan
                 plan_data = _extract_json_with_regex(content)
@@ -90,7 +93,7 @@ class PlannerAgent(RoutedAgent):
                 }))
 
             except Exception as e:
-                logging.error(f"Error in process_query: {str(e)}")
+                logger.error(f"Error in process_query: {str(e)}")
                 if retry_count >= self.max_retries - 1:
                     raise ValueError(f"Failed to generate valid plan after {retry_count + 1} attempts: {str(e)}")
                 retry_count += 1
