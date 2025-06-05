@@ -9,7 +9,7 @@ class QueryComponent(BaseModel):
 class ExecutionOrder(BaseModel):
     nodes: List[str]
     edges: List[List[str]] 
-    aggregation: Literal["combine_and_summarize", "sequential", "parallel"]
+    aggregation: Literal["combine_and_summarize", "sequential", "parallel","single_source"]
 
 class Think(BaseModel):
     query_analysis: str

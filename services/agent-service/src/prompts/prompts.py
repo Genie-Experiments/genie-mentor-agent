@@ -68,9 +68,18 @@ FEEDBACK:
        - "Google Best practices for RLHF tuning"
        - "What are the latest updates on Gemini vs GPT-4 comparison"
 
+       
 4. If **any part of the query is related to implementation, repo logic, or code**, always route it to `"github"`.
 
 5. **Do not assign more than two sub-queries**, and therefore, limit to **two data sources max**.
+
+6. ### Aggregation Strategies:
+
+The aggregation field must be one of these values:
+1. "combine_and_summarize": Only Use when you want to merge and summarize results from more than 1 data source
+2. "sequential": Use when sub-queries need to be executed in a specific order
+3. "parallel": Use when sub-queries can be executed independently
+4. "single_source": Use when there is only one data source and no aggregation is needed
 
 ### Feedback Incorporation:
 
@@ -92,14 +101,6 @@ Before generating the final output, think through these steps:
    - Consider if any other sources could provide complementary information
 6. Determine the execution order and aggregation strategy
 7. Document your reasoning process in the "think" field
-
-### Aggregation Strategies:
-
-The execution_order.aggregation field must be one of these three values:
-1. "combine_and_summarize": Only Use when you want to merge and summarize results from more than 1 data source
-2. "sequential": Use when sub-queries need to be executed in a specific order
-
-
 ---
 
 ### Format:
