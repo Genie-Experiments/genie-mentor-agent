@@ -382,7 +382,7 @@ If there is too much content retrieved, summarize it as much as you can.
 Your final response should be only a JSON object with the following structure, no other text.:
 {{
   "answer": "<comprehensive, detailed answer to the sub-query with educational context, including code examples and explanations>",
-  "sources": "<Exact file content used to answer the query>",
+  "sources": "<All the data retrieved from notion, not file names, but actual content from blocks>",
   "metadata": {{
       "doc_links": "[<links to the docs used>]"
       "doc_names": "[<names of the documents>]"
