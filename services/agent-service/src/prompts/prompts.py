@@ -96,9 +96,9 @@ Before generating the final output, think through these steps:
 ### Aggregation Strategies:
 
 The execution_order.aggregation field must be one of these three values:
-1. "combine_and_summarize": Use when you want to merge and summarize results from multiple sources
+1. "combine_and_summarize": Only Use when you want to merge and summarize results from more than 1 data source
 2. "sequential": Use when sub-queries need to be executed in a specific order
-3. "parallel": Use when sub-queries can be executed independently
+
 
 ---
 
@@ -125,7 +125,7 @@ Respond ONLY with a well-formatted JSON object using the schema below:
   "execution_order": {{
     "nodes": ["q1", "q2"],
     "edges": [],
-    "aggregation": "combine_and_summarize" | "sequential" | "parallel"  // Only these three values are allowed
+    "aggregation": "combine_and_summarize" | "sequential"  // Only these three values are allowed
   }},
   "think": {{
     "query_analysis": "Analysis of the main query components and requirements",
