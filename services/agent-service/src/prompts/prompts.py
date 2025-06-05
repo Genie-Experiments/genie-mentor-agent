@@ -85,7 +85,6 @@ The aggregation field must be one of these values:
 
 If feedback is provided, You MUST make concrete changes to the plan based on the feedback
 1. Review each feedback point and make necessary adjustments
-2. Always explain how you incorporated the feedback in the "feedback_incorporation" field
 
 ### Chain of Thought Process:
 
@@ -156,15 +155,55 @@ Respond ONLY with a well-formatted JSON object using the schema below:
 
 
 REFINEMENT_NEEDED_PROMPT = """
-You are a refinement detector. A query plan is given below.
+You are a plan refinement feedback agent. A query plan is given below.
 Plan:
 {plan_json}
-Available data sources: ["knowledgebase", "notion", "github", "websearch"]
+
 Analyze the plan and determine if it needs refinement in terms of:
-- data sources (should only use the available data sources listed above)
+- data sources (Available data sources: ["knowledgebase", "notion", "github", "websearch"])
 - unnecessary subqueries
 
+Source is assigned to each sub-query based on the following rules and examples:
 
+   - `"knowledgebase"`:
+     - Use for technical concepts or implementation approaches involving:
+       - Advanced RAG techniques (e.g., document indexing, reranking, context expansion).
+       - Embedding models, LLM behavior, and hallucination metrics.
+       - General architecture or design methodologies.
+     - Example queries:
+       - "How do alignment scores improve RAG queries?"
+       - "Compare dense vs hybrid retrieval effectiveness"
+       - "What are Houlsby vs Pfeiffer adapters?"
+       - "How does LangGraph improve RAG systems?"
+
+   - `"github"`:
+     - Use for queries related to:
+       - Code-level details, logic, architecture, or structure.
+       - Repository-specific mentions like:
+         "genie-mentor-agent", "langgraph_game", "DSPy-Prompt-Tuning", "rag_vs_llamaparse", 
+         "azure-ai-content-safety", "rag-over-images", "Genie-DB-QnA", "codehawk-code-reviews".
+     - Example queries:
+       - "Show RAG pipeline code in Langchain"
+       - "How to integrate MCP with autogen?"
+       - "Best practices for agent registration"
+       - "Core coding patterns for agents"
+
+   - `"notion"`:
+     - Use for high-level documentation, planning docs, experimental summaries, and internal notes.
+     - Example queries:
+       - "GENIE's RAG performance findings"
+       - "LlamaIndex vs Langchain comparison"
+       - "MCP server usage in GENIE"
+       - "LLM testing methodologies"
+
+   - `"websearch"`:
+     - Use **only** when the user explicitly asks for an external web search or uses phrases like:
+       "search the web", "look online", "get latest papers", etc.
+     - Example queries:
+       - "Search Latest GenAI models for code"
+       - "Search the web for Recent Mistral-7B benchmarks"
+       - "Google Best practices for RLHF tuning"
+       - "What are the latest updates on Gemini vs GPT-4 comparison"
 
 
 Respond with a JSON object in this exact format:
