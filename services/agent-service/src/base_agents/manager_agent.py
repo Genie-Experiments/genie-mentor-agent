@@ -11,6 +11,7 @@ logging.basicConfig(
 )
 logging.getLogger("autogen_core").setLevel(logging.WARNING)
 logging.getLogger("autogen_core.events").setLevel(logging.WARNING)
+
 class ManagerAgent(RoutedAgent):
     def __init__(
         self,
@@ -61,6 +62,61 @@ class ManagerAgent(RoutedAgent):
         if len(self.conversation_history[session_id]) > 5:
             self.conversation_history[session_id] = self.conversation_history[session_id][-5:]
 
+    def _should_skip_evaluation(self, plan_data: Dict[str, Any]) -> bool:
+        """
+        Check if evaluation and editing should be skipped based on selected sources.
+        Returns True if GitHub or Notion are selected as sources.
+        """
+        try:
+            # Get the plan from plan_data
+            plan = plan_data.get('plan', {})
+            
+            # Check for sources in various possible locations within the plan
+            sources_to_check = []
+            
+            # Common possible locations for sources in the plan
+            if isinstance(plan, dict):
+                # Check if sources are directly in the plan
+                if 'sources' in plan:
+                    sources_to_check.extend(plan['sources'])
+                
+                # Check if there are selected_sources
+                if 'selected_sources' in plan:
+                    sources_to_check.extend(plan['selected_sources'])
+                
+                # Check for data_sources
+                if 'data_sources' in plan:
+                    sources_to_check.extend(plan['data_sources'])
+                
+                # Check if plan has steps with sources
+                if 'steps' in plan:
+                    for step in plan['steps']:
+                        if isinstance(step, dict) and 'sources' in step:
+                            sources_to_check.extend(step['sources'])
+                        if isinstance(step, dict) and 'source' in step:
+                            sources_to_check.append(step['source'])
+            
+            # Check if plan itself is a list of sources
+            elif isinstance(plan, list):
+                sources_to_check.extend(plan)
+            
+            # Convert all sources to lowercase strings for comparison
+            sources_lower = [str(source).lower() for source in sources_to_check]
+            
+            # Check if github or notion are in the sources
+            skip_sources = ['github', 'notion']
+            for skip_source in skip_sources:
+                for source in sources_lower:
+                    if skip_source in source:
+                        logging.info(f"Found {skip_source} in sources. Skipping evaluation and editing.")
+                        return True
+            
+            return False
+            
+        except Exception as e:
+            logging.warning(f"Error checking sources for evaluation skip: {e}")
+            return False
+
     @message_handler
     async def handle_user_message(self, message: Message, ctx: MessageContext) -> Message:
         start_time = time.time()
@@ -83,7 +139,9 @@ class ManagerAgent(RoutedAgent):
             'evaluation_agent': [],
             'editor_agent': [],
             'errors': [],
-            'total_time': None
+            'total_time': None,
+            'evaluation_skipped': False,
+            'skip_reason': None
         }
         
         try:
@@ -148,7 +206,7 @@ class ManagerAgent(RoutedAgent):
             
             logging.info(f"[ExecutorAgent] Input: {current_plan}")
             query_result = await self.send_message(Message(content=json.dumps(current_plan)), self.executor_agent_id)
-            logging.info(f"[ExcutorAgent] Output: {query_result.content}")
+            logging.info(f"[ExecutorAgent] Output: {query_result.content}")
             self.trace_info['executor_agent'] = self.safe_json_parse(query_result.content)
             
             q_output = self.trace_info['executor_agent']
@@ -158,11 +216,24 @@ class ManagerAgent(RoutedAgent):
             answer = q_output.get("combined_answer_of_sources", "")
             documents = q_output.get("top_documents", [])
             
-            final_answer, eval_history, editor_agent = await self.run_evaluation_loop(
-                question=user_query,
-                initial_answer=answer,
-                contexts=documents
-            )
+            # Check if we should skip evaluation and editing
+            should_skip = self._should_skip_evaluation(plan_data)
+            
+            if should_skip:
+                # Skip evaluation and editing, use the answer directly
+                final_answer = answer
+                eval_history = []
+                editor_agent = []
+                self.trace_info['evaluation_skipped'] = True
+                self.trace_info['skip_reason'] = "GitHub or Notion source detected"
+                logging.info("Skipping evaluation and editing due to GitHub/Notion source selection")
+            else:
+                # Run normal evaluation loop
+                final_answer, eval_history, editor_agent = await self.run_evaluation_loop(
+                    question=user_query,
+                    initial_answer=answer,
+                    contexts=documents
+                )
             
             self.trace_info['evaluation_agent'] = eval_history
             self.trace_info['editor_agent'] = editor_agent

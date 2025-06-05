@@ -373,6 +373,7 @@ Error Response:
 
 NOTION_QUERY_PROMPT = '''
 Use Notion to find relevant information about the following query: {sub_query}. Retrieve key information from all the relevant pages, and answer query based on the information retrieved.
+GENIE is the name of the organization who's documentation you have access to
 First retrieve all documents, then parse them all to find relevant information
 The answer should be detailed, informative and educational, including information from all the sources used. 
 Infer keywords from the query and search across all documents, pages and blocks to find relevant ones.
@@ -382,7 +383,7 @@ If there is too much content retrieved, summarize it as much as you can.
 Your final response should be only a JSON object with the following structure, no other text.:
 {{
   "answer": "<comprehensive, detailed answer to the sub-query with educational context, including code examples and explanations>",
-  "sources": "<All the data retrieved from notion, not file names, but actual content from blocks>",
+  "sources": "<Context - Raw text and content retrieved from the pages and blocks in notion>",
   "metadata": {{
       "doc_links": "[<links to the docs used>]"
       "doc_names": "[<names of the documents>]"
