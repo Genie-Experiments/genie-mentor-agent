@@ -64,7 +64,8 @@ class ExecutorAgent(RoutedAgent):
                     "all_documents": [
                         doc for docs in self._sources_documents.values() for doc in docs
                     ],
-                    "documents_by_source": self._sources_documents
+                    "documents_by_source": self._sources_documents,
+                    "error":None
                 }))
 
             logging.info("Combining answers from all data sources.")
@@ -88,7 +89,8 @@ class ExecutorAgent(RoutedAgent):
                 "combined_answer_of_sources": combined_execution_results["combined_answer_of_sources"],
                 "top_documents": top_documents,
                 "all_documents": all_documents,
-                "documents_by_source": self._sources_documents
+                "documents_by_source": self._sources_documents,
+                "error":None
             }))
 
         except Exception as e:

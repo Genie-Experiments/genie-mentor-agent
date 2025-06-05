@@ -77,11 +77,11 @@ class ManagerAgent(RoutedAgent):
         self.trace_info = {
             'start_time': start_time,
             'user_query': user_query,
-            'planner_output': None,
-            'refiner_output': None,
-            'executor_output': None,
-            'evaluation_history': [],
-            'editor_history': [],
+            'planner_agent': None,
+            'planner_refiner_agent': None,
+            'executor_agent': None,
+            'evaluation_agent': [],
+            'editor_agent': [],
             'errors': [],
             'total_time': None
         }
@@ -92,7 +92,7 @@ class ManagerAgent(RoutedAgent):
             plan = await self.send_message(Message(content=user_query), self.planner_agent_id)
             logging.info(f"[PlannerAgent] Output: {plan.content}")
             plan_data = self.safe_json_parse(plan.content)
-            self.trace_info['planner_output'] = plan_data
+            self.trace_info['planner_agent'] = plan_data
             
             # Feedback loop between planner and refiner
             max_retries = 3
@@ -105,7 +105,7 @@ class ManagerAgent(RoutedAgent):
                 refined = await self.send_message(Message(content=json.dumps(current_plan)), self.planner_refiner_agent_id)
                 logging.info(f"[PlannerRefinerAgent] Output: {refined.content}")
                 refiner_data = self.safe_json_parse(refined.content)
-                self.trace_info['refiner_output'] = refiner_data
+                self.trace_info['planner_refiner_agent'] = refiner_data
                 
                 # If no refinement needed, break the loop
                 if refiner_data.get('refinement_required') == 'no':
@@ -144,30 +144,28 @@ class ManagerAgent(RoutedAgent):
                 retry_count += 1
                 logging.info(f"Refinement attempt {retry_count}/{max_retries}")
                 
-                # Log the refined plan for debugging
                 logging.info(f"Refined plan: {json.dumps(current_plan, indent=2)}")
             
-            # Execute the final plan
             logging.info(f"[ExecutorAgent] Input: {current_plan}")
             query_result = await self.send_message(Message(content=json.dumps(current_plan)), self.executor_agent_id)
             logging.info(f"[ExcutorAgent] Output: {query_result.content}")
-            self.trace_info['executor_output'] = self.safe_json_parse(query_result.content)
+            self.trace_info['executor_agent'] = self.safe_json_parse(query_result.content)
             
-            q_output = self.trace_info['executor_output']
-            if 'error' in q_output:
+            q_output = self.trace_info['executor_agent']
+            if q_output.get('error') is not None:
                 raise ValueError(f"Query execution failed: {q_output['error']}")
                 
             answer = q_output.get("combined_answer_of_sources", "")
             documents = q_output.get("top_documents", [])
             
-            final_answer, eval_history, editor_history = await self.run_evaluation_loop(
+            final_answer, eval_history, editor_agent = await self.run_evaluation_loop(
                 question=user_query,
                 initial_answer=answer,
                 contexts=documents
             )
             
-            self.trace_info['evaluation_history'] = eval_history
-            self.trace_info['editor_history'] = editor_history
+            self.trace_info['evaluation_agent'] = eval_history
+            self.trace_info['editor_agent'] = editor_agent
             self.trace_info['final_answer'] = final_answer
             self.trace_info['total_time'] = time.time() - start_time
             
@@ -197,8 +195,8 @@ class ManagerAgent(RoutedAgent):
         max_attempts = 2
         attempts = 0
         eval_history = []
-        editor_history = []
-
+        editor_agent = []
+       
         while attempts < max_attempts:
             eval_payload = {
                 "question": question,
@@ -216,7 +214,7 @@ class ManagerAgent(RoutedAgent):
             error = eval_result.get("error", None)
 
             eval_history.append({
-                "output": {
+                "evaluation_history": {
                     "score": score,
                     "reasoning": reasoning,
                     "error": error
@@ -243,8 +241,8 @@ class ManagerAgent(RoutedAgent):
             new_answer = editor_result.get("answer", current_answer)
             editor_error = editor_result.get("error", None)
 
-            editor_history.append({
-                "output": {
+            editor_agent.append({
+                "editor_history": {
                     "answer": new_answer,
                     "error": editor_error
                 },
@@ -254,4 +252,4 @@ class ManagerAgent(RoutedAgent):
             current_answer = new_answer
             attempts += 1
 
-        return current_answer, eval_history, editor_history
+        return current_answer, eval_history, editor_agent
