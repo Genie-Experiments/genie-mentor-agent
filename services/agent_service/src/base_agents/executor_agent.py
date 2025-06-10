@@ -6,15 +6,14 @@ from groq import Groq
 from autogen_core.models import UserMessage
 
 from ..prompts.prompts import GITHUB_QUERY_PROMPT, NOTION_QUERY_PROMPT, SHORT_GITHUB_PROMPT
-from ..prompts.dummy_data import dummy_data_1,dummy_data_2
 from ..protocols.message import Message
-from ..prompts.prompts import GENERATE_AGGREAGATED_ANSWER
+from ..prompts.aggregation_prompt import generate_aggregated_answer
 from ..utils.parsing import _extract_json_with_regex, extract_json_with_brace_counting
 
 from ..utils.logging import setup_logger, get_logger
 
 setup_logger()
-logger = get_logger("my_module")
+logger = get_logger("ExecutorAgent")
 
 
 class ExecutorAgent(RoutedAgent):
@@ -47,17 +46,13 @@ class ExecutorAgent(RoutedAgent):
                 logger.info(f"Executing query ID: {qid}")
                 result = await self.execute_query(qid, query_components)
                 results[qid] = result
-                logger.info(f"Result for {qid}: {result}")
+                
 
             if len(execution_order["nodes"]) == 1:
                 single_result = results[execution_order["nodes"][0]]
-                top_documents = []
-                for source, docs in self._sources_documents.items():
-                    top_documents.extend(docs[:5])
 
                 return Message(content=json.dumps({
                     "combined_answer_of_sources": single_result["answer"],
-                    "top_documents": top_documents,
                     "all_documents": [
                         doc for docs in self._sources_documents.values() for doc in docs
                     ],
@@ -74,9 +69,7 @@ class ExecutorAgent(RoutedAgent):
                 strategy=execution_order.get("aggregation")
             )
 
-            top_documents = []
-            for source, docs in self._sources_documents.items():
-                top_documents.extend(docs[:5])  
+            
             all_documents = [
                 doc 
                 for docs in self._sources_documents.values() 
@@ -86,7 +79,6 @@ class ExecutorAgent(RoutedAgent):
             logger.info("Returning combined results.")
             return Message(content=json.dumps({
                 "combined_answer_of_sources": combined_execution_results["combined_answer_of_sources"],
-                "top_documents": top_documents,
                 "all_documents": all_documents,
                 "documents_by_source": self._sources_documents,
                 "metadata_by_source": self._sources_metadata,
@@ -95,7 +87,7 @@ class ExecutorAgent(RoutedAgent):
 
 
         except Exception as e:
-            logger.exception("Error while executing query plan.")
+            logger.error("Error while executing query plan : {e}")
             return Message(content=json.dumps({"error": str(e)}))
 
     
@@ -116,7 +108,7 @@ class ExecutorAgent(RoutedAgent):
                     self.kb_agent_id
                 )
                 response = json.loads(response_message.content)
-                
+                logger.info(f"[KB] Agent Response : {response}")
 
             
             elif source == "notion":
@@ -145,6 +137,7 @@ class ExecutorAgent(RoutedAgent):
                     self.webrag_agent_id
                 )
                 response = json.loads(response_message.content)
+                logger.info(f"[WebSearch] Agent Response : {response}")
                 
 
             elif source == "github":
@@ -194,13 +187,13 @@ class ExecutorAgent(RoutedAgent):
 
 
     async def _combine_answer_from_sources(self, user_query: str, results: Dict[str, Any], strategy: Optional[str] = None) -> Dict[str, Any]:
-        prompt = GENERATE_AGGREAGATED_ANSWER.format(
+        prompt = generate_aggregated_answer.format(
             user_query=user_query,
             results=results,
             strategy=strategy
         )
 
-        logger.info("Sending aggregation prompt to model.")
+        logger.info(f"[Executor] Sending aggregation prompt to model : {prompt}")
         response = self.client.chat.completions.create(
             messages=[{"role": "user", "content": prompt}],
             model=self.model
@@ -210,12 +203,12 @@ class ExecutorAgent(RoutedAgent):
 
         try:
             result = _extract_json_with_regex(content)
-            logger.info("Extracted and parsed aggregated answer successfully.")
+            logger.info(f"Extracted and parsed aggregated answer successfully : {result}")
             return {
                 "combined_answer_of_sources": result["answer"],
             }
         except Exception as e:
-            logger.warning(f"Failed to parse structured JSON: {e}")
+            logger.error(f"Failed to parse structured JSON: {e}")
             return {
                 "combined_answer_of_sources": content,
             }

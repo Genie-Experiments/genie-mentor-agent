@@ -10,7 +10,10 @@ from ..webrag_utils.retry import retry_with_reduction_and_backoff
 from groq import Groq
 from llama_index.core import Settings
 
+from ...utils.logging import setup_logger, get_logger
 
+setup_logger()
+logger = get_logger("WebRAG")
 openai_integration = OpenAIIntegration(api_key=OPENAI_API_KEY)
 
 groq_integration = GroqIntegration(api_key=GROQ_API_KEY)
@@ -76,6 +79,7 @@ class RAG:
     def query_llm(self, query, context, template):
         def process_fn(context):
             message_content = template.format(context=context, query=query)
+            logger.info(f"[WebSearch] Prompt Formatted :  {message_content}")
             response = self.client.chat.completions.create(
                 messages=[{"role": "system", "content": message_content}],
                 model=self.model,

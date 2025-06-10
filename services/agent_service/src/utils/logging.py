@@ -23,7 +23,6 @@ def setup_logger(level=logging.INFO):
     root_logger.setLevel(level)
     root_logger.addHandler(handler)
 
-    # Silence noisy modules
     logging.getLogger("autogen_core").setLevel(logging.WARNING)
     logging.getLogger("autogen_core.events").setLevel(logging.WARNING)
 

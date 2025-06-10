@@ -8,7 +8,7 @@ from groq import Groq
 from ..utils.logging import setup_logger, get_logger
 
 setup_logger()
-logger = get_logger("my_module")
+logger = get_logger("EditorAgent")
 
 class EditorAgent(RoutedAgent):
     def __init__(self) -> None:
@@ -19,15 +19,15 @@ class EditorAgent(RoutedAgent):
     async def fix_answer(self, message: Message, ctx: MessageContext) -> Message:
         try:
             payload = json.loads(message.content)
-
+         
             prompt = EDITOR_PROMPT.format(
-                question=payload.get("question", ""),
-                previous_answer=payload.get("previous_answer", ""),
+                question=payload.get("question"),
+                previous_answer=payload.get("previous_answer"),
                 score=payload.get("score", 0),
                 reasoning=payload.get("reasoning", ""),
-                contexts="\n".join(payload.get("contexts", []))
+                contexts=payload.get("contexts")
             )
-           
+            logger.info(f"[EditorAgent] Formulated Prompt : {prompt}")
             response = self.client.chat.completions.create(
                 messages=[{"role": "user", "content": prompt}],
                 model=self.model
@@ -37,14 +37,14 @@ class EditorAgent(RoutedAgent):
         
             result = extract_json_with_brace_counting(content)
             final_answer = result.get("edited_answer", "")
-          
+            logger.info(f"[EditorAgent] Final Answer : {final_answer}")
             return Message(content=json.dumps({
                 "answer": final_answer,
                 "error": None
             }))
 
         except Exception as e:
-            logger.exception("EditorAgent Encountered Error, we are loading the previous answer")
+            logger.error(f"EditorAgent Encountered Error : {e}")
             return Message(content=json.dumps({
                 "answer": payload.get("previous_answer", ""),
                 "error": str(e)

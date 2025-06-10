@@ -5,9 +5,10 @@ from autogen_core import RoutedAgent, MessageContext, message_handler
 from ..protocols.message import Message
 from uptrain import Evals, EvalLLM, Settings
 from ..utils.logging import setup_logger, get_logger
+from itertools import chain
 
 setup_logger()
-logger = get_logger("my_module")
+logger = get_logger("EvalAgent")
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
@@ -18,23 +19,25 @@ class EvalAgent(RoutedAgent):
         self.eval_llm = EvalLLM(settings)
 
     @staticmethod
-    def _prepare_input(question: str, answer: str, contexts: List[str]) -> dict:
+    def _prepare_input(question: str, answer: str, contexts: List[List[str]]) -> dict:
+        flat_contexts = list(chain.from_iterable(contexts))  
         return {
             "question": question,
             "response": answer,
-            "context": " ".join(contexts)
+            "context": " ".join(flat_contexts)
         }
 
     @message_handler
     async def evaluate_answer(self, message: Message, ctx: MessageContext) -> Message:
         try:
             payload = json.loads(message.content)
+            logger.info(f"[EvalAgent] Recieved Payload: {payload}")
             data_item = self._prepare_input(payload["question"], payload["answer"], payload["contexts"])
             result = self.eval_llm.evaluate(data=[data_item], checks=[Evals.FACTUAL_ACCURACY])[0]
-
+            logger.info(f"[EvalAgent] Evaluation Result: {result}")
             score = float(result.get("score_factual_accuracy", 0))
             reasoning = result.get("explanation_factual_accuracy", "")
-
+            logger.info(f"[EvalAgent] Score: {score}, Reasoning: {reasoning}")
             return Message(content=json.dumps({
                 "score": score,
                 "reasoning": reasoning,
@@ -42,7 +45,7 @@ class EvalAgent(RoutedAgent):
             }))
 
         except Exception as e:
-            logger.exception("Evaluation failed")
+            logger.error(f"[EvalAgent] Evaluation failed : {e}")
             return Message(content=json.dumps({
                 "score": 0,
                 "reasoning": "",

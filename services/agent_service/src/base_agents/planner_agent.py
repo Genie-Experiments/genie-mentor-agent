@@ -12,7 +12,7 @@ from ..utils.parsing import _extract_json_with_regex
 from ..utils.logging import setup_logger, get_logger
 
 setup_logger()
-logger = get_logger("my_module")
+logger = get_logger("PlannerAgent")
 
 class PlannerAgent(RoutedAgent):
     def __init__(self) -> None:

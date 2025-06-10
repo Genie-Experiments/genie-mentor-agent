@@ -6,7 +6,7 @@ import time
 from ..utils.logging import setup_logger, get_logger
 
 setup_logger()
-logger = get_logger("my_module")
+logger = get_logger("ManagerAgent")
 
 class ManagerAgent(RoutedAgent):
     def __init__(
@@ -200,9 +200,7 @@ class ManagerAgent(RoutedAgent):
                 
                 logger.info(f"Refined plan: {json.dumps(current_plan, indent=2)}")
             
-            logger.info(f"[ExecutorAgent] Input: {current_plan}")
             query_result = await self.send_message(Message(content=json.dumps(current_plan)), self.executor_agent_id)
-            logger.info(f"[ExecutorAgent] Output: {query_result.content}")
             self.trace_info['executor_agent'] = self.safe_json_parse(query_result.content)
             
             q_output = self.trace_info['executor_agent']
@@ -210,7 +208,10 @@ class ManagerAgent(RoutedAgent):
                 raise ValueError(f"Query execution failed: {q_output['error']}")
                 
             answer = q_output.get("combined_answer_of_sources", "")
-            documents = q_output.get("top_documents", [])
+            documents = q_output.get("all_documents", [])
+            documents_by_source = q_output.get("documents_by_source", [])
+
+            
             
             # Check if we should skip evaluation and editing
             should_skip = self._should_skip_evaluation(plan_data)
@@ -228,7 +229,8 @@ class ManagerAgent(RoutedAgent):
                 final_answer, eval_history, editor_agent = await self.run_evaluation_loop(
                     question=user_query,
                     initial_answer=answer,
-                    contexts=documents
+                    contexts=documents,
+                    documents_by_source=documents_by_source
                 )
             
             self.trace_info['evaluation_agent'] = eval_history
@@ -257,7 +259,7 @@ class ManagerAgent(RoutedAgent):
         except json.JSONDecodeError:
             return {"raw_content": content}
 
-    async def run_evaluation_loop(self, question: str, initial_answer: str, contexts: List[str]) -> tuple:
+    async def run_evaluation_loop(self, question: str, initial_answer: str, contexts: List[str],documents_by_source: List[str]) -> tuple:
         current_answer = initial_answer
         max_attempts = 2
         attempts = 0
@@ -271,9 +273,8 @@ class ManagerAgent(RoutedAgent):
                 "contexts": contexts
             }
 
-            logger.info(f"[EvaluationAgent] Input (Attempt {attempts + 1}): {json.dumps(eval_payload)}")
+            logger.info(f"[EvaluationAgent] Input (Attempt {attempts + 1})")
             eval_resp = await self.send_message(Message(content=json.dumps(eval_payload)), self.eval_agent_id)
-            logger.info(f"[EvaluationAgent] Output (Attempt {attempts + 1}): {eval_resp.content}")
 
             eval_result = self.safe_json_parse(eval_resp.content)
             score = float(eval_result.get("score", 0))
@@ -291,18 +292,17 @@ class ManagerAgent(RoutedAgent):
 
             if error is None and score >= 1.0 or attempts == max_attempts - 1:
                 break
-
+           
             editor_payload = {
                 "question": question,
                 "previous_answer": current_answer,
-                "contexts": contexts,
+                "contexts": documents_by_source,
                 "score": score,
                 "reasoning": reasoning
             }
 
-            logger.info(f"[EditorAgent] Input (Attempt {attempts + 1}): {json.dumps(editor_payload)}")
+            logger.info(f"[EditorAgent] Input (Attempt {attempts + 1}")
             editor_resp = await self.send_message(Message(content=json.dumps(editor_payload)), self.editor_agent_id)
-            logger.info(f"[EditorAgent] Output (Attempt {attempts + 1}): {editor_resp.content}")
 
             editor_result = self.safe_json_parse(editor_resp.content)
             new_answer = editor_result.get("answer", current_answer)

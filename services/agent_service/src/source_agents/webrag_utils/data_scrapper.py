@@ -2,7 +2,10 @@ import requests
 import re
 import html2text
 from llama_index.core import Document
+from ...utils.logging import setup_logger, get_logger
 
+setup_logger()
+logger = get_logger("DataScraper")
 class DataScraper:
     def __init__(self):
         self.converter = html2text.HTML2Text()
@@ -31,10 +34,10 @@ class DataScraper:
                     documents.append(Document(text=clean_text))
                 
             except Exception as e:
-                print("Error retrieving data from url")
+                logger.error(f"Error retrieving data from url:{e}")
 
         if not documents:
-            print("No documents Fetches")
+            logger.error("No documents Fetches")
             return documents
         
         return documents
