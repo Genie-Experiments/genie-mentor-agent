@@ -220,10 +220,27 @@ If refinement is not needed, respond with:
     "feedback_summary": "No issues found with the plan.",
     "feedback_reasoning": "Why you think refinement is not needed"
 }}
-### Rules:
-1. **DO NOT** refine the plan if it is already accurate and complete.
-2. **DO NOT** refine the plan if the feedback is not clear or not actionable.
-IMPORTANT: Always provide at least one detailed reason in feedback_reasoning, even when refinement is not needed. Explain why the plan is good as is.
+### Strict Rules for Refinement:
+1. **DO NOT** refine the plan if:
+   - The data sources are correctly assigned according to the rules above
+   - The sub-queries are clear and focused
+   - The execution order makes logical sense
+   - The aggregation strategy is appropriate
+   - The plan follows the format correctly
+   - The query intent is clear and matches the user's query
+
+2. **Feedback Guidelines**:
+   - When refinement is not needed, provide ONE clear reason why the plan is good
+   - When refinement is needed, list SPECIFIC issues that need to be fixed
+   - DO NOT provide subjective or opinion-based feedback
+   - DO NOT suggest changes that don't directly improve the plan's effectiveness
+   - DO NOT request refinement for minor formatting or stylistic issues
+
+3. **Default to Acceptance**:
+   - If you're unsure whether a refinement is needed, default to accepting the plan
+   - Only request refinement when you are confident there is a clear issue
+   - Remember that unnecessary refinements can slow down the process
+IMPORTANT: Always provide at least one brief reason in feedback_reasoning, even when refinement is not needed. Explain why the plan is good as is.
 
 """
 

@@ -128,23 +128,69 @@ if submit_btn and user_query.strip():
     # Planner Section
     ############################################################################
     planner = trace.get("planner_agent", {})
-    plan = planner.get("plan", {})
+    
+    # Get all plan versions
+    plan_versions = []
+    if isinstance(planner, list):
+        plan_versions = planner
+    else:
+        plan_versions = [planner]
 
     st.header("🗺️ Let's see what Planner planned")
 
+    # Show original and refined plans in dropdowns
+    for idx, version in enumerate(plan_versions, 1):
+        version_plan = version.get("plan", {})
+        if idx == 1:
+            with st.expander("📋 Original Plan"):
+                st.markdown("**Query Components:**")
+                render_query_components(version_plan.get("query_components", []))
+                st.markdown(
+                    f"**Aggregation Strategy:** {version_plan.get('execution_order', {}).get('aggregation', 'N/A')}  \n\n"
+                    f"**Query Intent:** {version_plan.get('query_intent', 'N/A')}"
+                )
+                st.markdown("**Thinking Process:**")
+                think = version_plan.get("think", {})
+                st.markdown(f"**Query Analysis:** {think.get('query_analysis', 'N/A')}")
+                st.markdown(f"**Sub-Query Reasoning:** {think.get('sub_query_reasoning', 'N/A')}")
+                st.markdown(f"**Source Selection:** {think.get('source_selection', 'N/A')}")
+                st.markdown(f"**Execution Strategy:** {think.get('execution_strategy', 'N/A')}")
+        else:
+            with st.expander(f"📋 Refined Plan {idx-1}"):
+                st.markdown("**Query Components:**")
+                render_query_components(version_plan.get("query_components", []))
+                st.markdown(
+                    f"**Aggregation Strategy:** {version_plan.get('execution_order', {}).get('aggregation', 'N/A')}  \n\n"
+                    f"**Query Intent:** {version_plan.get('query_intent', 'N/A')}"
+                )
+                st.markdown("**Thinking Process:**")
+                think = version_plan.get("think", {})
+                st.markdown(f"**Query Analysis:** {think.get('query_analysis', 'N/A')}")
+                st.markdown(f"**Sub-Query Reasoning:** {think.get('sub_query_reasoning', 'N/A')}")
+                st.markdown(f"**Source Selection:** {think.get('source_selection', 'N/A')}")
+                st.markdown(f"**Execution Strategy:** {think.get('execution_strategy', 'N/A')}")
+
+    # Show final plan (current display)
+    st.subheader("📊 Final Plan")
+    # Get the last plan version for the final display
+    final_plan = plan_versions[-1].get("plan", {}) if plan_versions else {}
+    
     # Sub-queries table
-    render_query_components(plan.get("query_components", []))
+    render_query_components(final_plan.get("query_components", []))
 
     st.markdown(
-        f"**Aggregation Strategy:** {plan.get('execution_order', {}).get('aggregation', 'N/A')}  \n\n"
-        f"**Query Intent:** {plan.get('query_intent', 'N/A')}"
+        f"**Aggregation Strategy:** {final_plan.get('execution_order', {}).get('aggregation', 'N/A')}  \n\n"
+        f"**Query Intent:** {final_plan.get('query_intent', 'N/A')}"
     )
-
 
     # Thinking process dropdown
     with st.expander("💭 Show Planner's thinking process"):
-        pretty_think = json.dumps(plan.get("think", {}), indent=2, ensure_ascii=False)
-        st.code(pretty_think, language="json")
+        think = final_plan.get("think", {})
+        st.markdown("**Thinking Process:**")
+        st.markdown(f"**Query Analysis:** {think.get('query_analysis', 'N/A')}")
+        st.markdown(f"**Sub-Query Reasoning:** {think.get('sub_query_reasoning', 'N/A')}")
+        st.markdown(f"**Source Selection:** {think.get('source_selection', 'N/A')}")
+        st.markdown(f"**Execution Strategy:** {think.get('execution_strategy', 'N/A')}")
 
     ############################################################################
     # Planner Refiner Section
@@ -152,16 +198,37 @@ if submit_btn and user_query.strip():
     refiner = trace.get("planner_refiner_agent", {})
     if refiner:
         st.header("🛠️ Did Planner Pass Refiner Agent Test?")
-        with st.expander("🔍 View refiner details"):
-            st.markdown(f"**Refinement Required:** {refiner.get('refinement_required', 'N/A')}")
-            st.markdown(f"**Feedback Summary:** {refiner.get('feedback_summary', 'N/A')}")
-            reasoning = refiner.get("feedback_reasoning", [])
-            if reasoning:
-                st.markdown("**Feedback Reasoning:**")
-                for line in reasoning:
-                    st.write(f"- {line}")
-            if refiner.get("error"):
-                st.error(refiner["error"])
+        
+        # Get all refinement attempts
+        refinement_attempts = []
+        if isinstance(refiner, list):
+            refinement_attempts = refiner
+        else:
+            refinement_attempts = [refiner]
+            
+        for idx, attempt in enumerate(refinement_attempts, 1):
+            with st.expander(f"🔍 Refinement Attempt {idx}"):
+                st.markdown(f"**Refinement Required:** {attempt.get('refinement_required', 'N/A')}")
+                st.markdown(f"**Feedback Summary:** {attempt.get('feedback_summary', 'N/A')}")
+                
+                # Handle feedback_reasoning whether it's a string or list
+                reasoning = attempt.get("feedback_reasoning", [])
+                if isinstance(reasoning, str):
+                    reasoning = [reasoning]
+                
+                if reasoning:
+                    st.markdown("**Feedback Reasoning:**")
+                    for line in reasoning:
+                        st.write(f"- {line}")
+                else:
+                    st.info("No feedback reasoning provided")
+                    
+                if attempt.get("error"):
+                    st.error(attempt["error"])
+                    
+                # Show execution time if available
+                if "execution_time_ms" in attempt:
+                    st.caption(f"Execution time: {attempt['execution_time_ms']}ms")
 
     ############################################################################
     # Executor Section

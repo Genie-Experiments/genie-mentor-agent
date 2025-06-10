@@ -146,12 +146,16 @@ class ManagerAgent(RoutedAgent):
             plan = await self.send_message(Message(content=user_query), self.planner_agent_id)
             logger.info(f"[PlannerAgent] Output: {plan.content}")
             plan_data = self.safe_json_parse(plan.content)
-            self.trace_info['planner_agent'] = plan_data
+            
+            # Store original plan
+            plan_versions = [plan_data]
+            self.trace_info['planner_agent'] = plan_versions
             
             # Feedback loop between planner and refiner
             max_retries = 3
             retry_count = 0
             current_plan = plan_data.get('plan')
+            refinement_attempts = []
             
             while retry_count < max_retries:
                 # Get feedback from refiner
@@ -159,7 +163,7 @@ class ManagerAgent(RoutedAgent):
                 refined = await self.send_message(Message(content=json.dumps(current_plan)), self.planner_refiner_agent_id)
                 logger.info(f"[PlannerRefinerAgent] Output: {refined.content}")
                 refiner_data = self.safe_json_parse(refined.content)
-                self.trace_info['planner_refiner_agent'] = refiner_data
+                refinement_attempts.append(refiner_data)
                 
                 # If no refinement needed, break the loop
                 if refiner_data.get('refinement_required') == 'no':
@@ -194,11 +198,18 @@ class ManagerAgent(RoutedAgent):
                 if not current_plan:
                     logger.error("No plan returned from planner after refinement")
                     break
+                
+                # Store refined plan
+                plan_versions.append(plan_data)
+                self.trace_info['planner_agent'] = plan_versions
                     
                 retry_count += 1
                 logger.info(f"Refinement attempt {retry_count}/{max_retries}")
                 
                 logger.info(f"Refined plan: {json.dumps(current_plan, indent=2)}")
+            
+            # Store all refinement attempts in trace_info
+            self.trace_info['planner_refiner_agent'] = refinement_attempts
             
             query_result = await self.send_message(Message(content=json.dumps(current_plan)), self.executor_agent_id)
             self.trace_info['executor_agent'] = self.safe_json_parse(query_result.content)
