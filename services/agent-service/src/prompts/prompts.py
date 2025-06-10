@@ -220,7 +220,7 @@ If refinement is not needed, respond with:
     "feedback_summary": "No issues found with the plan.",
     "feedback_reasoning": "Why you think refinement is not needed"
 }}
-
+IMPORTANT: Always provide at least one detailed reason in feedback_reasoning, even when refinement is not needed. Explain why the plan is good as is.
 """
 
 
