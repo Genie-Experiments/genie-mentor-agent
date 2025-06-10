@@ -220,6 +220,10 @@ If refinement is not needed, respond with:
     "feedback_summary": "No issues found with the plan.",
     "feedback_reasoning": "Why you think refinement is not needed"
 }}
+### Rules:
+1. **DO NOT** refine the plan if it is already accurate and complete.
+2. **DO NOT** refine the plan if the feedback is not clear or not actionable.
+IMPORTANT: Always provide at least one detailed reason in feedback_reasoning, even when refinement is not needed. Explain why the plan is good as is.
 
 """
 
