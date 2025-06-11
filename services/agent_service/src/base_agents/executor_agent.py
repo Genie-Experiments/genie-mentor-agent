@@ -9,8 +9,8 @@ from ..prompts.prompts import GITHUB_QUERY_PROMPT, NOTION_QUERY_PROMPT, SHORT_GI
 from ..protocols.message import Message
 from ..prompts.aggregation_prompt import generate_aggregated_answer
 from ..utils.parsing import _extract_json_with_regex, extract_json_with_brace_counting
-
 from ..utils.logging import setup_logger, get_logger
+from ..utils.settings import settings
 
 setup_logger()
 logger = get_logger("ExecutorAgent")
@@ -20,14 +20,14 @@ class ExecutorAgent(RoutedAgent):
     def __init__(self, notion_workbench_agent_id: AgentId, 
                  github_workbench_agent_id: AgentId, 
                  webrag_agent_id: AgentId,
-                 kb_agent_id:AgentId) -> None:
+                 kb_agent_id: AgentId) -> None:
         super().__init__("executor_agent")
         self.notion_workbench_agent_id = notion_workbench_agent_id
         self.github_workbench_agent_id = github_workbench_agent_id
         self.webrag_agent_id = webrag_agent_id
         self.kb_agent_id = kb_agent_id
-        self.client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-        self.model = "meta-llama/llama-4-scout-17b-16e-instruct"
+        self.client = Groq(api_key=settings.GROQ_API_KEY)
+        self.model = settings.DEFAULT_MODEL
 
     @message_handler
     async def handle_query_plan(self, message: Message, ctx: MessageContext) -> Message:

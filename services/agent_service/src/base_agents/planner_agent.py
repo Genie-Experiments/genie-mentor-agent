@@ -10,6 +10,7 @@ from ..protocols.planner_schema import QueryPlan
 from ..protocols.message import Message
 from ..utils.parsing import _extract_json_with_regex
 from ..utils.logging import setup_logger, get_logger
+from ..utils.settings import settings
 
 setup_logger()
 logger = get_logger("PlannerAgent")
@@ -17,8 +18,8 @@ logger = get_logger("PlannerAgent")
 class PlannerAgent(RoutedAgent):
     def __init__(self) -> None:
         super().__init__('planner_agent')
-        self.client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-        self.model = "meta-llama/llama-4-scout-17b-16e-instruct"
+        self.client = Groq(api_key=settings.GROQ_API_KEY)
+        self.model = settings.DEFAULT_MODEL
         self.max_retries = 3
 
     @message_handler
@@ -28,6 +29,7 @@ class PlannerAgent(RoutedAgent):
             # Handle both string and JSON inputs
             try:
                 content = json.loads(message.content)
+                #TODO: Update feedback key here
                 if isinstance(content, dict) and 'feedback' in content:
                     return await self.process_query(content['query'], content['feedback'])
             except json.JSONDecodeError:

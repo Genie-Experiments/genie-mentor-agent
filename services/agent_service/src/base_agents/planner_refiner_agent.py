@@ -10,14 +10,16 @@ from ..protocols.message import Message
 from ..prompts.prompts import REFINEMENT_NEEDED_PROMPT
 from ..utils.parsing import _extract_json_with_regex
 from ..utils.logging import setup_logger, get_logger
+from ..utils.settings import settings
+
 setup_logger()
 logger = get_logger("my_module")
 
 class PlannerRefinerAgent(RoutedAgent):
     def __init__(self) -> None:  
         super().__init__('planner_refiner_agent')
-        self.client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-        self.model = "meta-llama/llama-4-scout-17b-16e-instruct"
+        self.client = Groq(api_key=settings.GROQ_API_KEY)
+        self.model = settings.DEFAULT_MODEL
 
     @message_handler
     async def handle_plan_message(self, message: Message, ctx: MessageContext) -> Message:

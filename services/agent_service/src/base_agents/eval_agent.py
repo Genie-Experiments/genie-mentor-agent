@@ -3,20 +3,19 @@ import os
 from typing import List
 from autogen_core import RoutedAgent, MessageContext, message_handler
 from ..protocols.message import Message
-from uptrain import Evals, EvalLLM, Settings
+from uptrain import Evals, EvalLLM, Settings as UptrainSettings
 from ..utils.logging import setup_logger, get_logger
+from ..utils.settings import settings
 from itertools import chain
 
 setup_logger()
 logger = get_logger("EvalAgent")
 
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-
 class EvalAgent(RoutedAgent):
     def __init__(self) -> None:
         super().__init__("eval_agent")
-        settings = Settings(model="gpt-4o", openai_api_key=OPENAI_API_KEY)
-        self.eval_llm = EvalLLM(settings)
+        uptrain_settings = UptrainSettings(model="gpt-4", openai_api_key=settings.OPENAI_API_KEY)
+        self.eval_llm = EvalLLM(uptrain_settings)
 
     @staticmethod
     def _prepare_input(question: str, answer: str, contexts: List[List[str]]) -> dict:

@@ -174,7 +174,7 @@ if submit_btn and user_query.strip():
     st.subheader("📊 Final Plan")
     # Get the last plan version for the final display
     final_plan = plan_versions[-1].get("plan", {}) if plan_versions else {}
-    
+
     # Sub-queries table
     render_query_components(final_plan.get("query_components", []))
 
@@ -220,7 +220,8 @@ if submit_btn and user_query.strip():
                     st.markdown("**Feedback Reasoning:**")
                     for line in reasoning:
                         st.write(f"- {line}")
-                else:
+                
+                if not reasoning: # Explicitly check if reasoning is empty
                     st.info("No feedback reasoning provided")
                     
                 if attempt.get("error"):

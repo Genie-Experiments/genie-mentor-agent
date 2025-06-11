@@ -6,6 +6,7 @@ from ..protocols.message import Message
 from ..utils.parsing import extract_json_with_brace_counting
 from groq import Groq
 from ..utils.logging import setup_logger, get_logger
+from ..utils.settings import settings
 
 setup_logger()
 logger = get_logger("EditorAgent")
@@ -13,8 +14,8 @@ logger = get_logger("EditorAgent")
 class EditorAgent(RoutedAgent):
     def __init__(self) -> None:
         super().__init__("editor_agent")
-        self.client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-        self.model = os.getenv("WEBRAG_LLM_DEFAULT_MODEL")
+        self.client = Groq(api_key=settings.GROQ_API_KEY)
+        self.model = settings.WEBRAG_LLM_DEFAULT_MODEL
     @message_handler
     async def fix_answer(self, message: Message, ctx: MessageContext) -> Message:
         try:
