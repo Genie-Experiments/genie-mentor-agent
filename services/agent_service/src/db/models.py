@@ -1,13 +1,14 @@
 # Standard library imports
 import datetime
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
 
-# Third-party imports
-from sqlalchemy import Column, Integer, String, Text, DateTime, JSON
 from pydantic import BaseModel
+# Third-party imports
+from sqlalchemy import JSON, Column, DateTime, Integer, String, Text
 
 # Local application imports
 from .database import Base
+
 
 class Conversation(Base):
     __tablename__ = "conversations"
@@ -18,13 +19,17 @@ class Conversation(Base):
     timestamp = Column(DateTime, default=datetime.datetime.utcnow)
     trace_info = Column(JSON)  # Store the complete trace information
 
+
 class Message(BaseModel):
     """Base message model for agent communication."""
+
     content: str
     role: Optional[str] = None
 
+
 class TraceInfo(BaseModel):
     """Model for storing trace information."""
+
     timestamp: str
     user_input: Dict[str, Any]
     planner_agent: Dict[str, Any]

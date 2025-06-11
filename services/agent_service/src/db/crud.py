@@ -1,14 +1,17 @@
 # Standard library imports
-from typing import List, Optional, Tuple, Dict, Any
+from typing import Any, Dict, List, Optional, Tuple
 
 # Local application imports
 from .database import SessionLocal
 from .models import Conversation
 
-def store_conversation(session_id: str, query: str, response: str, trace_info: Dict[str, Any]) -> None:
+
+def store_conversation(
+    session_id: str, query: str, response: str, trace_info: Dict[str, Any]
+) -> None:
     """
     Store a conversation with its trace information.
-    
+
     Args:
         session_id: The session identifier
         query: The user's query
@@ -17,22 +20,20 @@ def store_conversation(session_id: str, query: str, response: str, trace_info: D
     """
     db = SessionLocal()
     conv = Conversation(
-        session_id=session_id,
-        query=query,
-        response=response,
-        trace_info=trace_info
+        session_id=session_id, query=query, response=response, trace_info=trace_info
     )
     db.add(conv)
     db.commit()
     db.close()
 
+
 def get_history(session_id: str) -> List[Tuple[str, str, Dict[str, Any]]]:
     """
     Get conversation history with trace information.
-    
+
     Args:
         session_id: The session identifier
-        
+
     Returns:
         List of tuples containing (query, response, trace_info)
     """
@@ -41,13 +42,14 @@ def get_history(session_id: str) -> List[Tuple[str, str, Dict[str, Any]]]:
     db.close()
     return [(h.query, h.response, h.trace_info) for h in history]
 
+
 def get_trace_history(session_id: str) -> List[Dict[str, Any]]:
     """
     Get only the trace history for a session.
-    
+
     Args:
         session_id: The session identifier
-        
+
     Returns:
         List of trace information dictionaries
     """

@@ -1,4 +1,4 @@
-PLANNER_PROMPT = '''
+PLANNER_PROMPT = """
 You are a Planner Agent responsible for generating a structured query plan from the user's input. Your job is to analyze the query and determine if it needs to be decomposed into sub-queries.
 
 ---
@@ -150,8 +150,7 @@ Respond ONLY with a well-formatted JSON object using the schema below:
 - Always include detailed reasoning in the "think" field
 - Match the query type with the appropriate data source based on the examples provided
 - If feedback is provided, carefully consider and incorporate it into your plan
-'''
-
+"""
 
 
 REFINEMENT_NEEDED_PROMPT = """
@@ -288,18 +287,7 @@ Reply with a JSON object:
 """
 
 
-
-
-
-
-
-
-
-
-
-
-
-GITHUB_QUERY_PROMPT = '''
+GITHUB_QUERY_PROMPT = """
 You are a GitHub Repository Query Agent with access to the GitHub Model Context Protocol (MCP) server. Your task is to systematically explore and analyze all repositories in the 'Genie-Experiments' organization (https://github.com/Genie-Experiments) to answer the user's sub-query.
 
 Sub-query to Answer:
@@ -363,9 +351,9 @@ If there is an error or if you cannot find relevant information, respond with:
   "context": ""
 }}
 
-'''
+"""
 
-SHORT_GITHUB_PROMPT = '''
+SHORT_GITHUB_PROMPT = """
 You are a GitHub Query Agent tasked with exploring repositories in the 'Genie-Experiments' organization to answer the user's sub-query.
 Sub-query:
 "{sub_query}"
@@ -397,9 +385,9 @@ Error Response:
   "sources": [],
   "context": <any data retrieved from tools>,
 }}
-'''
+"""
 
-NOTION_QUERY_PROMPT = '''
+NOTION_QUERY_PROMPT = """
 Use Notion to find relevant information about the following query: {sub_query}. Retrieve key information from all the relevant pages, and answer query based on the information retrieved.
 GENIE is the name of the organization who's documentation you have access to
 First retrieve all documents, then parse them all to find relevant information
@@ -426,4 +414,4 @@ If there is an error, respond with:
   "error": "reason for failure",
   "sources": [],
 }}
-'''
+"""

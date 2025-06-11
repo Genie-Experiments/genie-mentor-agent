@@ -1,4 +1,4 @@
-generate_aggregated_answer = '''
+generate_aggregated_answer = """
 You are an assistant tasked with aggregating results fetched from multiple sources in response to a user query.
 When aggregating the results, ensure they are relevant to the user's query and follow the given aggregation strategy.
 In order, Result appearing first is A, then B and so on.
@@ -18,4 +18,4 @@ Instructions:
 {{
     "answer": "<your aggregated response here>"
 }}
-'''
+"""

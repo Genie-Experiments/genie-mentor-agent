@@ -1,15 +1,28 @@
 import time
 
-def reduce_context(context: str, reduction_percent: float, retries: int, target_length: int = 6000) -> str:
+
+def reduce_context(
+    context: str, reduction_percent: float, retries: int, target_length: int = 6000
+) -> str:
     reduction_factor = 1 - (reduction_percent * retries)
     reduced_length = max(int(len(context) * reduction_factor), target_length)
     return context[:reduced_length]
 
+
 def error_check_fn_rate_limit(error_message):
-    return "rate_limit_exceeded" in error_message and "TPM" in error_message and "Request too large" not in error_message
+    return (
+        "rate_limit_exceeded" in error_message
+        and "TPM" in error_message
+        and "Request too large" not in error_message
+    )
+
 
 def error_check_fn_request_too_large(error_message):
-    return "Request too large" in error_message or "reduce your message size" in error_message
+    return (
+        "Request too large" in error_message
+        or "reduce your message size" in error_message
+    )
+
 
 def retry_with_reduction_and_backoff(
     process_fn,
@@ -31,7 +44,9 @@ def retry_with_reduction_and_backoff(
                 if retries < max_retries:
                     time.sleep(delay_for_rate_limit)
                 else:
-                    raise RuntimeError(f"Rate limit error after {max_retries} retries: {error_message}")
+                    raise RuntimeError(
+                        f"Rate limit error after {max_retries} retries: {error_message}"
+                    )
 
             elif error_check_fn_request_too_large(error_message):
                 retries += 1
