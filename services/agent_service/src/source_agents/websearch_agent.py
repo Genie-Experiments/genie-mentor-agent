@@ -61,7 +61,7 @@ class WebSearchAgent(RoutedAgent):
             answer, context = await loop.run_in_executor(None, self.rag_pipeline, query, urls)
             response = WebSearchResponse(
                 answer=answer,
-                sources=[context],
+                sources=context,
                 metadata=[WebSearchMetadata(**item) for item in metadata],
                 error=None
             )

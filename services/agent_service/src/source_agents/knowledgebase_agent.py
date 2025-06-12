@@ -13,6 +13,7 @@ from ..prompts.kb_agent_prompt import response_generation_prompt
 from ..protocols.message import Message
 from ..utils.logging import get_logger, setup_logger
 from ..protocols.schemas import KBResponse
+
 setup_logger()
 logger = get_logger("KBAgent")
 
