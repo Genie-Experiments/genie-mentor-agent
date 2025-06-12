@@ -1,7 +1,9 @@
 import logging
+import os # Or from ..utils.settings import settings
 
 from autogen_core import AgentId, SingleThreadedAgentRuntime
 from autogen_core.model_context import BufferedChatCompletionContext
+# The OpenAIChatCompletionClient can be used for any OpenAI-compatible API, including Groq
 from autogen_ext.models.openai import OpenAIChatCompletionClient
 from autogen_ext.tools.mcp import McpWorkbench, SseServerParams
 
@@ -14,12 +16,8 @@ from ..base_agents.planner_refiner_agent import PlannerRefinerAgent
 from ..protocols.message import Message
 from ..source_agents.knowledgebase_agent import KBAgent
 from ..source_agents.workbench_agent import WorkbenchAgent
-from ..base_agents.eval_agent import EvalAgent
-from ..base_agents.editor_agent import EditorAgent
 from ..source_agents.websearch_agent import WebSearchAgent
-from ..source_agents.knowledgebase_agent import KBAgent
-from ..base_agents.manager_agent import ManagerAgent
-import logging
+
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
@@ -53,6 +51,20 @@ async def initialize_agent() -> None:
         async with McpWorkbench(github_mcp_server_params) as github_workbench:
 
             if not agent_initialized:
+                groq_client = OpenAIChatCompletionClient(
+                    model="meta-llama/llama-4-scout-17b-16e-instruct",
+                    api_key=os.environ.get("GROQ_API_KEY"),
+                    base_url="https://api.groq.com/openai/v1",
+                    model_info={
+                        "context_length": 128000,
+                        "vision": False,
+                        "function_calling": True,
+                        "json_output": True,
+                        "structured_output": True,
+                        "family": "llama"
+                    }
+                )
+
                 await PlannerAgent.register(RUNTIME, "planner_agent", PlannerAgent)
                 await PlannerRefinerAgent.register(
                     RUNTIME, "planner_refiner_agent", lambda: PlannerRefinerAgent()
@@ -68,24 +80,29 @@ async def initialize_agent() -> None:
                         kb_agent_id=KB_AGENT_ID
                     )
                 )
+
+                # 2. Update the WorkbenchAgent for Notion to use the Groq client.
                 await WorkbenchAgent.register(
                     RUNTIME,
                     "notion_workbench_agent",
                     factory=lambda: WorkbenchAgent(
-                        model_client=OpenAIChatCompletionClient(model="gpt-4o"),
+                        model_client=groq_client, # Use the configured Groq client
                         model_context=BufferedChatCompletionContext(buffer_size=10),
                         workbench=notion_workbench,
                     ),
                 )
+
+                # 3. Update the WorkbenchAgent for GitHub to use the Groq client.
                 await WorkbenchAgent.register(
                     RUNTIME,
                     "github_workbench_agent",
                     factory=lambda: WorkbenchAgent(
-                        model_client=OpenAIChatCompletionClient(model="gpt-4o"),
+                        model_client=groq_client, # Use the configured Groq client
                         model_context=BufferedChatCompletionContext(buffer_size=10),
                         workbench=github_workbench,
                     ),
                 )
+                
                 await WebSearchAgent.register(RUNTIME, 'websearch_agent', WebSearchAgent)
                 await KBAgent.register(RUNTIME, 'kb_agent', KBAgent)
 
