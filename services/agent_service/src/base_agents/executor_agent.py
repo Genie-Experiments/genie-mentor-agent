@@ -3,17 +3,20 @@ import os
 from typing import Any, Dict, Optional
 
 from autogen_core import AgentId, MessageContext, RoutedAgent, message_handler
-from autogen_core.models import UserMessage
 from groq import Groq
-
+from ..prompts.prompts import NOTION_QUERY_PROMPT, SHORT_GITHUB_PROMPT
+from ..protocols.message import Message
+from groq import Groq
 from ..prompts.aggregation_prompt import generate_aggregated_answer
-from ..prompts.prompts import (GITHUB_QUERY_PROMPT, NOTION_QUERY_PROMPT,
+from ..prompts.prompts import (NOTION_QUERY_PROMPT,
                                SHORT_GITHUB_PROMPT)
 from ..protocols.message import Message
 from ..utils.logging import get_logger, setup_logger
 from ..utils.parsing import (extract_json_with_brace_counting,
-                             extract_json_with_regex, safe_json_parse)
+                             extract_json_with_regex)
 from ..utils.settings import settings
+from ..protocols.schemas import KBResponse
+from ..utils.logging import setup_logger, get_logger
 
 setup_logger()
 logger = get_logger("ExecutorAgent")
@@ -55,28 +58,42 @@ class ExecutorAgent(RoutedAgent):
                 result = await self.execute_query(qid, query_components)
                 results[qid] = result
 
-            if len(execution_order["nodes"]) == 1:
-                single_result = results[execution_order["nodes"][0]]
+            valid_results = {
+                qid: res for qid, res in results.items()
+                if res.get("answer") and not res.get("error") and res.get("sources")
+            }
 
-                return Message(
-                    content=json.dumps(
-                        {
-                            "combined_answer_of_sources": single_result["answer"],
-                            "all_documents": [
-                                doc
-                                for docs in self._sources_documents.values()
-                                for doc in docs
-                            ],
-                            "documents_by_source": self._sources_documents,
-                            "metadata_by_source": self._sources_metadata,
-                            "error": None,
-                        }
-                    )
-                )
+            if len(valid_results) == 1:
+                # Only one valid source, use it directly (and allow downstream evaluation)
+                only_result = list(valid_results.values())[0]
+                logger.info("Only one valid source present. Skipping aggregation, proceeding with single valid result.")
+                return Message(content=json.dumps({
+                    "combined_answer_of_sources": only_result["answer"],
+                    "all_documents": [
+                        doc for docs in self._sources_documents.values() for doc in docs
+                    ],
+                    "documents_by_source": self._sources_documents,
+                    "metadata_by_source": self._sources_metadata,
+                    "error": None
+                }))
+
+            elif len(valid_results) < 1:
+                logger.warning("No valid sources. Returning error.")
+                return Message(content=json.dumps({
+                    "combined_answer_of_sources": None,
+                    "all_documents": [],
+                    "documents_by_source": self._sources_documents,
+                    "metadata_by_source": self._sources_metadata,
+                    "error": "All sources failed. No valid response to evaluate."
+                }))
+
 
             logger.info("Combining answers from all data sources.")
+
             combined_execution_results = await self._combine_answer_from_sources(
-                plan["user_query"], results, strategy=execution_order.get("aggregation")
+                plan["user_query"],
+                valid_results,
+                strategy=execution_order.get("aggregation")
             )
 
             all_documents = [
@@ -119,7 +136,7 @@ class ExecutorAgent(RoutedAgent):
                 response_message = await self.send_message(
                     Message(content=sub_query), self.kb_agent_id
                 )
-                response = json.loads(response_message.content)
+                response = KBResponse.model_validate_json(response_message.content).dict()
                 logger.info(f"[KB] Agent Response : {response}")
 
             elif source == "notion":

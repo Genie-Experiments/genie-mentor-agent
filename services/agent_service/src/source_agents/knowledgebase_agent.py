@@ -4,7 +4,6 @@ import os
 from typing import Any, Dict
 
 from autogen_core import MessageContext, RoutedAgent, message_handler
-from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
@@ -13,7 +12,7 @@ from langchain_groq import ChatGroq
 from ..prompts.kb_agent_prompt import response_generation_prompt
 from ..protocols.message import Message
 from ..utils.logging import get_logger, setup_logger
-
+from ..protocols.schemas import KBResponse
 setup_logger()
 logger = get_logger("KBAgent")
 
@@ -102,31 +101,18 @@ class KBAgent(RoutedAgent):
 
     @message_handler
     async def handle(self, message: Message, ctx: MessageContext) -> Message:
-        query = message.content.strip()
-        try:
-            loop = asyncio.get_event_loop()
-            result = await loop.run_in_executor(None, self.query_knowledgebase, query)
-
-            return Message(
-                content=json.dumps(
-                    {
-                        "answer": result["answer"],
-                        "sources": result["sources"],
-                        "metadata": result["metadata"],
-                        "error": result["error"],
-                    }
-                )
-            )
-
-        except Exception as e:
-            logger.error(f"Error in KnowledgeBaseAgent handler : {e}")
-            return Message(
-                content=json.dumps(
-                    {
-                        "answer": "An error occurred while processing your request",
-                        "sources": [],
-                        "metadata": [],
-                        "error": str(e),
-                    }
-                )
-            )
+            query = message.content.strip()
+            try:
+                loop = asyncio.get_event_loop()
+                result = await loop.run_in_executor(None, self.query_knowledgebase, query)
+                validated = KBResponse(**result)
+                return Message(content=validated.model_dump_json())
+           
+            except Exception as e:
+                logger.error(f"Error in KnowledgeBaseAgent handler : {e}")
+                return Message(content=json.dumps({
+                    "answer": "An error occurred while processing your request",
+                    "sources": [],
+                    "metadata": [],
+                    "error": str(e)
+                }))
