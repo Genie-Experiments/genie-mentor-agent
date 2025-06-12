@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from 'react';
-import InputField from '../../components/ui/InputField';
 import { mockAgentResponses } from '../../mocks/api-response';
 
 // Define types for the evaluation result items
@@ -12,9 +11,13 @@ interface EvaluationResultItem {
 
 const TABS = ['Answer', 'Research', 'Sources'];
 
-const Chat: React.FC = () => {
+interface ChatProps {
+  onQuestionSubmit: (question: string) => void;
+  question: string;
+}
+
+const Chat: React.FC<ChatProps> = ({ onQuestionSubmit, question }) => {
   const [activeTab, setActiveTab] = useState('Answer');
-  const [question, setQuestion] = useState('What is Genie AI Mentor?'); // Example question
   const [showBadge, setShowBadge] = useState(true);
   const [responses, setResponses] = useState<string[]>([]);
   const chatAreaRef = useRef<HTMLDivElement>(null);
@@ -27,15 +30,19 @@ const Chat: React.FC = () => {
       }
     }
   }, [responses]);
-
-  const handleQuestionSubmit = (value: string) => {
-    setQuestion(value);
-    setShowBadge(true);
-    setResponses((prev) => [
-      `Response to: ${value}`,
-      ...prev,
-    ]);
-  };
+  // Use useEffect to respond to question changes from the parent component
+  useEffect(() => {
+    if (question && question.trim() !== '') {
+      setShowBadge(true);
+      setResponses((prev) => [
+        `Response to: ${question}`,
+        ...prev,
+      ]);
+      
+      // Pass the question back to the parent component
+      onQuestionSubmit(question);
+    }
+  }, [question, onQuestionSubmit]);
 
   // Extract all sources from different agents
   const allSources = [
@@ -59,11 +66,9 @@ const Chat: React.FC = () => {
       link: source.notion_document_link,
       type: 'Notion'
     }))
-  ];
-
-  return (
+  ];  return (
     <div className="w-full flex justify-center">
-      <div className="max-w-[760px] w-full flex flex-col items-start px-4 relative min-h-screen">
+      <div className="max-w-[760px] w-full flex flex-col items-start px-4 pt-8">
         {/* Badge */}
         {showBadge && (
           <div
@@ -93,17 +98,17 @@ const Chat: React.FC = () => {
               onClick={() => setActiveTab(tab)}
               style={{ minWidth: 80 }}
             >
-              {tab}
-            </button>
+              {tab}            </button>
           ))}
         </div>
+        
         {/* Separator with active tab highlight */}
-        <div className="relative w-[760px] h-[1px] mt-[15px] mb-4" style={{background: '#9CBFBC'}}>
+        <div className="relative w-full h-[1px] mt-[15px] mb-4" style={{background: '#9CBFBC'}}>
           <div
             className="absolute h-full transition-all duration-300"
             style={{
-              left: `${TABS.indexOf(activeTab) * (760 / TABS.length)}px`,
-              width: `${760 / TABS.length}px`,
+              left: `${TABS.indexOf(activeTab) * (100 / TABS.length)}%`,
+              width: `${100 / TABS.length}%`,
               background: '#00A599',
               top: 0,
             }}
@@ -474,8 +479,7 @@ const Chat: React.FC = () => {
                         </div>
                         <div className="pl-10 text-[14px] opacity-80">
                           <a href={source.notion_document_link} target="_blank" className="text-[#00A599] hover:underline">{source.notion_document_link}</a>
-                        </div>
-                      </div>
+                        </div>                      </div>
                     ))}
                   </div>
                 </div>
@@ -483,40 +487,17 @@ const Chat: React.FC = () => {
             </div>
           )}
         </div>
-        {/* Chat Area with input fixed at bottom and content behind (no scroll) */}
-        <div className="w-full flex justify-center relative" style={{ width: 851, height: 202, flexShrink: 0, marginTop: 41 }}>
-          {/* Chat content behind input, NOT scrollable */}
-          <div
-            className="absolute left-0 top-0 w-full h-full pr-2"
-            style={{
-              zIndex: 1,
-            }}
-          >
-            <div className="flex flex-col items-end w-full" style={{ minHeight: 200, paddingBottom: 80 }}>
-              {/* Responses */}
-              {responses.map((resp, idx) => (
-                <div
-                  key={idx}
-                  className="mb-2 px-4 py-2 bg-[#F9FFFF] rounded-lg text-right max-w-[90%] text-[#002835] font-['Inter'] text-[16px] shadow"
-                >
-                  {resp}
-                </div>
-              ))}
-            </div>
-          </div>
-          {/* Gradient overlay at the bottom */}
-          <div
-            className="absolute left-0 bottom-0 w-full h-[80px] pointer-events-none"
-            style={{
-              background: 'linear-gradient(180deg, rgba(240, 255, 254, 0.00) 0%, #F0FFFE 41.99%)',
-              zIndex: 2,
-            }}
-          />
-          {/* Chat Input sticky at the bottom */}
-          <div className="sticky left-0 bottom-0 w-full flex justify-end z-10" style={{bottom: 0}}>
-            <div className="w-full max-w-[760px] mx-auto">
-              <InputField onSubmit={handleQuestionSubmit} />
-            </div>
+        {/* User responses area */}
+        <div className="w-full flex justify-center mt-8">
+          <div className="w-full flex flex-col items-end">
+            {responses.map((resp, idx) => (
+              <div
+                key={idx}
+                className="mb-2 px-4 py-2 bg-[#F9FFFF] rounded-lg text-right max-w-[90%] text-[#002835] font-['Inter'] text-[16px] shadow"
+              >
+                {resp}
+              </div>
+            ))}
           </div>
         </div>
       </div>

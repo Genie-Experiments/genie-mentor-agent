@@ -1,11 +1,17 @@
 import React from 'react';
-import InputField from './components/ui/InputField';
 import QuestionBox from './components/ui/QuestionBox';
 import genieLogo from './assets/genie.svg';
 
-const WelcomeScreen: React.FC = () => {
-  const handleQuestionSubmit = (question: string) => {
-    console.log('Question submitted:', question);
+interface WelcomeScreenProps {
+  onQuestionSubmit?: (question: string) => void;
+}
+
+const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onQuestionSubmit }) => {  const handleQuestionClick = (question: string) => {
+    if (onQuestionSubmit) {
+      onQuestionSubmit(question);
+    } else {
+      console.log('Question submitted:', question);
+    }
   };
 
   const predefinedQuestions = [
@@ -31,25 +37,23 @@ const WelcomeScreen: React.FC = () => {
             Genie AI Mentor Agent
           </h1>
         </div>{' '}
-        {/* Start text */}
-        <p className="mb-4 text-center font-['Inter'] text-[22px] font-normal text-[#002835]">
+        {/* Start text */}        <p className="mb-4 text-center font-['Inter'] text-[22px] font-normal text-[#002835]">
           Start by asking a question
         </p>
         <div className="mt-4">
-          <InputField onSubmit={handleQuestionSubmit} />{' '}
+          {/* Input field is now in App.tsx */}
         </div>{' '}
       </div>
       <div className="mt-auto w-full">
         {' '}
         <p className="mb-6 text-center font-['Inter'] text-[18px] font-normal text-[#002835] opacity-60">
           Or try predefined questions provided below
-        </p>
-        <div className="mx-auto grid w-[658px] grid-cols-2 gap-x-4 gap-y-3">
+        </p>        <div className="mx-auto grid w-[658px] grid-cols-2 gap-x-4 gap-y-3">
           {predefinedQuestions.map((question, index) => (
             <QuestionBox
               key={index}
               question={question}
-              onClick={() => handleQuestionSubmit(question)}
+              onClick={() => handleQuestionClick(question)}
             />
           ))}
         </div>
