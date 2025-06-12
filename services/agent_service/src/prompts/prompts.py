@@ -377,6 +377,7 @@ You are a GitHub Query Agent. Your goal is to explore specific repositories to a
 
 
 Don't throw error for 404 errors, keep at it until you have a definite answer
+Dont stop until you have a definite answer, with code extracted and code snippets
 **Final Answer JSON Structure:**
 ```json
 {{
