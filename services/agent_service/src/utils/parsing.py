@@ -20,38 +20,86 @@ def extract_json_with_regex(text: str) -> dict:
 
 def extract_json_with_brace_counting(text: str) -> dict:
     """Extract JSON by finding balanced braces - works well for nested JSON"""
-    start_idx = text.find("{")
-    if start_idx == -1:
-        raise ValueError("No JSON object found")
-
-    brace_count = 0
-    end_idx = start_idx
-
-    for i, char in enumerate(text[start_idx:], start_idx):
-        if char == "{":
-            brace_count += 1
-        elif char == "}":
-            brace_count -= 1
-
-        if brace_count == 0:
-            end_idx = i
-            break
-
-    if brace_count != 0:
-        raise ValueError("Unbalanced braces in JSON")
-
-    json_str = text[start_idx : end_idx + 1]
+    # Try to find a JSON object that starts with '{"' to avoid false positives
+    # in code snippets with unrelated braces
+    json_starts1 = [i for i, char in enumerate(text) if i < len(text)-1 and text[i:i+2] == '{\''] 
+    json_starts2 = [i for i, char in enumerate(text) if i < len(text)-1 and text[i:i+2] == '{"']
+    potential_starts = json_starts1 + json_starts2
+    
+    if not potential_starts:
+        # Fallback to just looking for opening braces
+        start_idx = text.find("{")
+        if start_idx == -1:
+            raise ValueError("No JSON object found")
+        potential_starts = [start_idx]
+    
+    # Try each potential starting point
+    for start_idx in potential_starts:
+        try:
+            brace_count = 0
+            end_idx = start_idx
+            in_string = False
+            escape_next = False
+            
+            for i, char in enumerate(text[start_idx:], start_idx):
+                if escape_next:
+                    escape_next = False
+                    continue
+                    
+                if char == '\\':
+                    escape_next = True
+                elif char == '"' and not escape_next:
+                    in_string = not in_string
+                elif not in_string:  # Only count braces outside of strings
+                    if char == "{":
+                        brace_count += 1
+                    elif char == "}":
+                        brace_count -= 1
+                
+                if brace_count == 0 and i > start_idx:  # Found a complete object
+                    end_idx = i
+                    break
+            
+            if brace_count != 0:
+                continue  # Try next potential start if this one had unbalanced braces
+                
+            json_str = text[start_idx : end_idx + 1]
+            # Try to parse and return if successful
+            return json.loads(json_str)
+        except (ValueError, json.JSONDecodeError):
+            continue  # Try next potential start
+    
+    # If we get here, no valid JSON was found
     try:
-        return json.loads(json_str)
-    except json.JSONDecodeError as e:
-        raise ValueError(f"Failed to parse JSON: {e}")
+        # One last attempt with regex to find the most promising JSON-like structure
+        return extract_json_with_regex(text)
+    except:
+        # If all else fails, try a more lenient approach with regex cleanup
+        # Find the largest {...} block and clean it up
+        matches = re.findall(r'\{[^{}]*((\{[^{}]*\})[^{}]*)*\}', text, re.DOTALL)
+        if matches:
+            largest_match = max(matches, key=lambda x: len(x[0]) if isinstance(x, tuple) else len(x))
+            json_candidate = largest_match[0] if isinstance(largest_match, tuple) else largest_match
+            try:
+                return json.loads(json_candidate)
+            except:
+                pass
+        
+        raise ValueError("Could not extract valid JSON - unbalanced braces or invalid format")
 
 
 def safe_json_parse(content: str) -> dict:
     try:
         return json.loads(content)
     except json.JSONDecodeError:
-        return {"raw_content": content}
+        # Try the more robust extraction methods before giving up
+        try:
+            return extract_json_with_brace_counting(content)
+        except Exception:
+            try:
+                return extract_json_with_regex(content)
+            except Exception:
+                return {"raw_content": content}
 
 
 def extract_all_sources_from_plan(plan_data: Any) -> List[str]:

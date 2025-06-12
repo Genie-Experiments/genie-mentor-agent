@@ -16,7 +16,6 @@ setup_logger()
 logger = get_logger("ManagerAgent")
 EVALUATION_PASS_THRESHOLD=1.0
 class ManagerAgent(RoutedAgent):
-    _SKIP_EVALUATION_SOURCES = frozenset(["github", "notion"])
 
     def __init__(
         self,
@@ -216,7 +215,9 @@ class ManagerAgent(RoutedAgent):
                 'evaluation_agent': eval_history,
                 'editor_agent': editor_history,
                 'final_answer': final_answer,
-                'total_time': time.time() - start_time
+                'total_time': time.time() - start_time,
+                'evaluation_skipped': False,
+                'skip_reason': None
             })
             self._update_history(session_id, message.content, final_answer)
 
@@ -300,12 +301,12 @@ class ManagerAgent(RoutedAgent):
             attempts += 1
       
         if not editor_agent:
-            logger.info("[ManagerAgent] EditorAgent skipped: Evaluation passed.")
+            logger.info("[ManagerAgent] EditorAgent completed its evaluation cycle.")
             editor_agent.append({
                 "editor_history": {
                     "answer": current_answer,
                     "error": None,
-                    "skipped": True
+                    "skipped": False
                 },
                 "attempt": 0
             })

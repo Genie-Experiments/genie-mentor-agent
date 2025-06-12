@@ -11,7 +11,7 @@ from autogen_core.models import (AssistantMessage, ChatCompletionClient,
 from autogen_core.tools import ToolResult, Workbench
 
 from ..protocols.message import Message
-
+from ..utils.parsing import extract_json_with_brace_counting
 
 class WorkbenchAgent(RoutedAgent):
     def __init__(
@@ -93,8 +93,6 @@ class WorkbenchAgent(RoutedAgent):
                 tools=(await self._workbench.list_tools()),
                 cancellation_token=ctx.cancellation_token,
             )
-        # TODO: Get final prompt being sent to LLM - after content has been fetched
-        # Now we have a single message as the result.
         assert isinstance(create_result.content, str)
 
         print("---------Final Response From Notion-----------")
@@ -104,6 +102,14 @@ class WorkbenchAgent(RoutedAgent):
         await self._model_context.add_message(
             AssistantMessage(content=create_result.content, source="assistant")
         )
+        
+        result_json = extract_json_with_brace_counting(create_result.content)
+        result_object = {
+            "answer": result_json.get("answer"),
+            "sources": result_json.get("sources"),
+            "metadata": result_json.get("metadata"),
+            "error": result_json.get("error")
+        }
 
         # Return the result as a message.
-        return Message(content=create_result.content)
+        return Message(content=json.dumps(result_object))

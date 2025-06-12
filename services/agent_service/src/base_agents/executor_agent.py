@@ -180,6 +180,7 @@ class ExecutorAgent(RoutedAgent):
                     response = extract_json_with_brace_counting(
                         response_message.content.strip()
                     )
+                    print(json.dumps(response, indent=2))
                 except Exception as e:
                     logger.warning(
                         f"Failed to parse structured JSON from GitHub response: {e}"

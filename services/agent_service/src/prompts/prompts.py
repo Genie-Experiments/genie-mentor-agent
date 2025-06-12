@@ -381,8 +381,8 @@ Dont stop until you have a definite answer, with code extracted and code snippet
 **Final Answer JSON Structure:**
 ```json
 {{
-  "answer": "<A comprehensive, detailed answer to the sub-query, including code examples and explanations derived from the tool results.>",
-  "sources": "<A list of exact file paths and the specific code snippets or content from those files that were used to formulate the answer.>",
+  "answer": "<A comprehensive, detailed answer to the sub-query, including code examples and explanations derived from the tool results. Should be a definitive answer only, not simply directing user towards files and repositories>",
+  "sources": ["List of decoded file content. ALL OF THE CODE EXTRACTED AND USED. Different file contents should be different entries in the list. List should be strings, those strings should only be code, NO OBJECTS, NO FILENAMES"],
   "metadata": {{
       "repo_links": ["<A list of links to the repositories that were actually used.>"],
       "repo_names": ["<A list of names of the repositories that were used.>"]
