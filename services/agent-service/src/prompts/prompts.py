@@ -1,8 +1,8 @@
-PLANNER_PROMPT = """
+PLANNER_PROMPT = '''
 You are a Planner Agent responsible for generating a structured query plan from the user's input. Your job is to analyze the query and determine if it needs to be decomposed into sub-queries.
 
 ---
-NEW USER QUERY:
+USER QUERY:
 {user_query}
 
 FEEDBACK:
@@ -150,7 +150,8 @@ Respond ONLY with a well-formatted JSON object using the schema below:
 - Always include detailed reasoning in the "think" field
 - Match the query type with the appropriate data source based on the examples provided
 - If feedback is provided, carefully consider and incorporate it into your plan
-"""
+'''
+
 
 
 REFINEMENT_NEEDED_PROMPT = """
@@ -219,28 +220,9 @@ If refinement is not needed, respond with:
     "feedback_summary": "No issues found with the plan.",
     "feedback_reasoning": "Why you think refinement is not needed"
 }}
-### Strict Rules for Refinement:
-1. **DO NOT** refine the plan if:
-   - The data sources are correctly assigned according to the rules above
-   - The sub-queries are clear and focused
-   - The execution order makes logical sense
-   - The aggregation strategy is appropriate
-   - The plan follows the format correctly
-   - The query intent is clear and matches the user's query
-
-2. **Feedback Guidelines**:
-   - When refinement is not needed, provide ONE clear reason why the plan is good
-   - When refinement is needed, list SPECIFIC issues that need to be fixed
-   - DO NOT provide subjective or opinion-based feedback
-   - DO NOT suggest changes that don't directly improve the plan's effectiveness
-   - DO NOT request refinement for minor formatting or stylistic issues
-
-3. **Default to Acceptance**:
-   - If you're unsure whether a refinement is needed, default to accepting the plan
-   - Only request refinement when you are confident there is a clear issue
-   - Remember that unnecessary refinements can slow down the process
-IMPORTANT: Always provide at least one brief reason in feedback_reasoning, even when refinement is not needed. Explain why the plan is good as is.
-
+IMPORTANT: Always provide at least one detailed reason in feedback_reasoning, even when refinement is not needed. Explain why the plan is good as is.
+### Rules:
+1. Do not refine the plan if it is accurate and complete. 
 """
 
 
@@ -287,7 +269,51 @@ Reply with a JSON object:
 """
 
 
-GITHUB_QUERY_PROMPT = """
+
+
+GENERATE_AGGREAGATED_ANSWER = '''
+You are an assistant tasked with aggregating results fetched from multiple sources in response to a user query.
+When aggregating the results, ensure they are relevant to the user's query and follow the given aggregation strategy.
+
+User Query: "{user_query}"
+Results: {results}
+Aggregation Strategy: "{strategy}"
+
+Instructions:
+- Aggregate the provided results into a coherent and concise response.
+- Assess the relevance of the results to the user's query.
+- Return the response as a properly formatted JSON object using the following structure:
+
+{{
+    "answer": "<your aggregated response here>",
+}}
+'''
+
+
+
+
+response_generation_prompt = """
+You are an expert AI assistant. You are given a context that is extracted from URLs provided by the Google Search engine with respect to a user query. 
+User Query is given to you as well. 
+Try to answer the query from the given context that may be coming from multiple URLs and pages. Be to the point and specific, replying with respect to the query given to you.
+
+GUIDELINES:
+- A clear and thorough explanation of the topic.
+- Examples or use cases to illustrate your answer.
+- Any relevant code snippets, formulas, or technical details.
+- References or sources from the provided context, if available.
+- Avoid assumptions; stick to the given context.
+- Try to act like a real-time web RAG-based agent. Do not act like you were given a context and you are answering from it.
+
+Context: "{context}"
+User Query: "{query}"
+Answer:
+"""
+
+
+
+
+GITHUB_QUERY_PROMPT = '''
 You are a GitHub Repository Query Agent with access to the GitHub Model Context Protocol (MCP) server. Your task is to systematically explore and analyze all repositories in the 'Genie-Experiments' organization (https://github.com/Genie-Experiments) to answer the user's sub-query.
 
 Sub-query to Answer:
@@ -351,9 +377,9 @@ If there is an error or if you cannot find relevant information, respond with:
   "context": ""
 }}
 
-"""
+'''
 
-SHORT_GITHUB_PROMPT = """
+SHORT_GITHUB_PROMPT = '''
 You are a GitHub Query Agent tasked with exploring repositories in the 'Genie-Experiments' organization to answer the user's sub-query.
 Sub-query:
 "{sub_query}"
@@ -385,9 +411,9 @@ Error Response:
   "sources": [],
   "context": <any data retrieved from tools>,
 }}
-"""
+'''
 
-NOTION_QUERY_PROMPT = """
+NOTION_QUERY_PROMPT = '''
 Use Notion to find relevant information about the following query: {sub_query}. Retrieve key information from all the relevant pages, and answer query based on the information retrieved.
 GENIE is the name of the organization who's documentation you have access to
 First retrieve all documents, then parse them all to find relevant information
@@ -414,4 +440,4 @@ If there is an error, respond with:
   "error": "reason for failure",
   "sources": [],
 }}
-"""
+'''

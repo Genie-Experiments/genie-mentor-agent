@@ -1,3 +1,4 @@
+import asyncio
 import json
 import time
 from typing import Any, Dict, List
@@ -6,6 +7,7 @@ from autogen_core import AgentId, MessageContext, RoutedAgent, message_handler
 
 from ..protocols.message import Message
 from ..utils.logging import get_logger, setup_logger
+from ..utils.memory_client import remember, recall
 from ..utils.parsing import extract_all_sources_from_plan, safe_json_parse
 
 setup_logger()
@@ -32,38 +34,6 @@ class ManagerAgent(RoutedAgent):
 
         self.trace_info = {}
         self.attempts = []
-        # Store conversation history per session
-        self.conversation_history: Dict[str, List[Dict[str, str]]] = {}
-
-    def _get_context(self, session_id: str) -> str:
-        """Get conversation context for the current session."""
-        if session_id not in self.conversation_history:
-            return ""
-
-        history = self.conversation_history[session_id]
-        if not history:
-            return ""
-
-        # Get only the last Q&A pair for context
-        last_qa = history[-1]
-        context = "\nPrevious conversation:\n"
-        context += f"Q: {last_qa['question']}\nA: {last_qa['answer']}\n"
-        return context
-
-    def _update_history(self, session_id: str, question: str, answer: str):
-        """Update conversation history for the session."""
-        if session_id not in self.conversation_history:
-            self.conversation_history[session_id] = []
-
-        self.conversation_history[session_id].append(
-            {"question": question, "answer": answer}
-        )
-
-        # Keep only last 5 conversations to manage memory
-        if len(self.conversation_history[session_id]) > 5:
-            self.conversation_history[session_id] = self.conversation_history[
-                session_id
-            ][-5:]
 
     def _should_skip_evaluation(self, plan_data: Dict[str, Any]) -> bool:
         """
@@ -93,15 +63,12 @@ class ManagerAgent(RoutedAgent):
         self, message: Message, ctx: MessageContext
     ) -> Message:
         start_time = time.time()
-        session_id = ctx.session_id if hasattr(ctx, "session_id") else "default"
+        session_id = getattr(ctx, "session_id", "default")
+        mem_snips  = await recall(session_id, message.content, k=3)
+        context    = "\n".join(mem_snips) if mem_snips else ""
+        user_query = f"{context}\n\n{message.content}" if context else message.content
 
-        # Get conversation context
-        context = self._get_context(session_id)
-        user_query = message.content
-
-        # If there's context, prepend it to the query
-        if context:
-            user_query = f"{context}\nCurrent question: {user_query}"
+        logger.info(f"[ManagerAgent] Final query with context: {user_query}")
 
         self.trace_info = {
             "start_time": start_time,
@@ -239,8 +206,25 @@ class ManagerAgent(RoutedAgent):
             self.trace_info["total_time"] = time.time() - start_time
 
             # Update conversation history
-            self._update_history(session_id, message.content, final_answer)
-
+            memory_content = json.dumps({
+                "type": "plan",
+                "question": user_query,
+                "answer": json.dumps(final_answer),   # or store plan directly
+                "timestamp": time.strftime('%Y-%m-%d %H:%M:%S')
+            })
+            
+            logger.debug(f"[ManagerAgent] Remembering: {json.dumps(memory_content, indent=2)}")
+            try:
+                await remember(
+                session_id,
+                f"Q: {message.content}",
+                f"A: {final_answer}\nTimestamp: {time.strftime('%Y-%m-%d %H:%M:%S')}"
+            )
+            except Exception as e:
+                logger.error(f"Failed to store memory: {e}")
+                # Don't raise the error - memory storage failure shouldn't break the main flow
+                self.trace_info["errors"].append(f"Memory storage failed: {str(e)}")
+            
             return Message(content=json.dumps({"trace_info": self.trace_info}))
 
         except Exception as e:
