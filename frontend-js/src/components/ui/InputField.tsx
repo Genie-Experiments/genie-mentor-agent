@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 
 interface InputFieldProps {
   onSubmit: (value: string) => void;
+  placeholder?: string;
 }
 
-const InputField: React.FC<InputFieldProps> = ({ onSubmit }) => {
+const InputField: React.FC<InputFieldProps> = ({ onSubmit, placeholder = "Ask a question..." }) => {
   const [inputValue, setInputValue] = useState('');
 
   const handleSubmit = () => {
@@ -19,20 +20,18 @@ const InputField: React.FC<InputFieldProps> = ({ onSubmit }) => {
       handleSubmit();
     }
   };
-
   return (
-    <div className="flex w-full max-w-[760px] items-center justify-between rounded-[8px] border border-[#002835] bg-white p-[13px_13px_13px_18px] shadow-md">
-      <input
+    <div className="flex w-full max-w-[760px] items-center justify-between rounded-[16px] border border-[#002835] bg-white p-[15px_15px_15px_20px] shadow-lg">      <input
         type="text"
-        className="flex-grow border-none font-['Inter'] text-[16px] text-[#002835] outline-none placeholder-[#002835]/50"
-        placeholder="Ask a question..."
+        className="flex-grow border-none font-['Inter'] text-[18px] text-[#002835] outline-none placeholder-[#002835]/50"
+        placeholder={placeholder}
         value={inputValue}
         onChange={(e) => setInputValue(e.target.value)}
         onKeyPress={handleKeyPress}
       />
       <button 
         onClick={handleSubmit} 
-        className="h-[30px] w-[30px] flex-shrink-0 transition-transform hover:scale-105"
+        className="h-[36px] w-[36px] flex-shrink-0 transition-transform hover:scale-105"
         aria-label="Submit question"
       >
         <svg

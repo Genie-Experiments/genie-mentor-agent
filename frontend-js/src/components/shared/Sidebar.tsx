@@ -11,9 +11,10 @@ interface Conversation {
 
 interface SidebarProps {
   conversations?: Conversation[];
+  onNewChat?: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ conversations = [] }) => {
+const Sidebar: React.FC<SidebarProps> = ({ conversations = [], onNewChat }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const toggleSidebar = () => {
@@ -21,13 +22,15 @@ const Sidebar: React.FC<SidebarProps> = ({ conversations = [] }) => {
   };
 
   const handleNewChat = () => {
-    console.log('New chat started');
-  };
-
-  return (
+    if (onNewChat) {
+      onNewChat();
+    } else {
+      console.log('New chat started');
+    }
+  };return (
     <div
       className={cn(
-        'relative flex h-screen flex-col overflow-hidden bg-[#00A599] transition-all duration-300 ease-in-out',
+        'flex h-screen flex-col overflow-hidden bg-[#00A599] transition-all duration-300 ease-in-out sticky top-0 left-0',
         isCollapsed ? 'w-[90px]' : 'w-[300px]',
         'rounded-r-[26px]'
       )}
