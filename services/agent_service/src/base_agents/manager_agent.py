@@ -58,60 +58,6 @@ class ManagerAgent(RoutedAgent):
         if len(self.conversation_history[session_id]) > 5:
             self.conversation_history[session_id] = self.conversation_history[session_id][-5:]
 
-    def _should_skip_evaluation(self, plan_data: Dict[str, Any]) -> bool:
-        """
-        Check if evaluation and editing should be skipped based on selected sources.
-        Returns True if GitHub or Notion are selected as sources.
-        """
-        try:
-            # Get the plan from plan_data
-            plan = plan_data.get('plan', {})
-            
-            # Check for sources in various possible locations within the plan
-            sources_to_check = []
-            
-            # Common possible locations for sources in the plan
-            if isinstance(plan, dict):
-                # Check if sources are directly in the plan
-                if 'sources' in plan:
-                    sources_to_check.extend(plan['sources'])
-                
-                # Check if there are selected_sources
-                if 'selected_sources' in plan:
-                    sources_to_check.extend(plan['selected_sources'])
-                
-                # Check for data_sources
-                if 'data_sources' in plan:
-                    sources_to_check.extend(plan['data_sources'])
-                
-                # Check if plan has steps with sources
-                if 'steps' in plan:
-                    for step in plan['steps']:
-                        if isinstance(step, dict) and 'sources' in step:
-                            sources_to_check.extend(step['sources'])
-                        if isinstance(step, dict) and 'source' in step:
-                            sources_to_check.append(step['source'])
-            
-            # Check if plan itself is a list of sources
-            elif isinstance(plan, list):
-                sources_to_check.extend(plan)
-            
-            # Convert all sources to lowercase strings for comparison
-            sources_lower = [str(source).lower() for source in sources_to_check]
-            
-            # Check if github or notion are in the sources
-            skip_sources = ['github', 'notion']
-            for skip_source in skip_sources:
-                for source in sources_lower:
-                    if skip_source in source:
-                        logger.info(f"Found {skip_source} in sources. Skipping evaluation and editing.")
-                        return True
-            
-            return False
-            
-        except Exception as e:
-            logger.warning(f"Error checking sources for evaluation skip: {e}")
-            return False
 
     @message_handler
     async def handle_user_message(self, message: Message, ctx: MessageContext) -> Message:
@@ -213,25 +159,13 @@ class ManagerAgent(RoutedAgent):
 
             
             
-            # Check if we should skip evaluation and editing
-            should_skip = self._should_skip_evaluation(plan_data)
-            
-            if should_skip:
-                # Skip evaluation and editing, use the answer directly
-                final_answer = answer
-                eval_history = []
-                editor_agent = []
-                self.trace_info['evaluation_skipped'] = True
-                self.trace_info['skip_reason'] = "GitHub or Notion source detected"
-                logger.info("Skipping evaluation and editing due to GitHub/Notion source selection")
-            else:
-                # Run normal evaluation loop
-                final_answer, eval_history, editor_agent = await self.run_evaluation_loop(
-                    question=user_query,
-                    initial_answer=answer,
-                    contexts=documents,
-                    documents_by_source=documents_by_source
-                )
+            # Always run normal evaluation loop (do not skip for any source)
+            final_answer, eval_history, editor_agent = await self.run_evaluation_loop(
+                question=user_query,
+                initial_answer=answer,
+                contexts=documents,
+                documents_by_source=documents_by_source
+            )
             
             self.trace_info['evaluation_agent'] = eval_history
             self.trace_info['editor_agent'] = editor_agent

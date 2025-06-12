@@ -19,7 +19,7 @@ from autogen_core.models import (
 )
 from autogen_core.tools import ToolResult, Workbench
 from ..protocols.message import Message
-
+from ..utils import parsing
 
 class WorkbenchAgent(RoutedAgent):
     def __init__(
@@ -85,15 +85,29 @@ class WorkbenchAgent(RoutedAgent):
                 tools=(await self._workbench.list_tools()),
                 cancellation_token=ctx.cancellation_token,
             )
-        # TODO: Get final prompt being sent to LLM - after content has been fetched
-        # Now we have a single message as the result.
         assert isinstance(create_result.content, str)
 
-        print("---------Final Response From Notion-----------")
+        print("---------Final Response From MCP Agent-----------")
         print(create_result.content)
 
         # Add the assistant message to the model context.
         await self._model_context.add_message(AssistantMessage(content=create_result.content, source="assistant"))
 
-        # Return the result as a message.
-        return Message(content=create_result.content)
+        # Aggregate tool call results if any were made
+        aggregated_tool_results = []
+        if 'results' in locals():
+            # If results were collected in the tool call loop, aggregate their .to_text() output
+            aggregated_tool_results = [result.to_text() for result in results]
+
+        # Extract JSON from the final LLM answer using the parsing util
+        try:
+            response_json = parsing.extract_json_with_brace_counting(create_result.content)
+        except Exception as e:
+            print(f"Failed to extract JSON: {e}")
+            response_json = {"content": create_result.content, "sources": aggregated_tool_results}
+
+        # Replace the 'sources' value with the aggregated tool call results
+        response_json["sources"] = aggregated_tool_results
+
+        # Return the stringified JSON in the message content
+        return Message(content=json.dumps(response_json))
