@@ -95,21 +95,35 @@ class WorkbenchAgent(RoutedAgent):
             )
         assert isinstance(create_result.content, str)
 
-        print("---------Final Response From Notion-----------")
-        print(create_result.content)
+        
 
         # Add the assistant message to the model context.
         await self._model_context.add_message(
             AssistantMessage(content=create_result.content, source="assistant")
         )
         
-        result_json = extract_json_with_brace_counting(create_result.content)
-        result_object = {
+        try:
+            print("---------Final Response From MCP Agent-----------")
+            print(create_result.content)
+            result_json = extract_json_with_brace_counting(create_result.content)
+            result_object = {
             "answer": result_json.get("answer"),
             "sources": result_json.get("sources"),
             "metadata": result_json.get("metadata"),
             "error": result_json.get("error")
-        }
-
-        # Return the result as a message.
-        return Message(content=json.dumps(result_object))
+            }
+            print("---------Final Response From MCP Agent-----------")
+            print(result_object)
+            # Return the result as a message.
+            return Message(content=json.dumps(result_object))
+        except Exception as e:
+            print(f"Error extracting JSON from response: {e}")
+            result_json = {"error": str(e)}
+            result_object = {
+                "answer": "Error Occured in MCP Agent",
+                "sources": [],
+                "metadata": [],
+                "error": str(e)
+            }
+            return Message(content=json.dumps(result_object))
+        

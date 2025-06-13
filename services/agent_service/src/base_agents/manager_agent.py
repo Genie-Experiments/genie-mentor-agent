@@ -251,6 +251,8 @@ class ManagerAgent(RoutedAgent):
         while attempts < max_attempts:
             
             logger.info(f"[EvaluationAgent] Input (Attempt {attempts + 1})")
+            print("---------CONTEXTS---------")
+            print(contexts)
             eval_payload = EvalAgentInput(question=question, answer=current_answer, contexts=contexts)
             eval_resp = await self.send_message(Message(content=eval_payload.model_dump_json()), self.eval_agent_id)
             eval_result = EvalAgentOutput.model_validate_json(eval_resp.content)
@@ -276,6 +278,7 @@ class ManagerAgent(RoutedAgent):
            
             
             logger.info(f"[EditorAgent] Input (Attempt {attempts + 1}")
+            print(documents_by_source, "\n\n\n\n")
             editor_payload = EditorAgentInput(
                 question=question,
                 previous_answer=current_answer,

@@ -146,18 +146,8 @@ class ExecutorAgent(RoutedAgent):
                 response_message = await self.send_message(
                     Message(content=prompt), self.notion_workbench_agent_id
                 )
-                try:
-                    response = extract_json_with_brace_counting(
-                        response_message.content.strip()
-                    )
-                except Exception as e:
-                    logger.warning(
-                        f"Failed to parse structured JSON from GitHub response: {e}"
-                    )
-                    response = {
-                        "answer": response_message.content.strip(),
-                        "sources": [],
-                    }
+                response = json.loads(response_message.content)
+                logger.info(f"[Notion] Agent Response : {response}")
 
             elif source == "websearch":
 
@@ -176,19 +166,8 @@ class ExecutorAgent(RoutedAgent):
                 response_message = await self.send_message(
                     Message(content=prompt), self.github_workbench_agent_id
                 )
-                try:
-                    response = extract_json_with_brace_counting(
-                        response_message.content.strip()
-                    )
-                    print(json.dumps(response, indent=2))
-                except Exception as e:
-                    logger.warning(
-                        f"Failed to parse structured JSON from GitHub response: {e}"
-                    )
-                    response = {
-                        "answer": response_message.content.strip(),
-                        "sources": [],
-                    }
+                response = json.loads(response_message.content)
+                logger.info(f"[GitHub] Agent Response : {response}")
 
             else:
                 raise ValueError(f"Unknown source: {source}")

@@ -382,13 +382,25 @@ Dont stop until you have a definite answer, with code extracted and code snippet
 ```json
 {{
   "answer": "<A comprehensive, detailed answer to the sub-query, including code examples and explanations derived from the tool results. Should be a definitive answer only, not simply directing user towards files and repositories>",
-  "sources": ["List of decoded file content. ALL OF THE CODE EXTRACTED AND USED. Different file contents should be different entries in the list. List should be strings, those strings should only be code, NO OBJECTS, NO FILENAMES"],
+  "sources": ["List of decoded file content. ALL OF THE CODE EXTRACTED AND USED. Different file contents should be different entries in the list. List should be strings"],
   "metadata": {{
       "repo_links": ["<A list of links to the repositories that were actually used.>"],
-      "repo_names": ["<A list of names of the repositories that were used.>"]
+      "repo_names": ["<A list of names of the repositories that were used.>"] 
     }},
   "error": ""
 }}
+```
+
+**CRITICAL JSON FORMATTING INSTRUCTIONS:**
+1. Your final response MUST be ONLY the JSON object above - no other text, comments, or explanation
+2. Ensure ALL brackets, braces and quotes are properly closed and balanced
+3. Each source in the "sources" array must be a properly escaped string
+4. Double-check that your JSON is properly formatted and parseable
+5. DO NOT include markdown formatting elements like ```json or ``` in your final response
+6. Return ONLY THE RAW JSON OBJECT with no other text
+7. Make sure all quotes and control characters in strings are properly escaped
+
+IMPORTANT: ANY violation of these formatting rules may cause the entire workflow to fail.
 """
 
 NOTION_QUERY_PROMPT = """
@@ -424,8 +436,20 @@ You are a methodical Notion Query Agent. Your task is to search the GENIE organi
   "sources": "<The raw text and content retrieved from the various Notion pages and blocks that were used to formulate the answer.>",
   "metadata": {{
       "doc_links": ["<A list of links to the Notion documents that were used.>"],
-      "doc_names": ["<A list of the names of the Notion documents that were used.>"]
+      "doc_names": ["<A list of the names of the Notion documents that were used.>"] 
     }},
   "error": ""
 }}
+
+**CRITICAL JSON FORMATTING INSTRUCTIONS:**
+1. Your final response MUST be ONLY the JSON object above - no other text, comments, or explanation
+2. Ensure ALL brackets, braces and quotes are properly closed and balanced
+3. Make sure all strings in the JSON are properly escaped, especially quotes and control characters
+4. Double-check that your JSON is properly formatted and will parse correctly
+5. DO NOT include markdown formatting elements like ```json or ``` in your final response
+6. Return ONLY THE RAW JSON OBJECT with no other text
+7. The sources field must be a valid string, properly escaped
+8. The arrays in metadata must contain only properly formatted strings
+
+IMPORTANT: ANY violation of these formatting rules may cause the entire workflow to fail.
 """
