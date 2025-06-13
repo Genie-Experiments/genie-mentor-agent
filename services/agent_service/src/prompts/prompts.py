@@ -403,6 +403,55 @@ Dont stop until you have a definite answer, with code extracted and code snippet
 IMPORTANT: ANY violation of these formatting rules may cause the entire workflow to fail.
 """
 
+TEMP_GITHUB_PROMPT = """
+You are a GitHub Query Agent. Your goal is to explore specific repositories to answer the user's sub-query.
+
+**User Sub-query:** "{sub_query}"
+
+**Authorized Repositories:**
+- https://github.com/Genie-Experiments/rag_vs_llamaparse
+- https://github.com/Genie-Experiments/Ragas-agentic-testing
+- https://github.com/Genie-Experiments/agentic-rag
+
+**Your process must follow these distinct steps:**
+
+**Step 1: Exploration and Tool Use**
+- Your immediate priority is to gather information.
+- Start by exploring the repositories to understand their structure and find relevant files. Use the `get_file_contents` tool with a "/" path to list the contents of the root directory.
+- Based on the file list, use the `get_file_contents` tool again to read the contents of any files that seem relevant to the user's sub-query.
+- **IMPORTANT:** During this step, your response must ONLY contain a list of tool calls. Do NOT generate any other text, explanations, or the final JSON answer.
+
+**Step 2: Synthesize Final Answer**
+- After you have gathered all the necessary information from your tool calls, and you have received the results, you will then construct the final answer.
+- Your final response in this step must be ONLY a single JSON object with the exact structure below. Do not include any text before or after the JSON object.
+
+
+Don't throw error for 404 errors, keep at it until you have a definite answer
+Dont stop until you have a definite answer, with code extracted and code snippets
+**Final Answer JSON Structure:**
+```json
+{{
+  "answer": "<A comprehensive, detailed answer to the sub-query, including code examples and explanations derived from the tool results. Should be a definitive answer only, not simply directing user towards files and repositories. Its very important that this answer be detailed and include all code and file content extracted from repo. Answer should not only direct user to files, instead include content from any files mentioned. It should only be educational, not say relevant information wasnt found, always an answer based on the information retrieved>",
+  "metadata": {{
+      "repo_links": ["<A list of links to the repositories that were actually used.>"],
+      "repo_names": ["<A list of names of the repositories that were used.>"] 
+    }},
+  "error": ""
+}}
+```
+
+**CRITICAL JSON FORMATTING INSTRUCTIONS:**
+1. Your final response MUST be ONLY the JSON object above - no other text, comments, or explanation
+2. Ensure ALL brackets, braces and quotes are properly closed and balanced
+3. Each source in the "sources" array must be a properly escaped string
+4. Double-check that your JSON is properly formatted and parseable
+5. DO NOT include markdown formatting elements like ```json or ``` in your final response
+6. Return ONLY THE RAW JSON OBJECT with no other text
+7. Make sure all quotes and control characters in strings are properly escaped
+
+IMPORTANT: ANY violation of these formatting rules may cause the entire workflow to fail.
+"""
+
 NOTION_QUERY_PROMPT = """
 You are a methodical Notion Query Agent. Your task is to search the GENIE organization's Notion documentation to provide a detailed answer to the user's sub-query. You must operate in a strict, sequential manner.
 
@@ -432,7 +481,7 @@ You are a methodical Notion Query Agent. Your task is to search the GENIE organi
 **Final Answer JSON Structure:**
 ```json
 {{
-  "answer": "<A comprehensive, detailed answer to the sub-query, synthesized from the information retrieved from Notion.>",
+  "answer": "<A comprehensive, detailed answer to the sub-query, synthesized from the information retrieved from Notion. It should not only direct user to files, instead include content from any files mentioned. It should only be educational, not say relevant information wasnt found, always an answer based on the information retrieved>",
   "sources": "<The raw text and content retrieved from the various Notion pages and blocks that were used to formulate the answer.>",
   "metadata": {{
       "doc_links": ["<A list of links to the Notion documents that were used.>"],

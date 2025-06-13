@@ -1,6 +1,6 @@
 import json
 import re
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional, Tuple
 
 
 def extract_json_with_regex(text: str) -> dict:
@@ -100,6 +100,129 @@ def safe_json_parse(content: str) -> dict:
                 return extract_json_with_regex(content)
             except Exception:
                 return {"raw_content": content}
+
+
+def extract_github_metadata(text: str) -> Dict[str, Any]:
+    """
+    Extract GitHub repository information from text content.
+    Returns metadata including repository links and repository names.
+    """
+    repo_links = []
+    repo_names = []
+    
+    # Extract GitHub URLs
+    github_urls = re.findall(r'https?://github\.com/[^\s"\'\)]+', text)
+    
+    for url in github_urls:
+        # Clean the URL in case it has trailing punctuation
+        url = re.sub(r'[.,;:"\']$', '', url)
+        repo_links.append(url)
+        
+        # Extract repo name from URL
+        match = re.search(r'github\.com/[^/]+/([^/\s"\'\)]+)', url)
+        if match:
+            repo_names.append(match.group(1))
+    
+    return {
+        "repo_links": repo_links,
+        "repo_names": repo_names
+    }
+
+
+def extract_notion_metadata(text: str) -> Dict[str, Any]:
+    """
+    Extract Notion page information from text content.
+    Returns metadata including page links and titles.
+    """
+    page_links = []
+    page_titles = []
+    
+    # Extract Notion URLs
+    notion_urls = re.findall(r'https?://(?:www\.)?notion\.so/[^\s"\'\)]+', text)
+    
+    for url in notion_urls:
+        # Clean the URL in case it has trailing punctuation
+        url = re.sub(r'[.,;:"\']$', '', url)
+        page_links.append(url)
+        
+        # Try to extract page title if available in text around URL
+        title_match = re.search(r'\[(.*?)\]\(' + re.escape(url) + r'\)', text)
+        if title_match:
+            page_titles.append(title_match.group(1))
+    
+    return {
+        "page_links": page_links,
+        "page_titles": page_titles
+    }
+
+
+def parse_source_response(text: str) -> Dict[str, Any]:
+    """
+    Process response text to extract meaningful content and metadata.
+    Handles detection of GitHub and Notion content.
+    Returns parsed data with source-specific metadata.
+    """
+    try:
+        # First try to parse as normal JSON
+        parsed_json = json.loads(text)
+        
+        # Check if the answer field itself contains nested JSON (common for GitHub responses)
+        if isinstance(parsed_json, dict) and "answer" in parsed_json:
+            answer_text = parsed_json["answer"]
+            if isinstance(answer_text, str) and (answer_text.strip().startswith('{') or answer_text.strip().startswith('[')):
+                try:
+                    # Try to parse the inner JSON
+                    inner_json = json.loads(answer_text)
+                    if isinstance(inner_json, dict):
+                        # If inner JSON has answer field, extract it directly
+                        if "answer" in inner_json:
+                            parsed_json["answer"] = inner_json["answer"]
+                            # Merge metadata if present
+                            if "metadata" in inner_json and isinstance(parsed_json.get("metadata"), dict):
+                                parsed_json["metadata"].update(inner_json["metadata"])
+                except json.JSONDecodeError:
+                    # If inner parsing fails, keep original answer text
+                    pass
+        
+        return parsed_json
+        
+    except json.JSONDecodeError:
+        # Next try the brace counting method
+        try:
+            parsed_json = extract_json_with_brace_counting(text)
+            
+            # Apply the same nested JSON check as above
+            if isinstance(parsed_json, dict) and "answer" in parsed_json:
+                answer_text = parsed_json["answer"]
+                if isinstance(answer_text, str) and (answer_text.strip().startswith('{') or answer_text.strip().startswith('[')):
+                    try:
+                        inner_json = json.loads(answer_text)
+                        if isinstance(inner_json, dict):
+                            if "answer" in inner_json:
+                                parsed_json["answer"] = inner_json["answer"]
+                                if "metadata" in inner_json and isinstance(parsed_json.get("metadata"), dict):
+                                    parsed_json["metadata"].update(inner_json["metadata"])
+                    except json.JSONDecodeError:
+                        pass
+                        
+            return parsed_json
+            
+        except ValueError:
+            # Check if it contains GitHub or Notion links
+            has_github = "github.com" in text
+            has_notion = "notion.so" in text
+            
+            result = {"answer": text, "metadata": {}, "error": ""}
+            
+            # Extract and add GitHub metadata if present
+            if has_github:
+                result["metadata"].update(extract_github_metadata(text))
+                
+            # Extract and add Notion metadata if present
+            if has_notion:
+                result["metadata"].update(extract_notion_metadata(text))
+                
+            return result
 
 
 def extract_all_sources_from_plan(plan_data: Any) -> List[str]:

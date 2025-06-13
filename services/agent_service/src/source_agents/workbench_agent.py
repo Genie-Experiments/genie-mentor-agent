@@ -11,7 +11,7 @@ from autogen_core.models import (AssistantMessage, ChatCompletionClient,
 from autogen_core.tools import ToolResult, Workbench
 
 from ..protocols.message import Message
-from ..utils.parsing import extract_json_with_brace_counting
+from ..utils.parsing import extract_json_with_brace_counting, parse_source_response
 
 class WorkbenchAgent(RoutedAgent):
     def __init__(
@@ -105,25 +105,17 @@ class WorkbenchAgent(RoutedAgent):
         try:
             print("---------Final Response From MCP Agent-----------")
             print(create_result.content)
-            result_json = extract_json_with_brace_counting(create_result.content)
-            result_object = {
-            "answer": result_json.get("answer"),
-            "sources": result_json.get("sources"),
-            "metadata": result_json.get("metadata"),
-            "error": result_json.get("error")
-            }
-            print("---------Final Response From MCP Agent-----------")
-            print(result_object)
-            # Return the result as a message.
-            return Message(content=json.dumps(result_object))
+            
+            # Use our new parser that handles GitHub and Notion content
+            result_json = parse_source_response(create_result.content)
+            return Message(content=json.dumps(result_json))
         except Exception as e:
             print(f"Error extracting JSON from response: {e}")
-            result_json = {"error": str(e)}
-            result_object = {
-                "answer": "Error Occured in MCP Agent",
-                "sources": [],
-                "metadata": [],
+            # Create a fallback result with the original content as the answer
+            result_json = {
+                "answer": create_result.content,
+                "metadata": {},
                 "error": str(e)
             }
-            return Message(content=json.dumps(result_object))
+            return Message(content=json.dumps(result_json))
         

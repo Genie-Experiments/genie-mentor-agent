@@ -4,7 +4,7 @@ from typing import Any, Dict, Optional
 
 from autogen_core import AgentId, MessageContext, RoutedAgent, message_handler
 from groq import Groq
-from ..prompts.prompts import NOTION_QUERY_PROMPT, SHORT_GITHUB_PROMPT
+from ..prompts.prompts import NOTION_QUERY_PROMPT, SHORT_GITHUB_PROMPT, TEMP_GITHUB_PROMPT
 from ..protocols.message import Message
 from groq import Groq
 from ..prompts.aggregation_prompt import generate_aggregated_answer
@@ -58,10 +58,25 @@ class ExecutorAgent(RoutedAgent):
                 result = await self.execute_query(qid, query_components)
                 results[qid] = result
 
-            valid_results = {
-                qid: res for qid, res in results.items()
-                if res.get("answer") and not res.get("error") and res.get("sources")
-            }
+            # Build valid_results with custom rules:
+            valid_results = {}
+            for qid, res in results.items():
+                source_type = query_components[qid].get("source", "").lower()
+
+                # Must have a non-empty answer and no error regardless of source
+                if not res.get("answer") or res.get("error"):
+                    continue
+
+                if source_type in {"github", "notion"}:
+                    # For GitHub/Notion we don't require sources to be present.
+                    valid_results[qid] = res
+                    # Ensure we have an entry so downstream aggregation doesn't fail.
+                    if source_type not in self._sources_documents:
+                        self._sources_documents[source_type] = res.get("sources", []) or []
+                else:
+                    # For other sources require at least one source document.
+                    if res.get("sources"):
+                        valid_results[qid] = res
 
             if len(valid_results) == 1:
                 # Only one valid source, use it directly (and allow downstream evaluation)
@@ -162,7 +177,7 @@ class ExecutorAgent(RoutedAgent):
 
                 logger.info(f"[{qid}] Querying GitHub")
 
-                prompt = SHORT_GITHUB_PROMPT.format(sub_query=sub_query)
+                prompt = TEMP_GITHUB_PROMPT.format(sub_query=sub_query)
                 response_message = await self.send_message(
                     Message(content=prompt), self.github_workbench_agent_id
                 )

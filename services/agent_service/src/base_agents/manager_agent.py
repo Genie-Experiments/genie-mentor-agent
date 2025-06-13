@@ -203,21 +203,40 @@ class ManagerAgent(RoutedAgent):
 
             documents = q_output.get("all_documents", [])
             documents_by_source = q_output.get("documents_by_source", {})
-
-            final_answer, eval_history, editor_history = await self.run_evaluation_loop(
-                question=user_query,
-                initial_answer=answer,
-                contexts=documents,
-                documents_by_source=documents_by_source
-            )
+            
+            # Check if Notion or GitHub sources are used
+            skip_evaluation = False
+            skip_reason = None
+            
+            for source_name in documents_by_source.keys():
+                source_lower = source_name.lower() if isinstance(source_name, str) else ""
+                if "notion" in source_lower or "github" in source_lower:
+                    skip_evaluation = True
+                    skip_reason = f"Evaluation skipped because {source_name} source was used"
+                    break
+                    
+            if skip_evaluation:
+                # Skip evaluation and return the answer directly
+                final_answer = answer
+                eval_history = []
+                editor_history = []
+                logger.info(f"[ManagerAgent] {skip_reason}")
+            else:
+                # Run the normal evaluation loop
+                final_answer, eval_history, editor_history = await self.run_evaluation_loop(
+                    question=user_query,
+                    initial_answer=answer,
+                    contexts=documents,
+                    documents_by_source=documents_by_source
+                )
 
             self.trace_info.update({
                 'evaluation_agent': eval_history,
                 'editor_agent': editor_history,
                 'final_answer': final_answer,
                 'total_time': time.time() - start_time,
-                'evaluation_skipped': False,
-                'skip_reason': None
+                'evaluation_skipped': skip_evaluation,
+                'skip_reason': skip_reason
             })
             self._update_history(session_id, message.content, final_answer)
 
