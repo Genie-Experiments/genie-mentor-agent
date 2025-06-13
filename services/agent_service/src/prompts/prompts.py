@@ -436,7 +436,6 @@ Dont stop until you have a definite answer, with code extracted and code snippet
       "repo_links": ["<A list of links to the repositories that were actually used.>"],
       "repo_names": ["<A list of names of the repositories that were used.>"] 
     }},
-  "error": ""
 }}
 ```
 
@@ -487,7 +486,6 @@ You are a methodical Notion Query Agent. Your task is to search the GENIE organi
       "doc_links": ["<A list of links to the Notion documents that were used.>"],
       "doc_names": ["<A list of the names of the Notion documents that were used.>"] 
     }},
-  "error": ""
 }}
 
 **CRITICAL JSON FORMATTING INSTRUCTIONS:**

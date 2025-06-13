@@ -13,6 +13,7 @@ Instructions:
     - Number is the corresponding index of the document from that source (e.g., [A][1], [B][2]).
 - Preserve all citation references as provided in the results — do not modify them or invent new ones.
 - Do not combine unrelated results. Prioritize accuracy and clarity.
+- Do preserve emojis in the response if they exist.
 - Return the response as a properly formatted JSON object using the following structure:
 
 {{
