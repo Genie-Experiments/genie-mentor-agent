@@ -1,0 +1,11 @@
+fastapi==0.103.1
+uvicorn==0.23.2
+pydantic==2.3.0
+langchain==0.0.267
+psycopg2-binary==2.9.7
+sqlalchemy==2.0.20
+pgvector==0.2.1
+httpx==0.24.1
+unstructured==0.10.8
+sentence-transformers==2.2.2
+python-multipart==0.0.6
