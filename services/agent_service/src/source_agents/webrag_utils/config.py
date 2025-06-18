@@ -1,13 +1,16 @@
 import os
+
 from dotenv import load_dotenv
 
 load_dotenv()
+
 
 def get_env_variable(var_name: str, cast_type=None, required: bool = True):
     value = os.getenv(var_name)
     if required and value is None:
         raise ValueError(f"{var_name} is not set in the environment variables.")
     return cast_type(value) if cast_type and value is not None else value
+
 
 GROQ_API_KEY = get_env_variable("WEBRAG_GROQ_API_KEY")
 GOOGLE_API_KEY = get_env_variable("WEBRAG_GOOGLE_API_KEY")

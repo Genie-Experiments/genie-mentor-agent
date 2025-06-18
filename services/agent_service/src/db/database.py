@@ -11,13 +11,15 @@ from sqlalchemy.orm import sessionmaker
 load_dotenv()
 
 # Database configuration
-DATABASE_URL = os.getenv('DATABASE_URL', 'sqlite:///./temp.db')  # Using a temporary database file
+DATABASE_URL = os.getenv(
+    "DATABASE_URL", "sqlite:///./temp.db"
+)  # Using a temporary database file
 
 # Create engine with appropriate configuration
-if DATABASE_URL.startswith('sqlite'):
+if DATABASE_URL.startswith("sqlite"):
     engine = create_engine(
         DATABASE_URL,
-        connect_args={'check_same_thread': False}  # Only needed for SQLite
+        connect_args={"check_same_thread": False},  # Only needed for SQLite
     )
 else:
     engine = create_engine(DATABASE_URL)
@@ -26,4 +28,4 @@ else:
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # Create base class for models
-Base = declarative_base()  
+Base = declarative_base()
