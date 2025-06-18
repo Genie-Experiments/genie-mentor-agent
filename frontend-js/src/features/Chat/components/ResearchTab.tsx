@@ -18,6 +18,8 @@ const ResearchTab: React.FC<ResearchTabProps> = ({ traceInfo }) => {
   const [plannerModalContent, setPlannerModalContent] = useState<string>(''); // Format planner detailed response as structured text with appropriate styling
   const [executorModalVisible, setExecutorModalVisible] = useState(false);
   const [executorModalContent, setExecutorModalContent] = useState<string>('');
+  const [evaluatorModalVisible, setEvaluatorModalVisible] = useState(false);
+  const [evaluatorModalContent, setEvaluatorModalContent] = useState<string>('');
 
   const formatExecutorDetailedResponse = (executor: ExecutorAgent): string => {
     const keyStyle =
@@ -180,6 +182,65 @@ const ResearchTab: React.FC<ResearchTabProps> = ({ traceInfo }) => {
 
   const closePlannerModal = () => {
     setPlannerModalVisible(false);
+  };
+
+  const formatEvaluatorDetailedResponse = (evaluator: EvaluationAgent): string => {
+    const keyStyle =
+      'color: #002835; font-family: Inter; font-size: 18px; font-style: normal; font-weight: 600; line-height: 24px;';
+    const valueStyle =
+      'color: #002835; font-family: Inter; font-size: 16px; font-style: normal; font-weight: 400; line-height: 24px;';
+    const sectionStyle =
+      'color: #002835; font-family: Inter; font-size: 16px; font-style: normal; font-weight: 600; line-height: 24px;';
+
+    let content = ''; // No execution time field in EvaluationAgent, so we skip this section
+
+    // Evaluation Attempt
+    content += `<div style="${keyStyle}">Evaluation Attempt</div>`;
+    content += `<div style="${valueStyle}">${evaluator.attempt}</div>`;
+    content += `<div style="margin-bottom: 20px;"></div>`;
+
+    // Score
+    content += `<div style="${keyStyle}">Score</div>`;
+    content += `<div style="${valueStyle}">${evaluator.evaluation_history.score}</div>`;
+    content += `<div style="margin-bottom: 20px;"></div>`;
+
+    // Complete Reasoning
+    content += `<div style="${keyStyle}">Complete Reasoning</div>`;
+    content += `<div style="${valueStyle}">${evaluator.evaluation_history.reasoning}</div>`;
+    content += `<div style="margin-bottom: 20px;"></div>`;
+
+    // Evaluation History - Additional details
+    if (evaluator.evaluation_history) {
+      const evaluationHistory = evaluator.evaluation_history;
+
+      // Show additional evaluation details if available
+      Object.entries(evaluationHistory).forEach(([key, value]) => {
+        if (key !== 'score' && key !== 'reasoning' && key !== 'error' && value) {
+          content += `<div style="${sectionStyle}">${key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' ')}:</div>`;
+          content += `<div style="${valueStyle}">${value}</div>`;
+          content += `<div style="margin-bottom: 10px;"></div>`;
+        }
+      });
+    }
+
+    // Error if present
+    if (evaluator.evaluation_history.error) {
+      content += `<div style="${keyStyle}">Error</div>`;
+      content += `<div style="${valueStyle}">${evaluator.evaluation_history.error}</div>`;
+    }
+
+    return content;
+  };
+
+  // Functions to handle opening and closing the evaluator modal
+  const openEvaluatorModal = (evaluator: EvaluationAgent) => {
+    const content = formatEvaluatorDetailedResponse(evaluator);
+    setEvaluatorModalContent(content);
+    setEvaluatorModalVisible(true);
+  };
+
+  const closeEvaluatorModal = () => {
+    setEvaluatorModalVisible(false);
   };
 
   const sectionTitleStyle: React.CSSProperties = {
@@ -494,7 +555,10 @@ const ResearchTab: React.FC<ResearchTabProps> = ({ traceInfo }) => {
               {evaluator.evaluation_history.error && renderKeyValue('Error', 'Yes')}
             </div>
           ))}
-          <div style={viewDetailsStyle}>
+          <div
+            style={viewDetailsStyle}
+            onClick={() => openEvaluatorModal(traceInfo.evaluation_agent[0])}
+          >
             View Complete Reasoning
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -529,6 +593,14 @@ const ResearchTab: React.FC<ResearchTabProps> = ({ traceInfo }) => {
         title="Executor Detailed Response"
         content={executorModalContent}
         onClose={closeExecutorModal}
+        isHtml={true}
+      />
+      {/* Evaluator Modal - New addition */}{' '}
+      <ContextModal
+        isVisible={evaluatorModalVisible}
+        title="Evaluator Detailed Response"
+        content={evaluatorModalContent}
+        onClose={closeEvaluatorModal}
         isHtml={true}
       />
     </div>
