@@ -1,13 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { callBackend } from '../../lib/api-service';
 import type { ApiResponse } from '../../lib/api-service';
-import { 
-  TabsContainer, 
-  QuestionBadge, 
-  AnswerTab, 
-  ResearchTab, 
-  SourcesTab
-} from './components';
+import { TabsContainer, QuestionBadge, AnswerTab, ResearchTab, SourcesTab } from './components';
 
 interface ChatProps {
   question: string;
@@ -24,7 +18,7 @@ const Chat: React.FC<ChatProps> = ({ question }) => {
       const fetchResponse = async () => {
         setIsLoading(true);
         setError(null);
-        setApiResponse(null); 
+        setApiResponse(null);
         try {
           const responseData = await callBackend(question);
           setApiResponse(responseData);
@@ -42,22 +36,27 @@ const Chat: React.FC<ChatProps> = ({ question }) => {
   }, [question]);
 
   return (
-    <div className="w-full flex justify-center">
-      <div className="max-w-[760px] w-full flex flex-col items-start px-4 pt-8">
+    <div className="flex w-full justify-center">
+      <div className="flex w-full max-w-[760px] flex-col items-start px-4 pt-8">
         {question && (
-          <QuestionBadge 
-            question={question} 
-            isLoading={isLoading && !apiResponse} 
-            error={error && !apiResponse ? error : null} 
+          <QuestionBadge
+            question={question}
+            isLoading={isLoading && !apiResponse}
+            error={error && !apiResponse ? error : null}
           />
         )}
-
-        {isLoading && !apiResponse && <p className="mt-4">Loading response...</p>} 
-        {error && !apiResponse && <p className="text-red-500 mt-4">{error}</p>}        {apiResponse && (
+        {isLoading && !apiResponse && <p className="mt-4">Loading response...</p>}
+        {error && !apiResponse && <p className="mt-4 text-red-500">{error}</p>}{' '}
+        {apiResponse && (
           <>
             <TabsContainer
               defaultValue="answer"
-              answerContent={<AnswerTab finalAnswer={apiResponse.trace_info.final_answer} />}
+              answerContent={
+                <AnswerTab
+                  finalAnswer={apiResponse.trace_info.final_answer}
+                  executorAgent={apiResponse.trace_info.executor_agent}
+                />
+              }
               sourcesContent={<SourcesTab executorAgent={apiResponse.trace_info.executor_agent} />}
               traceContent={<ResearchTab traceInfo={apiResponse.trace_info} />}
             />
