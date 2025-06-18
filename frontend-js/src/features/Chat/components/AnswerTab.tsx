@@ -69,10 +69,7 @@ const AnswerTab: React.FC<AnswerTabProps> = ({ finalAnswer }) => {
         <div className="mb-2" style={{
           color: '#002835', fontFamily: 'Inter', fontSize: 16, fontWeight: 500, textTransform: 'uppercase', opacity: 0.4
         }}>Answer</div>
-        <div className="mb-1" style={{color:'#002835', fontFamily:'Inter', fontSize:18, fontWeight:600, lineHeight:'23px'}}>
-          What is Genie AI Mentor?
-        </div>
-        <div style={{color:'#002835', fontFamily:'Inter', fontSize:16, fontWeight:400, lineHeight:'23px'}}>
+        <div style={{color:'#002835', fontFamily:'Inter', fontSize:16, fontWeight:400, lineHeight:'23px', marginBottom: '20px'}}>
           {finalAnswer}
         </div>
       </div>

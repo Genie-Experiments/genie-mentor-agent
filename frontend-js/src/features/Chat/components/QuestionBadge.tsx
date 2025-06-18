@@ -14,7 +14,7 @@ const QuestionBadge: React.FC<QuestionBadgeProps> = ({
   return (
     <div>
       {/* Badge */}
-      <div className="flex px-[9px] py-[5px] justify-center items-center gap-[10px] rounded-[50px] bg-[#00A599] mb-0 mt-8">
+      <div className="flex px-[9px] py-[5px] justify-center max-w-[80px] width-[100%] items-center gap-[10px] rounded-[50px] bg-[#00A599] mb-0 mt-8">
         <span className="text-white font-['Inter'] text-[14px] font-semibold">Question</span>
       </div>
       
