@@ -6,6 +6,9 @@ import type {
   NotionMetadata,
 } from '../../../lib/api-service';
 import ContextModal from './ContextModal';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import './markdown-styles.css';
 
 interface AnswerTabProps {
   finalAnswer: string;
@@ -328,7 +331,7 @@ const AnswerTab: React.FC<AnswerTabProps> = ({ finalAnswer, executorAgent }) => 
           }}
         >
           Answer
-        </div>
+        </div>{' '}
         <div
           style={{
             color: '#002835',
@@ -338,8 +341,9 @@ const AnswerTab: React.FC<AnswerTabProps> = ({ finalAnswer, executorAgent }) => 
             lineHeight: '23px',
             marginBottom: '30px',
           }}
+          className="markdown-content"
         >
-          {finalAnswer}
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{finalAnswer}</ReactMarkdown>
         </div>
       </div>
     </div>

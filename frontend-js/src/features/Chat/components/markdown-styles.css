@@ -1,0 +1,122 @@
+/* Markdown content styles */
+.markdown-content {
+  /* Basic text styling */
+  overflow-wrap: break-word;
+}
+
+.markdown-content h1, 
+.markdown-content h2, 
+.markdown-content h3, 
+.markdown-content h4, 
+.markdown-content h5, 
+.markdown-content h6 {
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+  font-weight: 600;
+  line-height: 1.25;
+  color: #002835;
+}
+
+.markdown-content h1 {
+  font-size: 1.75em;
+}
+
+.markdown-content h2 {
+  font-size: 1.5em;
+}
+
+.markdown-content h3 {
+  font-size: 1.25em;
+}
+
+.markdown-content h4 {
+  font-size: 1.1em;
+}
+
+.markdown-content p {
+  margin-bottom: 1em;
+}
+
+.markdown-content a {
+  color: #00A599;
+  text-decoration: underline;
+}
+
+.markdown-content a:hover {
+  text-decoration: none;
+}
+
+.markdown-content ul, .markdown-content ol {
+  margin-bottom: 1em;
+  margin-left: 1.5em;
+}
+
+.markdown-content ul {
+  list-style-type: disc;
+}
+
+.markdown-content ol {
+  list-style-type: decimal;
+}
+
+.markdown-content li {
+  margin-bottom: 0.25em;
+}
+
+.markdown-content blockquote {
+  border-left: 4px solid #9CBFBC;
+  padding-left: 1em;
+  margin-left: 0;
+  margin-bottom: 1em;
+  color: #002835;
+  opacity: 0.8;
+}
+
+.markdown-content pre {
+  background-color: #f6f8fa;
+  border-radius: 4px;
+  padding: 1em;
+  margin-bottom: 1em;
+  overflow-x: auto;
+}
+
+.markdown-content code {
+  background-color: #f6f8fa;
+  padding: 0.2em 0.4em;
+  border-radius: 3px;
+  font-family: monospace;
+}
+
+.markdown-content pre code {
+  padding: 0;
+  background-color: transparent;
+}
+
+.markdown-content table {
+  border-collapse: collapse;
+  margin-bottom: 1em;
+  width: 100%;
+}
+
+.markdown-content table th,
+.markdown-content table td {
+  padding: 0.5em;
+  border: 1px solid #9CBFBC;
+}
+
+.markdown-content table th {
+  background-color: #f6f8fa;
+  font-weight: 600;
+}
+
+.markdown-content hr {
+  height: 1px;
+  background-color: #9CBFBC;
+  border: none;
+  margin: 1.5em 0;
+}
+
+.markdown-content img {
+  max-width: 100%;
+  height: auto;
+}
