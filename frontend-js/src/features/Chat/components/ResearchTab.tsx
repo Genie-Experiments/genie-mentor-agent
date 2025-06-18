@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import type {
   TraceInfo,
   PlannerAgent,
-  EvaluationAgent,
   PlannerRefinerAgent,
+  EvaluationAgent,
+  ExecutorAgent,
 } from '../../../lib/api-service';
 import ContextModal from './ContextModal';
 
@@ -15,6 +16,96 @@ const ResearchTab: React.FC<ResearchTabProps> = ({ traceInfo }) => {
   // Add modal state
   const [plannerModalVisible, setPlannerModalVisible] = useState(false);
   const [plannerModalContent, setPlannerModalContent] = useState<string>(''); // Format planner detailed response as structured text with appropriate styling
+  const [executorModalVisible, setExecutorModalVisible] = useState(false);
+  const [executorModalContent, setExecutorModalContent] = useState<string>('');
+
+  const formatExecutorDetailedResponse = (executor: ExecutorAgent): string => {
+    const keyStyle =
+      'color: #002835; font-family: Inter; font-size: 18px; font-style: normal; font-weight: 600; line-height: 24px;';
+    const valueStyle =
+      'color: #002835; font-family: Inter; font-size: 16px; font-style: normal; font-weight: 400; line-height: 24px;';
+    const sectionStyle =
+      'color: #002835; font-family: Inter; font-size: 16px; font-style: normal; font-weight: 600; line-height: 24px;';
+
+    let content = '';
+
+    // Combined Answer of Sources
+    if (executor.combined_answer_of_sources) {
+      content += `<div style="${keyStyle}">Combined Answer</div>`;
+      content += `<div style="${valueStyle}">${executor.combined_answer_of_sources}</div>`;
+      content += `<div style="margin-bottom: 20px;"></div>`;
+    }
+
+    // Sources by Document Type
+    if (executor.documents_by_source) {
+      content += `<div style="${keyStyle}">Documents by Source</div>`;
+      content += `<div style="margin-bottom: 8px;"></div>`;
+
+      // Knowledgebase documents
+      if (
+        executor.documents_by_source.knowledgebase &&
+        executor.documents_by_source.knowledgebase.length > 0
+      ) {
+        content += `<div style="${sectionStyle}">Knowledgebase:</div>`;
+        executor.documents_by_source.knowledgebase.forEach((doc, index) => {
+          content += `<div style="${valueStyle}">Document ${index + 1}: ${doc.slice(0, 150)}...</div>`;
+          content += `<div style="margin-bottom: 10px;"></div>`;
+        });
+        content += `<div style="margin-bottom: 20px;"></div>`;
+      }
+
+      // Websearch documents
+      if (
+        executor.documents_by_source.websearch &&
+        executor.documents_by_source.websearch.length > 0
+      ) {
+        content += `<div style="${sectionStyle}">Websearch:</div>`;
+        executor.documents_by_source.websearch.forEach((doc, index) => {
+          content += `<div style="${valueStyle}">Document ${index + 1}: ${doc.slice(0, 150)}...</div>`;
+          content += `<div style="margin-bottom: 10px;"></div>`;
+        });
+        content += `<div style="margin-bottom: 20px;"></div>`;
+      }
+
+      // GitHub documents
+      if (executor.documents_by_source.github && executor.documents_by_source.github.length > 0) {
+        content += `<div style="${sectionStyle}">GitHub:</div>`;
+        executor.documents_by_source.github.forEach((doc, index) => {
+          content += `<div style="${valueStyle}">Document ${index + 1}: ${doc.slice(0, 150)}...</div>`;
+          content += `<div style="margin-bottom: 10px;"></div>`;
+        });
+        content += `<div style="margin-bottom: 20px;"></div>`;
+      }
+
+      // Notion documents
+      if (executor.documents_by_source.notion && executor.documents_by_source.notion.length > 0) {
+        content += `<div style="${sectionStyle}">Notion:</div>`;
+        executor.documents_by_source.notion.forEach((doc, index) => {
+          content += `<div style="${valueStyle}">Document ${index + 1}: ${doc.slice(0, 150)}...</div>`;
+          content += `<div style="margin-bottom: 10px;"></div>`;
+        });
+        content += `<div style="margin-bottom: 20px;"></div>`;
+      }
+    } // Error if present
+    if (executor.error) {
+      content += `<div style="${keyStyle}">Error</div>`;
+      content += `<div style="${valueStyle}">${executor.error}</div>`;
+    }
+
+    return content;
+  };
+
+  // Functions to handle opening and closing the executor modal
+  const openExecutorModal = (executor: ExecutorAgent) => {
+    const content = formatExecutorDetailedResponse(executor);
+    setExecutorModalContent(content);
+    setExecutorModalVisible(true);
+  };
+
+  const closeExecutorModal = () => {
+    setExecutorModalVisible(false);
+  };
+
   const formatPlannerDetailedResponse = (planner: PlannerAgent): string => {
     const keyStyle =
       'color: #002835; font-family: Inter; font-size: 18px; font-style: normal; font-weight: 600; line-height: 24px;';
@@ -352,25 +443,21 @@ const ResearchTab: React.FC<ResearchTabProps> = ({ traceInfo }) => {
           )}
           <div style={separatorStyle} />
         </>
-      )}
+      )}{' '}
       {/* Knowledge Base Agent and Other Executor Agents Section */}
       {traceInfo.executor_agent && (
         <React.Fragment>
           <div style={sectionTitleStyle}>EXECUTOR AGENT</div>
           <div style={{ marginBottom: '11px' }}>
-            {/* Assuming executor_agent is an object, not an array. 
-                  Displaying general info. Specific fields like agent_name, execution_time, answer 
-                  are not directly in ExecutorAgent type but might be in documents_by_source or metadata_by_source.
-                  For now, showing a generic message or error if present. */}
-            {renderKeyValue('Error', traceInfo.executor_agent.error ? 'Yes' : 'No')}
-            {/* Add more specific rendering based on available data in traceInfo.executor_agent */}
+            {/* Displaying general info about executor agent */}
             {traceInfo.executor_agent.combined_answer_of_sources &&
               renderKeyValue(
                 'Combined Answer',
                 traceInfo.executor_agent.combined_answer_of_sources
               )}
+            {traceInfo.executor_agent.error && renderKeyValue('Error', 'Yes')}
           </div>
-          <div style={viewDetailsStyle}>
+          <div style={viewDetailsStyle} onClick={() => openExecutorModal(traceInfo.executor_agent)}>
             View Executor Agent Detailed Response
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -394,7 +481,7 @@ const ResearchTab: React.FC<ResearchTabProps> = ({ traceInfo }) => {
       {/* Separator before Evaluator Agent if executor agents existed */}
       {traceInfo.executor_agent &&
         traceInfo.evaluation_agent &&
-        traceInfo.evaluation_agent.length > 0 && <div style={separatorStyle} />}
+        traceInfo.evaluation_agent.length > 0 && <div style={separatorStyle} />}{' '}
       {/* Evaluator Agent Section */}
       {traceInfo.evaluation_agent && traceInfo.evaluation_agent.length > 0 && (
         <>
@@ -404,7 +491,7 @@ const ResearchTab: React.FC<ResearchTabProps> = ({ traceInfo }) => {
               {renderKeyValue('Evaluation Attempt', evaluator.attempt)}
               {renderKeyValue('Score', evaluator.evaluation_history.score)}
               {renderKeyValue('Reasoning', evaluator.evaluation_history.reasoning)}
-              {renderKeyValue('Error', evaluator.evaluation_history.error ? 'Yes' : 'No')}
+              {evaluator.evaluation_history.error && renderKeyValue('Error', 'Yes')}
             </div>
           ))}
           <div style={viewDetailsStyle}>
@@ -434,6 +521,14 @@ const ResearchTab: React.FC<ResearchTabProps> = ({ traceInfo }) => {
         title="Planner Detailed Response"
         content={plannerModalContent}
         onClose={closePlannerModal}
+        isHtml={true}
+      />
+      {/* Executor Modal - New addition */}
+      <ContextModal
+        isVisible={executorModalVisible}
+        title="Executor Detailed Response"
+        content={executorModalContent}
+        onClose={closeExecutorModal}
         isHtml={true}
       />
     </div>
