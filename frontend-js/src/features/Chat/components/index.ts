@@ -4,3 +4,4 @@ export { default as AnswerTab } from './AnswerTab';
 export { default as ResearchTab } from './ResearchTab';
 export { default as SourcesTab } from './SourcesTab';
 export { default as ResponseList } from './ResponseList';
+export { default as ChatMessage } from './ChatMessage';

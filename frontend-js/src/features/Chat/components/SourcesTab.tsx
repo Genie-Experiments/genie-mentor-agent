@@ -225,36 +225,70 @@ const SourcesTab: React.FC<SourcesTabProps> = ({ executorAgent }) => {
 
   const renderNotionSources = (metadata: NotionMetadata[]) =>
     renderWebSources(mapNotionToWebsearchMetadata(metadata));
+  // Helper function to check if all sources are empty or missing
+  const hasNoSources = () => {
+    const { metadata_by_source } = executorAgent;
+
+    // If metadata_by_source is undefined or null, there are no sources
+    if (!metadata_by_source) return true;
+
+    // Check if all source arrays are either undefined, null, or empty
+    const hasKnowledgebase =
+      metadata_by_source.knowledgebase && metadata_by_source.knowledgebase.length > 0;
+    const hasWebsearch = metadata_by_source.websearch && metadata_by_source.websearch.length > 0;
+    const hasGithub = metadata_by_source.github && metadata_by_source.github.length > 0;
+    const hasNotion = metadata_by_source.notion && metadata_by_source.notion.length > 0;
+
+    // Return true if all source arrays are empty or missing
+    return !hasKnowledgebase && !hasWebsearch && !hasGithub && !hasNotion;
+  };
+
+  const noSourcesMessageStyle: React.CSSProperties = {
+    color: '#002835',
+    fontFamily: 'Inter',
+    fontSize: '16px',
+    fontStyle: 'normal',
+    fontWeight: 400,
+    lineHeight: 'normal',
+    textAlign: 'center',
+    padding: '32px 0',
+  };
 
   return (
     <div className="flex w-full flex-col gap-4 font-['Inter'] text-[#002835]">
-      {executorAgent.metadata_by_source?.knowledgebase && (
+      {hasNoSources() ? (
+        <div style={noSourcesMessageStyle}>No sources available for this answer.</div>
+      ) : (
         <>
-          <div style={sectionTitleStyle}>Knowledge Base Sources</div>
-          {renderKnowledgeBaseSources(executorAgent.metadata_by_source.knowledgebase)}
-          <div style={separatorStyle} />
+          {executorAgent.metadata_by_source?.knowledgebase && (
+            <>
+              <div style={sectionTitleStyle}>Knowledge Base Sources</div>
+              {renderKnowledgeBaseSources(executorAgent.metadata_by_source.knowledgebase)}
+              <div style={separatorStyle} />
+            </>
+          )}
+          {executorAgent.metadata_by_source?.websearch && (
+            <>
+              <div style={sectionTitleStyle}>Web Sources</div>
+              {renderWebSources(executorAgent.metadata_by_source.websearch)}
+              <div style={separatorStyle} />
+            </>
+          )}
+          {executorAgent.metadata_by_source?.github && (
+            <>
+              <div style={sectionTitleStyle}>GitHub Sources</div>
+              {renderGitHubSources(executorAgent.metadata_by_source.github)}
+              <div style={separatorStyle} />
+            </>
+          )}
+          {executorAgent.metadata_by_source?.notion && (
+            <>
+              <div style={sectionTitleStyle}>Notion Sources</div>
+              {renderNotionSources(executorAgent.metadata_by_source.notion)}
+            </>
+          )}
         </>
       )}
-      {executorAgent.metadata_by_source?.websearch && (
-        <>
-          <div style={sectionTitleStyle}>Web Sources</div>
-          {renderWebSources(executorAgent.metadata_by_source.websearch)}
-          <div style={separatorStyle} />
-        </>
-      )}
-      {executorAgent.metadata_by_source?.github && (
-        <>
-          <div style={sectionTitleStyle}>GitHub Sources</div>
-          {renderGitHubSources(executorAgent.metadata_by_source.github)}
-          <div style={separatorStyle} />
-        </>
-      )}
-      {executorAgent.metadata_by_source?.notion && (
-        <>
-          <div style={sectionTitleStyle}>Notion Sources</div>
-          {renderNotionSources(executorAgent.metadata_by_source.notion)}
-        </>
-      )}{' '}
       <ContextModal
         isVisible={modalVisible}
         onClose={closeContextModal}
