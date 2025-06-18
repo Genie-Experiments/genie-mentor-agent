@@ -5,9 +5,16 @@ interface ContextModalProps {
   title: string;
   content: string;
   onClose: () => void;
+  isHtml?: boolean;
 }
 
-const ContextModal: React.FC<ContextModalProps> = ({ isVisible, title, content, onClose }) => {
+const ContextModal: React.FC<ContextModalProps> = ({
+  isVisible,
+  title,
+  content,
+  onClose,
+  isHtml = false,
+}) => {
   if (!isVisible) return null;
 
   return (
@@ -50,19 +57,23 @@ const ContextModal: React.FC<ContextModalProps> = ({ isVisible, title, content, 
             </svg>
           </button>
         </div>{' '}
-        <div
-          className="px-[30px] py-[30px] whitespace-pre-wrap"
-          style={{
-            color: '#002835',
-            fontFamily: 'Inter',
-            fontSize: '16px',
-            fontStyle: 'normal',
-            fontWeight: 400,
-            lineHeight: '24px',
-          }}
-        >
-          {content}
-        </div>
+        {isHtml ? (
+          <div className="px-[30px] py-[30px]" dangerouslySetInnerHTML={{ __html: content }} />
+        ) : (
+          <div
+            className="px-[30px] py-[30px] whitespace-pre-wrap"
+            style={{
+              color: '#002835',
+              fontFamily: 'Inter',
+              fontSize: '16px',
+              fontStyle: 'normal',
+              fontWeight: 400,
+              lineHeight: '24px',
+            }}
+          >
+            {content}
+          </div>
+        )}
       </div>
     </div>
   );
