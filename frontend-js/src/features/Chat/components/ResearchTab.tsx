@@ -338,14 +338,15 @@ const ResearchTab: React.FC<ResearchTabProps> = ({ traceInfo }) => {
           {traceInfo.planner_refiner_agent.map(
             (refinementAgent: PlannerRefinerAgent, index: number) => (
               <div key={index} style={{ marginBottom: '11px' }}>
+                {renderKeyValue('Execution Time', refinementAgent.execution_time_ms + 'ms', true)}
                 {renderKeyValue(
                   'Refinement Required',
-                  refinementAgent.refinement_required?.toString()
+                  refinementAgent.refinement_required?.toString()?.charAt(0).toUpperCase() +
+                    refinementAgent.refinement_required?.toString()?.slice(1)
                 )}
-                {renderKeyValue('Execution Time', refinementAgent.execution_time_ms, true)}
                 {renderKeyValue('Feedback Summary', refinementAgent.feedback_summary)}
                 {renderKeyValue('Feedback Reasoning', refinementAgent.feedback_reasoning)}
-                {renderKeyValue('Error', refinementAgent.error ? 'Yes' : 'No')}
+                {refinementAgent.error && renderKeyValue('Error', 'Yes')}
               </div>
             )
           )}
