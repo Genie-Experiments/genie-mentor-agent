@@ -222,13 +222,27 @@ class ManagerAgent(RoutedAgent):
                 editor_history = []
                 logger.info(f"[ManagerAgent] {skip_reason}")
             else:
-                # Run the normal evaluation loop
-                final_answer, eval_history, editor_history = await self.run_evaluation_loop(
-                    question=user_query,
-                    initial_answer=answer,
-                    contexts=documents,
-                    documents_by_source=documents_by_source
-                )
+                
+                try:
+                    final_answer, eval_history, editor_history = await self.run_evaluation_loop(
+                        question=user_query,
+                        initial_answer=answer,
+                        contexts=documents,
+                        documents_by_source=documents_by_source,
+                    )
+                except Exception as e:
+                    logger.error(f"[ManagerAgent] Evaluation failed, using executor output. Reason: {e}")
+                    self.trace_info.update({
+                        'final_answer': answer,
+                        'evaluation_agent': [],
+                        'editor_agent': [],
+                        'evaluation_skipped': False,
+                        'skip_reason': "Evaluation or Editor failed.",
+                        'total_time': time.time() - start_time
+                    })
+                    self._update_history(session_id, message.content, self.trace_info['final_answer'])
+                    return Message(content=json.dumps({'trace_info': self.trace_info}))
+
 
             self.trace_info.update({
                 'evaluation_agent': eval_history,
@@ -267,69 +281,75 @@ class ManagerAgent(RoutedAgent):
         eval_history = []
         editor_agent = []
 
-        while attempts < max_attempts:
-            
-            logger.info(f"[EvaluationAgent] Input (Attempt {attempts + 1})")
-            print("---------CONTEXTS---------")
-            print(contexts)
-            eval_payload = EvalAgentInput(question=question, answer=current_answer, contexts=contexts)
-            eval_resp = await self.send_message(Message(content=eval_payload.model_dump_json()), self.eval_agent_id)
-            eval_result = EvalAgentOutput.model_validate_json(eval_resp.content)
-            
+        try:
+            while attempts < max_attempts:
+                logger.info(f"[EvaluationAgent] Input (Attempt {attempts + 1})")
+                eval_payload = EvalAgentInput(
+                    question=question,
+                    answer=current_answer,
+                    contexts=contexts,
+                )
+                eval_resp = await self.send_message(
+                    Message(content=eval_payload.model_dump_json()), self.eval_agent_id
+                )
+                eval_result = EvalAgentOutput.model_validate_json(eval_resp.content)
 
-            score = float(eval_result.score)
-            reasoning = eval_result.reasoning or ""
-            error = eval_result.error
+                score = float(eval_result.score)
+                reasoning = eval_result.reasoning or ""
+                error = eval_result.error
 
-            eval_history.append(
-                {
-                    "evaluation_history": {
-                        "score": score,
-                        "reasoning": reasoning,
-                        "error": error,
+                eval_history.append(
+                    {
+                        "evaluation_history": {
+                            "score": score,
+                            "reasoning": reasoning,
+                            "error": error,
+                        },
+                        "attempt": attempts + 1,
+                    }
+                )
+
+                if error is None and score >= EVALUATION_PASS_THRESHOLD:
+                    # Evaluation passed, editor never called
+                    editor_agent.append({
+                        "attempt": attempts
+                    })
+                    break
+
+                if attempts == max_attempts - 1:
+                    # Final evaluation attempt failed
+                    break
+
+                logger.info(f"[EditorAgent] Input (Attempt {attempts + 1})")
+                editor_payload = EditorAgentInput(
+                    question=question,
+                    previous_answer=current_answer,
+                    score=score,
+                    reasoning=reasoning,
+                    contexts=documents_by_source,
+                )
+                editor_resp = await self.send_message(
+                    Message(content=editor_payload.json()), self.editor_agent_id
+                )
+                editor_result = EditorAgentOutput.model_validate_json(editor_resp.content)
+
+                new_answer = editor_result.get("answer", current_answer)
+                editor_error = editor_result.get("error", None)
+
+                editor_agent.append({
+                    "editor_history": {
+                        "answer": new_answer,
+                        "error": editor_error,
+                        "skipped": False
                     },
-                    "attempt": attempts + 1,
-                }
-            )
+                    "attempt": attempts + 1
+                })
 
-            if error is None and score >= EVALUATION_PASS_THRESHOLD or attempts == max_attempts - 1:
-                break
-           
-            
-            logger.info(f"[EditorAgent] Input (Attempt {attempts + 1}")
-            print(documents_by_source, "\n\n\n\n")
-            editor_payload = EditorAgentInput(
-                question=question,
-                previous_answer=current_answer,
-                score=score,
-                reasoning=reasoning,
-                contexts=documents_by_source
-            )
-            editor_resp = await self.send_message(Message(content=editor_payload.json()), self.editor_agent_id)
-            editor_result = EditorAgentOutput.model_validate_json(editor_resp.content)
-            new_answer = editor_result.get("answer", current_answer)
-            editor_error = editor_result.get("error", None)
+                current_answer = new_answer
+                attempts += 1
 
-            editor_agent.append({
-                "editor_history": {
-                    "answer": new_answer,
-                    "error": editor_error,
-                    "skipped": False
-                },
-                "attempt": attempts + 1
-            })
+            return current_answer, eval_history, editor_agent
 
-            current_answer = new_answer
-            attempts += 1
-      
-        if not editor_agent:
-            logger.info("[ManagerAgent] EditorAgent completed its evaluation cycle.")
-            editor_agent.append({
-                "editor_history": {
-                    "answer": current_answer,
-                    "error": None,
-                    "skipped": False
-                },
-                "attempt": 0
-            })
-        return current_answer, eval_history, editor_agent
+        except Exception as e:
+            logger.error(f"[ManagerAgent] Evaluation or editing failed: {e}")
+            raise
