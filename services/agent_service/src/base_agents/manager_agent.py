@@ -233,7 +233,7 @@ class ManagerAgent(RoutedAgent):
                 except Exception as e:
                     logger.error(f"[ManagerAgent] Evaluation failed, using executor output. Reason: {e}")
                     self.trace_info.update({
-                        'final_answer': q_output.get("answer", "Executor answer used due to failure."),
+                        'final_answer': answer,
                         'evaluation_agent': [],
                         'editor_agent': [],
                         'evaluation_skipped': False,
