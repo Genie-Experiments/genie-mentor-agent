@@ -1,54 +1,60 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
-interface TabsContainerProps {
-  tabs: string[];
-  defaultTab?: string;
-  children: (activeTab: string) => React.ReactNode;
+interface TabItem {
+  value: string;
+  label: string;
+  content: React.ReactNode;
 }
 
-const TabsContainer: React.FC<TabsContainerProps> = ({ 
-  tabs, 
-  defaultTab = tabs[0], 
-  children 
+interface TabsContainerProps {
+  defaultValue?: string;
+  children?: React.ReactNode;
+  answerContent?: React.ReactNode;
+  sourcesContent?: React.ReactNode;
+  traceContent?: React.ReactNode;
+}
+
+const tabTriggerStyles =
+  "relative w-[126px] cursor-pointer rounded-none bg-transparent px-0 py-[10px] font-['Inter'] text-[18px] font-normal shadow-none " +
+  "hover:after:absolute hover:after:bottom-[-2px] hover:after:left-0 hover:after:h-[1px] hover:after:w-full hover:after:bg-[#00A599]/50 hover:after:content-[''] " +
+  'data-[state=active]:bg-transparent data-[state=active]:font-semibold data-[state=active]:text-[#00A599] data-[state=active]:shadow-none ' +
+  'data-[state=active]:after:absolute data-[state=active]:after:bottom-[-2px] data-[state=active]:after:left-0 data-[state=active]:after:h-[2px] ' +
+  "data-[state=active]:after:w-full data-[state=active]:after:bg-[#00A599] data-[state=active]:after:content-[''] data-[state=inactive]:text-[#002835]";
+
+const TabsContainer: React.FC<TabsContainerProps> = ({
+  defaultValue = 'answer',
+  children,
+  answerContent,
+  sourcesContent,
+  traceContent,
 }) => {
-  const [activeTab, setActiveTab] = useState(defaultTab);
+  const tabs: TabItem[] = [
+    { value: 'answer', label: 'Answer', content: answerContent || children },
+    { value: 'trace', label: 'Research', content: traceContent },
+    { value: 'sources', label: 'All Sources', content: sourcesContent },
+  ];
 
   return (
-    <div className="w-full">
-      {/* Tabs Navigation */}
-      <div className="flex mt-[51px] gap-[76px] w-full">
+    <Tabs defaultValue={defaultValue} className="w-full">
+      <div className="mt-[51px] border-b border-[#9CBFBC] pb-[1px]">
+        <TabsList className="h-auto gap-[30px] bg-transparent p-0">
+          {tabs.map((tab) => (
+            <TabsTrigger key={tab.value} value={tab.value} className={tabTriggerStyles}>
+              {tab.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>{' '}
+      </div>
+
+      <div className="mt-[51px]">
         {tabs.map((tab) => (
-          <button
-            key={tab}
-            className={`font-['Inter'] text-[18px] font-normal focus:outline-none transition-colors relative pb-2 ${
-              activeTab === tab ? 'text-[#00A599]' : 'text-[#002835]'
-            }`}
-            onClick={() => setActiveTab(tab)}
-            style={{ minWidth: 80 }}
-          >
-            {tab}
-          </button>
+          <TabsContent key={tab.value} value={tab.value} className="mt-0 mb-4 min-h-[80px]">
+            {tab.content}
+          </TabsContent>
         ))}
       </div>
-      
-      {/* Separator with active tab highlight */}
-      <div className="relative w-full h-[1px] mt-[15px] mb-4" style={{background: '#9CBFBC'}}>
-        <div
-          className="absolute h-full transition-all duration-300"
-          style={{
-            left: `${tabs.indexOf(activeTab) * (100 / tabs.length)}%`,
-            width: `${100 / tabs.length}%`,
-            background: '#00A599',
-            top: 0,
-          }}
-        />
-      </div>
-      
-      {/* Tab Content */}
-      <div className="w-full min-h-[80px] mb-4">
-        {children(activeTab)}
-      </div>
-    </div>
+    </Tabs>
   );
 };
 

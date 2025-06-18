@@ -9,8 +9,6 @@ import {
   SourcesTab
 } from './components';
 
-const TABS = ['Answer', 'Research', 'Sources'];
-
 interface ChatProps {
   question: string;
 }
@@ -55,24 +53,14 @@ const Chat: React.FC<ChatProps> = ({ question }) => {
         )}
 
         {isLoading && !apiResponse && <p className="mt-4">Loading response...</p>} 
-        {error && !apiResponse && <p className="text-red-500 mt-4">{error}</p>} 
-
-        {apiResponse && (
+        {error && !apiResponse && <p className="text-red-500 mt-4">{error}</p>}        {apiResponse && (
           <>
-            <TabsContainer tabs={TABS}>
-              {(activeTab) => {
-                switch (activeTab) {
-                  case 'Answer':
-                    return <AnswerTab finalAnswer={apiResponse.trace_info.final_answer} />;
-                  case 'Research':
-                    return <ResearchTab traceInfo={apiResponse.trace_info} />;
-                  case 'Sources':
-                    return <SourcesTab executorAgent={apiResponse.trace_info.executor_agent} />;
-                  default:
-                    return null;
-                }
-              }}
-            </TabsContainer>
+            <TabsContainer
+              defaultValue="answer"
+              answerContent={<AnswerTab finalAnswer={apiResponse.trace_info.final_answer} />}
+              sourcesContent={<SourcesTab executorAgent={apiResponse.trace_info.executor_agent} />}
+              traceContent={<ResearchTab traceInfo={apiResponse.trace_info} />}
+            />
           </>
         )}
       </div>
