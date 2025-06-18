@@ -55,6 +55,12 @@ class Settings(BaseSettings):
         default="text-embedding-ada-002",
         description="Default embedding model for WebRAG",
     )
+    GOOGLE_SERVICE_ACCOUNT_FILE: str = Field(
+        ..., description="Path to the Google service account JSON file"
+    )
+    KB_PROCESSED_FILES: str = Field(
+        ..., description="Path to the file tracking already processed KB documents"
+    )
     WEBRAG_OPENAI_API_KEY: str = Field(..., description="OpenAI API key for WebRAG")
     WEBRAG_GROQ_API_KEY: str = Field(..., description="Groq API key for WebRAG")
     WEBRAG_GOOGLE_API_KEY: str = Field(..., description="Google API key for WebRAG")
@@ -163,3 +169,7 @@ CORS_ORIGINS = settings.CORS_ORIGINS
 # Feature Flags
 ENABLE_EVALUATION = settings.ENABLE_EVALUATION
 ENABLE_EDITING = settings.ENABLE_EDITING
+
+
+GOOGLE_SERVICE_ACCOUNT_FILE = settings.GOOGLE_SERVICE_ACCOUNT_FILE
+KB_PROCESSED_FILES = settings.KB_PROCESSED_FILES
