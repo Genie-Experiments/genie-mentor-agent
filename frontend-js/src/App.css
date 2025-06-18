@@ -1,11 +1,8 @@
-/* Custom styles for App component */
-
-/* Remove the default styling that might conflict with Tailwind */
 #root {
-  margin: 0;
-  padding: 0;
-  max-width: none;
-  text-align: left;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
 }
 
 .logo {
