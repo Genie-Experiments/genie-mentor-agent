@@ -69,7 +69,7 @@ const AnswerTab: React.FC<AnswerTabProps> = ({ finalAnswer }) => {
         <div className="mb-2" style={{
           color: '#002835', fontFamily: 'Inter', fontSize: 16, fontWeight: 500, textTransform: 'uppercase', opacity: 0.4
         }}>Answer</div>
-        <div style={{color:'#002835', fontFamily:'Inter', fontSize:16, fontWeight:400, lineHeight:'23px', marginBottom: '20px'}}>
+        <div style={{color:'#002835', fontFamily:'Inter', fontSize:16, fontWeight:400, lineHeight:'23px', marginBottom: '30px'}}>
           {finalAnswer}
         </div>
       </div>

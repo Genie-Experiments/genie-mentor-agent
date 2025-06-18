@@ -39,10 +39,10 @@ function App() {
         <div className="absolute bottom-0 left-0 right-0 z-10 w-full">
           {/* Gradient overlay - enhanced blur effect */}
           <div 
-            className="absolute bottom-0 left-0 right-0 h-40 pointer-events-none"
+            className="absolute bottom-0 left-0 right-0 h-[200px] pointer-events-none"
             style={{ 
               background: 'linear-gradient(180deg, rgba(240, 255, 254, 0.00) 0%, #F0FFFE 41.99%)',
-              backdropFilter: 'blur(5px)'
+              // backdropFilter: 'blur(5px)'
             }}>
           </div>
           
