@@ -44,8 +44,8 @@ const CitationRenderer: React.FC<CitationRendererProps> = ({ children, onCitatio
       console.log(`Found citation: [${match[1]}], parsed as number: ${citationNumber}`);
       parts.push({
         type: 'citation',
-        content: citationNumber.toString(),
-        index: citationNumber,
+        content: match[0], // Keep the original citation format [n]
+        index: citationNumber - 1, // Convert to 0-based index for array access
       });
 
       lastIndex = match.index + match[0].length;

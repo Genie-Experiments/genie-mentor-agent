@@ -87,20 +87,19 @@ const AnswerTab: React.FC<AnswerTabProps> = ({ finalAnswer, executorAgent }) => 
     content: '',
   });
   const openContextModal = (index: number) => {
-    if (!executorAgent?.documents_by_source?.knowledgebase) return; // The citation index should directly correspond to the array index
-    // Since citation numbers in the text start from 1, and array indices start from 0
-    const arrayIndex = index - 1;
-    console.log(`Citation clicked: ${index}, using array index: ${arrayIndex}`);
+    if (!executorAgent?.documents_by_source?.knowledgebase) return;
+
+    console.log(`Citation clicked: using array index: ${index}`);
 
     // Make sure the index is valid
-    if (arrayIndex < 0 || arrayIndex >= executorAgent.documents_by_source.knowledgebase.length) {
+    if (index < 0 || index >= executorAgent.documents_by_source.knowledgebase.length) {
       console.warn(`Citation index ${index} is out of bounds`);
       return;
     }
 
-    const content = executorAgent.documents_by_source.knowledgebase[arrayIndex] || '';
+    const content = executorAgent.documents_by_source.knowledgebase[index] || '';
     const title =
-      executorAgent.metadata_by_source?.knowledgebase?.[arrayIndex]?.title || `Context ${index}`;
+      executorAgent.metadata_by_source?.knowledgebase?.[index]?.title || `Context ${index + 1}`;
 
     setActiveContext({ title, content });
     setModalVisible(true);
