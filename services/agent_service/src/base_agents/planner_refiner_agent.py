@@ -15,7 +15,7 @@ from ..utils.parsing import extract_json_with_regex
 from ..utils.settings import settings
 
 setup_logger()
-logger = get_logger("my_module")
+logger = get_logger("planner_refiner")
 
 
 class PlannerRefinerAgent(RoutedAgent):
