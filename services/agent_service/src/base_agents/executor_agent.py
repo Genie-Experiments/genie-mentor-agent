@@ -59,11 +59,11 @@ class ExecutorAgent(RoutedAgent):
             valid_results = {}
             for qid, res in results.items():
                 source_type = query_components[qid].get("source", "").lower()
-
+                print("\n\nSource Type : ", source_type)
                 # Must have a non-empty answer and no error regardless of source
                 if not res.get("answer") or res.get("error"):
                     continue
-
+                print("\n\nResult : ", res)
                 if source_type in {"github", "notion"}:
                     # For GitHub/Notion we don't require sources to be present.
                     valid_results[qid] = res
@@ -78,7 +78,7 @@ class ExecutorAgent(RoutedAgent):
             if len(valid_results) == 1:
                 # Only one valid source, use it directly (and allow downstream evaluation)
                 only_result = list(valid_results.values())[0]
-                logger.info("Only one valid source present. Skipping aggregation, proceeding with single valid result.")
+                print(self._sources_metadata)
                 return Message(content=json.dumps({
                     "combined_answer_of_sources": only_result["answer"],
                     "all_documents": [
@@ -194,6 +194,11 @@ class ExecutorAgent(RoutedAgent):
 
             if "metadata" in response:
                 source_meta = response["metadata"]
+                # Normalize to list of dicts
+                if isinstance(source_meta, dict):
+                    source_meta = [source_meta]
+                elif not isinstance(source_meta, list):
+                    source_meta = []
                 if source not in self._sources_metadata:
                     self._sources_metadata[source] = []
                 self._sources_metadata[source].extend(source_meta)
