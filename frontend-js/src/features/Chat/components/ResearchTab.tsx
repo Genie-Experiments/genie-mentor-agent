@@ -358,7 +358,7 @@ const ResearchTab: React.FC<ResearchTabProps> = ({ traceInfo }) => {
   );
 
   return (
-    <div className="flex w-full flex-col gap-4 p-4 font-['Inter'] text-[#002835]">
+    <div className="flex w-full flex-col gap-4 font-['Inter'] text-[#002835]">
       {/* PLANNER AGENT Section */}
       {traceInfo.planner_agent && traceInfo.planner_agent.length > 0 && (
         <>
