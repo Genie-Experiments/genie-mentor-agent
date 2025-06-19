@@ -4,16 +4,13 @@ from typing import Any, Dict, Optional
 
 from autogen_core import AgentId, MessageContext, RoutedAgent, message_handler
 from groq import Groq
-from ..prompts.prompts import NOTION_QUERY_PROMPT, SHORT_GITHUB_PROMPT, TEMP_GITHUB_PROMPT
 from ..protocols.message import Message
 from groq import Groq
 from ..prompts.aggregation_prompt import generate_aggregated_answer
-from ..prompts.prompts import (NOTION_QUERY_PROMPT,
-                               SHORT_GITHUB_PROMPT)
+from ..prompts.prompts import (NOTION_QUERY_PROMPT, GITHUB_PROMPT)
 from ..protocols.message import Message
 from ..utils.logging import get_logger, setup_logger
-from ..utils.parsing import (extract_json_with_brace_counting,
-                             extract_json_with_regex)
+from ..utils.parsing import extract_json_with_regex
 from ..utils.settings import settings
 from ..protocols.schemas import KBResponse
 from ..utils.logging import setup_logger, get_logger
@@ -177,7 +174,7 @@ class ExecutorAgent(RoutedAgent):
 
                 logger.info(f"[{qid}] Querying GitHub")
 
-                prompt = TEMP_GITHUB_PROMPT.format(sub_query=sub_query)
+                prompt = GITHUB_PROMPT.format(sub_query=sub_query)
                 response_message = await self.send_message(
                     Message(content=prompt), self.github_workbench_agent_id
                 )
