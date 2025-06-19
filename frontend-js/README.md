@@ -15,6 +15,46 @@ This project uses industry-standard tools such as ESLint with type-checked confi
 
 Ensure you have Node.js (version 14 or later) installed. Download it from [nodejs.org](https://nodejs.org) and verify the installation with `node -v`.
 
+## Docker Setup
+
+### Prerequisites
+
+- Docker and Docker Compose installed on your machine
+
+### Running with Docker
+
+1. **Build and run the frontend in isolation:**
+
+   ```bash
+   docker build -t genie-mentor-frontend .
+   docker run -p 3001:80 genie-mentor-frontend
+   ```
+
+   This will make the frontend available at `http://localhost:3001`.
+
+2. **Running as part of the entire project:**
+   From the project root directory:
+   ```bash
+   docker-compose up -d
+   ```
+   This will start all services including the frontend.
+
+### Development with Docker
+
+For development with live reload capabilities:
+
+```bash
+docker-compose -f docker-compose.dev.yml up frontend
+```
+
+### Integration with Backend Services
+
+The frontend is configured to communicate with:
+
+- `agent-service` - Main agent service
+- `data-ingestion-service` - Service for data ingestion
+- Gateway services for external integrations
+
 ## Expanding the ESLint configuration
 
 If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
@@ -74,3 +114,20 @@ We welcome contributions. Please ensure:
 - Code follows our style guidelines.
 - All tests pass.
 - Relevant documentation is updated.
+
+## Troubleshooting Docker Setup
+
+### Common Issues
+
+1. **Port conflicts:**
+
+   - If port 3001 is already in use, modify the port mapping in docker-compose.yml
+
+2. **Container build failures:**
+
+   - Check logs with `docker-compose logs frontend`
+   - Rebuild with `docker-compose build --no-cache frontend`
+
+3. **Connection to backend services:**
+   - Ensure all dependent services are running
+   - Check network configuration in docker-compose.yml
