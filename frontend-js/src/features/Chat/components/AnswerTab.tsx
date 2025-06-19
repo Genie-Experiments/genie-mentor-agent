@@ -115,27 +115,31 @@ const AnswerTab: React.FC<AnswerTabProps> = ({ finalAnswer, executorAgent }) => 
             description: source.description || 'No description available',
           });
         });
-      }
-
-      // Add GitHub sources
+      } // Add GitHub sources
       if (executorAgent.metadata_by_source.github) {
         executorAgent.metadata_by_source.github.forEach((source: GitHubMetadata) => {
-          sources.push({
-            title: source.repo || 'Untitled',
-            url: source.url || '#',
-            description: `File: ${source.file_path}`,
-          });
+          if (source.repo_links && source.repo_names) {
+            for (let i = 0; i < source.repo_links.length && i < source.repo_names.length; i++) {
+              sources.push({
+                title: source.repo_names[i] || 'Untitled GitHub Repository',
+                url: source.repo_links[i] || '#',
+                description: 'GitHub Repository',
+              });
+            }
+          }
         });
-      }
-
-      // Add Notion sources
+      } // Add Notion sources
       if (executorAgent.metadata_by_source.notion) {
         executorAgent.metadata_by_source.notion.forEach((source: NotionMetadata) => {
-          sources.push({
-            title: source.title || 'Untitled',
-            url: source.url || '#',
-            description: `Page ID: ${source.page_id}`,
-          });
+          if (source.doc_links && source.doc_names) {
+            for (let i = 0; i < source.doc_links.length && i < source.doc_names.length; i++) {
+              sources.push({
+                title: source.doc_names[i] || 'Untitled Notion Document',
+                url: source.doc_links[i] || '#',
+                description: 'Notion Document',
+              });
+            }
+          }
         });
       }
     }
@@ -203,6 +207,7 @@ const AnswerTab: React.FC<AnswerTabProps> = ({ finalAnswer, executorAgent }) => 
       {/* Top Sources Section - Only shown if sources are available */}
       {topSources.length > 0 && (
         <div>
+          {' '}
           <div
             className="mb-4"
             style={{
@@ -223,9 +228,10 @@ const AnswerTab: React.FC<AnswerTabProps> = ({ finalAnswer, executorAgent }) => 
                 href={source.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex flex-col items-start justify-center gap-[10px] rounded-[8px] border border-[#9CBFBC] bg-white transition-shadow hover:shadow-[0px_12px_21px_0px_#CDE6E5]"
-                style={{ width: 243, padding: '15px 18px', textDecoration: 'none' }}
+                className="flex flex-col items-start justify-center rounded-[8px] border border-[#9CBFBC] bg-white transition-shadow hover:shadow-[0px_12px_21px_0px_#CDE6E5]"
+                style={{ width: 243, padding: '15px 18px', textDecoration: 'none', gap: 0 }}
               >
+                {' '}
                 <div className="flex items-center gap-2">
                   {/* Star Icon */}
                   <span
@@ -256,22 +262,43 @@ const AnswerTab: React.FC<AnswerTabProps> = ({ finalAnswer, executorAgent }) => 
                     {truncateUrl(source.url)}
                   </span>
                 </div>
+                <div style={{ height: '10px' }} />
                 <div
                   style={{
                     color: '#002835',
                     fontFamily: 'Inter',
-                    fontSize: 14,
-                    fontWeight: 400,
+                    fontSize: 16,
+                    fontStyle: 'normal',
+                    fontWeight: 500,
+                    lineHeight: 'normal',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     display: '-webkit-box',
                     WebkitLineClamp: 2,
                     WebkitBoxOrient: 'vertical',
                     maxWidth: 200,
-                    height: '42px',
                   }}
                 >
                   {source.title}
+                </div>
+                <div style={{ height: '7px' }} />
+                <div
+                  style={{
+                    color: '#002835',
+                    fontFamily: 'Inter',
+                    fontSize: 14,
+                    fontStyle: 'normal',
+                    fontWeight: 400,
+                    lineHeight: 'normal',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical',
+                    maxWidth: 200,
+                  }}
+                >
+                  {source.description}
                 </div>
               </a>
             ))}
@@ -282,6 +309,7 @@ const AnswerTab: React.FC<AnswerTabProps> = ({ finalAnswer, executorAgent }) => 
       {/* Context Section - Only shown if contexts are available */}
       {contextsAvailable && (
         <div>
+          {' '}
           <div
             className="mb-4"
             style={{
@@ -319,8 +347,9 @@ const AnswerTab: React.FC<AnswerTabProps> = ({ finalAnswer, executorAgent }) => 
 
       {/* Answer Section */}
       <div>
+        {' '}
         <div
-          className="mb-2"
+          className="mb-[16px]"
           style={{
             color: '#002835',
             fontFamily: 'Inter',

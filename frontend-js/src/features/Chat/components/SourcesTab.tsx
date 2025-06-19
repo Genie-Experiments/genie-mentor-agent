@@ -31,7 +31,6 @@ const SourcesTab: React.FC<SourcesTabProps> = ({ executorAgent }) => {
   const closeContextModal = () => {
     setModalVisible(false);
   };
-
   const sectionTitleStyle: React.CSSProperties = {
     color: '#002835',
     fontFamily: 'Inter',
@@ -70,11 +69,10 @@ const SourcesTab: React.FC<SourcesTabProps> = ({ executorAgent }) => {
     lineHeight: 'normal',
     opacity: 0.6,
   };
-
   const separatorStyle: React.CSSProperties = {
     background: '#9CBFBC',
     height: '1px',
-    margin: '33px 0',
+    margin: '27px 0',
   };
 
   const viewDetailsStyle: React.CSSProperties = {
@@ -150,7 +148,6 @@ const SourcesTab: React.FC<SourcesTabProps> = ({ executorAgent }) => {
       ))}
     </ol>
   );
-
   const renderWebSources = (metadata: WebsearchMetadata[]) => (
     <ol style={{ paddingLeft: 0 }}>
       {metadata.map((item, index) => (
@@ -176,10 +173,6 @@ const SourcesTab: React.FC<SourcesTabProps> = ({ executorAgent }) => {
             >
               {index + 1}.
             </span>
-            <span style={itemTitleStyle}>{item.title || 'Untitled'}</span>
-          </div>
-          <div style={{ marginLeft: 32, width: '100%' }}>
-            <div style={{ height: '14px' }} />
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -197,27 +190,51 @@ const SourcesTab: React.FC<SourcesTabProps> = ({ executorAgent }) => {
                 {item.url}
               </a>
             </div>
+          </div>{' '}
+          <div style={{ marginLeft: 32, width: '100%' }}>
+            <div style={{ height: '10px' }} />
+            <div style={itemTitleStyle}>{item.title || 'Untitled'}</div>
+            <div style={{ height: '7px' }} />
             <div style={itemDetailStyle}>{item.description || 'No description available.'}</div>
           </div>
         </li>
       ))}
     </ol>
   );
-
   const mapGitHubToWebsearchMetadata = (metadata: GitHubMetadata[]): WebsearchMetadata[] => {
-    return metadata.map((item) => ({
-      title: item.repo || 'Untitled',
-      description: `File: ${item.file_path}`,
-      url: item.url || '#',
-    }));
+    const result: WebsearchMetadata[] = [];
+
+    metadata.forEach((item) => {
+      if (item.repo_links && item.repo_names) {
+        for (let i = 0; i < item.repo_links.length; i++) {
+          result.push({
+            title: item.repo_names[i] || 'Untitled GitHub Repository',
+            description: 'GitHub Repository',
+            url: item.repo_links[i] || '#',
+          });
+        }
+      }
+    });
+
+    return result;
   };
 
   const mapNotionToWebsearchMetadata = (metadata: NotionMetadata[]): WebsearchMetadata[] => {
-    return metadata.map((item) => ({
-      title: item.title || 'Untitled',
-      description: `Page ID: ${item.page_id}`,
-      url: item.url || '#',
-    }));
+    const result: WebsearchMetadata[] = [];
+
+    metadata.forEach((item) => {
+      if (item.doc_links && item.doc_names) {
+        for (let i = 0; i < item.doc_links.length; i++) {
+          result.push({
+            title: item.doc_names[i] || 'Untitled Notion Document',
+            description: 'Notion Document',
+            url: item.doc_links[i] || '#',
+          });
+        }
+      }
+    });
+
+    return result;
   };
 
   const renderGitHubSources = (metadata: GitHubMetadata[]) =>
@@ -253,6 +270,22 @@ const SourcesTab: React.FC<SourcesTabProps> = ({ executorAgent }) => {
     textAlign: 'center',
     padding: '32px 0',
   };
+  // Helper function to count how many source types are available
+  const countSourceTypes = () => {
+    const { metadata_by_source } = executorAgent;
+    let count = 0;
+    if (metadata_by_source?.knowledgebase && metadata_by_source.knowledgebase.length > 0) count++;
+    if (metadata_by_source?.websearch && metadata_by_source.websearch.length > 0) count++;
+    if (metadata_by_source?.github && metadata_by_source.github.length > 0) count++;
+    if (metadata_by_source?.notion && metadata_by_source.notion.length > 0) count++;
+    return count;
+  };
+
+  // Get the total number of source types
+  const sourceTypeCount = countSourceTypes();
+
+  // Track which source type we're currently rendering
+  let renderedSourcesCount = 0;
 
   return (
     <div className="flex w-full flex-col gap-4 font-['Inter'] text-[#002835]">
@@ -260,33 +293,37 @@ const SourcesTab: React.FC<SourcesTabProps> = ({ executorAgent }) => {
         <div style={noSourcesMessageStyle}>No sources available for this answer.</div>
       ) : (
         <>
-          {executorAgent.metadata_by_source?.knowledgebase && (
-            <>
-              <div style={sectionTitleStyle}>Knowledge Base Sources</div>
-              {renderKnowledgeBaseSources(executorAgent.metadata_by_source.knowledgebase)}
-              <div style={separatorStyle} />
-            </>
-          )}
-          {executorAgent.metadata_by_source?.websearch && (
-            <>
-              <div style={sectionTitleStyle}>Web Sources</div>
-              {renderWebSources(executorAgent.metadata_by_source.websearch)}
-              <div style={separatorStyle} />
-            </>
-          )}
-          {executorAgent.metadata_by_source?.github && (
-            <>
-              <div style={sectionTitleStyle}>GitHub Sources</div>
-              {renderGitHubSources(executorAgent.metadata_by_source.github)}
-              <div style={separatorStyle} />
-            </>
-          )}
-          {executorAgent.metadata_by_source?.notion && (
-            <>
-              <div style={sectionTitleStyle}>Notion Sources</div>
-              {renderNotionSources(executorAgent.metadata_by_source.notion)}
-            </>
-          )}
+          {executorAgent.metadata_by_source?.knowledgebase &&
+            executorAgent.metadata_by_source.knowledgebase.length > 0 && (
+              <>
+                <div style={sectionTitleStyle}>Knowledge Base Sources</div>
+                {renderKnowledgeBaseSources(executorAgent.metadata_by_source.knowledgebase)}
+                {++renderedSourcesCount < sourceTypeCount && <div style={separatorStyle} />}
+              </>
+            )}
+          {executorAgent.metadata_by_source?.websearch &&
+            executorAgent.metadata_by_source.websearch.length > 0 && (
+              <>
+                <div style={sectionTitleStyle}>Web Sources</div>
+                {renderWebSources(executorAgent.metadata_by_source.websearch)}
+                {++renderedSourcesCount < sourceTypeCount && <div style={separatorStyle} />}
+              </>
+            )}
+          {executorAgent.metadata_by_source?.github &&
+            executorAgent.metadata_by_source.github.length > 0 && (
+              <>
+                <div style={sectionTitleStyle}>GitHub Sources</div>
+                {renderGitHubSources(executorAgent.metadata_by_source.github)}
+                {++renderedSourcesCount < sourceTypeCount && <div style={separatorStyle} />}
+              </>
+            )}
+          {executorAgent.metadata_by_source?.notion &&
+            executorAgent.metadata_by_source.notion.length > 0 && (
+              <>
+                <div style={sectionTitleStyle}>Notion Sources</div>
+                {renderNotionSources(executorAgent.metadata_by_source.notion)}
+              </>
+            )}
         </>
       )}
       <ContextModal

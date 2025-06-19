@@ -47,7 +47,7 @@ const TabsContainer: React.FC<TabsContainerProps> = ({
         </TabsList>{' '}
       </div>
 
-      <div className="mt-[51px]">
+      <div className="mt-[27px]">
         {tabs.map((tab) => (
           <TabsContent key={tab.value} value={tab.value} className="mt-0 mb-4 min-h-[80px]">
             {tab.content}

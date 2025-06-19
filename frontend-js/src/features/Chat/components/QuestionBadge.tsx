@@ -6,44 +6,33 @@ interface QuestionBadgeProps {
   error: string | null;
 }
 
-const QuestionBadge: React.FC<QuestionBadgeProps> = ({ 
-  question,
-  isLoading,
-  error
-}) => {
+const QuestionBadge: React.FC<QuestionBadgeProps> = ({ question, isLoading, error }) => {
   return (
     <div>
-      {/* Badge */}
-      <div className="flex px-[9px] py-[5px] justify-center max-w-[80px] width-[100%] items-center gap-[10px] rounded-[50px] bg-[#00A599] mb-0 mt-8">
-        <span className="text-white font-['Inter'] text-[14px] font-semibold">Question</span>
+      <div className="width-[100%] mt-0 mb-0 flex max-w-[80px] items-center justify-center gap-[10px] rounded-[50px] bg-[#00A599] px-[9px] py-[5px] ">
+        <span className="font-['Inter'] text-[14px] font-semibold text-white">Question</span>
       </div>
-      
-      {/* User Question */}
+
       <div className="mt-[16px]">
-        <span className="text-[#002835] font-['Inter'] text-[28px] font-semibold">{question}</span>
+        <span className="font-['Inter'] text-[28px] font-semibold text-[#002835]">{question}</span>
       </div>
-      
-      {/* Loading State */}
+
       {isLoading && (
         <div className="mt-[21px] flex items-center gap-2">
-          <div className="animate-spin h-5 w-5 border-2 border-[#00A599] border-t-transparent rounded-full"></div>
-          <span className="text-[#002835] font-['Inter'] text-[18px] font-normal">
+          <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#00A599] border-t-transparent"></div>
+          <span className="font-['Inter'] text-[18px] font-normal text-[#002835]">
             Processing your question...
           </span>
         </div>
       )}
-      
-      {/* Error Message */}
+
       {error && (
-        <div className="mt-[21px] text-red-500 font-['Inter'] text-[18px] font-normal">
-          {error}
-        </div>
+        <div className="mt-[21px] font-['Inter'] text-[18px] font-normal text-red-500">{error}</div>
       )}
-      
-      {/* Info Text */}
+
       {!isLoading && !error && (
         <div className="mt-[21px]">
-          <span className="text-[#002835] font-['Inter'] text-[18px] font-normal">
+          <span className="font-['Inter'] text-[18px] font-normal text-[#002835]">
             It takes less than a minute to gather and compile best answers for you.
           </span>
         </div>

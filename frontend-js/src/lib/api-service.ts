@@ -107,17 +107,15 @@ export interface WebsearchMetadata { // Exporting WebsearchMetadata
 
 // --- Placeholder Metadata Types ---
 export interface GitHubMetadata { // Exporting GitHubMetadata
-  // Placeholder, to be refined with a successful response
-  repo: string;
-  file_path: string;
-  url: string;
+  // Defined structure from GitHub integration
+  repo_links: string[];
+  repo_names: string[];
 }
 
 export interface NotionMetadata { // Exporting NotionMetadata
-  // Placeholder, to be refined with a successful response
-  page_id: string;
-  title: string;
-  url: string;
+  // Defined structure from Notion integration
+  doc_links: string[];
+  doc_names: string[];
 }
 
 // Evaluation Agent
