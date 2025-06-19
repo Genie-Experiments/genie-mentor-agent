@@ -184,8 +184,14 @@ def parse_source_response(text: str) -> Dict[str, Any]:
                     # If inner parsing fails, keep original answer text
                     pass
         
+        # Ensure 'answer' and 'metadata' keys always exist
+        if not isinstance(parsed_json, dict):
+            parsed_json = {"answer": str(parsed_json), "metadata": {}}
+        if 'answer' not in parsed_json:
+            parsed_json['answer'] = 'Error parsing agent response'
+        if 'metadata' not in parsed_json:
+            parsed_json['metadata'] = {}
         return parsed_json
-        
     except json.JSONDecodeError:
         # Next try the brace counting method
         try:
@@ -205,6 +211,13 @@ def parse_source_response(text: str) -> Dict[str, Any]:
                     except json.JSONDecodeError:
                         pass
                         
+            # Ensure 'answer' and 'metadata' keys always exist
+            if not isinstance(parsed_json, dict):
+                parsed_json = {"answer": str(parsed_json), "metadata": {}}
+            if 'answer' not in parsed_json:
+                parsed_json['answer'] = ''
+            if 'metadata' not in parsed_json:
+                parsed_json['metadata'] = {}
             return parsed_json
             
         except ValueError:

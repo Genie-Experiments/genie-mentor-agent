@@ -59,11 +59,9 @@ class ExecutorAgent(RoutedAgent):
             valid_results = {}
             for qid, res in results.items():
                 source_type = query_components[qid].get("source", "").lower()
-
                 # Must have a non-empty answer and no error regardless of source
                 if not res.get("answer") or res.get("error"):
                     continue
-
                 if source_type in {"github", "notion"}:
                     # For GitHub/Notion we don't require sources to be present.
                     valid_results[qid] = res
@@ -194,6 +192,11 @@ class ExecutorAgent(RoutedAgent):
 
             if "metadata" in response:
                 source_meta = response["metadata"]
+                # Normalize to list of dicts
+                if isinstance(source_meta, dict):
+                    source_meta = [source_meta]
+                elif not isinstance(source_meta, list):
+                    source_meta = []
                 if source not in self._sources_metadata:
                     self._sources_metadata[source] = []
                 self._sources_metadata[source].extend(source_meta)
