@@ -59,11 +59,9 @@ class ExecutorAgent(RoutedAgent):
             valid_results = {}
             for qid, res in results.items():
                 source_type = query_components[qid].get("source", "").lower()
-                print("\n\nSource Type : ", source_type)
                 # Must have a non-empty answer and no error regardless of source
                 if not res.get("answer") or res.get("error"):
                     continue
-                print("\n\nResult : ", res)
                 if source_type in {"github", "notion"}:
                     # For GitHub/Notion we don't require sources to be present.
                     valid_results[qid] = res
