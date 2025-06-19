@@ -165,13 +165,17 @@ export async function callBackend(query: string, sessionId: string = "123"): Pro
     });
     
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const errorText = await response.text().catch(() => 'Unknown error');
+      throw new Error(`Server responded with ${response.status}: ${errorText}`);
     }
     
     const data = await response.json();
     return data;
   } catch (error) {
     console.error('Error calling backend:', error);
+    if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+      throw new Error('Could not connect to the server. Please check your network connection or server status.');
+    }
     throw error;
   }
 }

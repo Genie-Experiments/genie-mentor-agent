@@ -3,27 +3,24 @@ import Sidebar from './components/shared/Sidebar';
 import Chat from './features/Chat/Chat';
 import WelcomeScreen from './WelcomeScreen';
 import InputField from './components/ui/InputField';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 
 function App() {
   const sampleConversations = [{ id: '1', title: 'Machine learning algorithms' }];
   const [showWelcomeScreen, setShowWelcomeScreen] = useState(true);
   const [question, setQuestion] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-
   const handleQuestionSubmit = (value: string) => {
     if (value.trim()) {
       setQuestion(value);
       setShowWelcomeScreen(false);
       setIsLoading(true);
-
-      // Simulate loading state completion (would normally happen when response is received)
-      // Remove this in a real implementation and use actual response completion
-      setTimeout(() => {
-        setIsLoading(false);
-      }, 3000);
     }
   };
+
+  const handleLoadingStateChange = useCallback((isLoading: boolean) => {
+    setIsLoading(isLoading);
+  }, []);
 
   const handleStartNewChat = () => {
     setQuestion('');
@@ -37,10 +34,11 @@ function App() {
         <div
           className={`scrollbar-hide flex-1 overflow-y-auto ${!showWelcomeScreen ? 'pb-32' : ''}`}
         >
+          {' '}
           {showWelcomeScreen ? (
             <WelcomeScreen onQuestionSubmit={handleQuestionSubmit} />
           ) : (
-            <Chat question={question} />
+            <Chat question={question} onLoadingStateChange={handleLoadingStateChange} />
           )}
         </div>{' '}
         {!showWelcomeScreen && (

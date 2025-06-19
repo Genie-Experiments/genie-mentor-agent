@@ -5,6 +5,7 @@ import { TabsContainer, QuestionBadge, AnswerTab, ResearchTab, SourcesTab } from
 
 interface ChatProps {
   question: string;
+  onLoadingStateChange?: (isLoading: boolean) => void;
 }
 
 interface ConversationItem {
@@ -15,12 +16,19 @@ interface ConversationItem {
   error?: string | null;
 }
 
-const Chat: React.FC<ChatProps> = ({ question }) => {
+const Chat: React.FC<ChatProps> = ({ question, onLoadingStateChange }) => {
   const [apiResponse, setApiResponse] = useState<ApiResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [conversationHistory, setConversationHistory] = useState<ConversationItem[]>([]);
   const chatAreaRef = useRef<HTMLDivElement>(null);
+
+  // Update parent component's loading state when our loading state changes
+  useEffect(() => {
+    if (onLoadingStateChange) {
+      onLoadingStateChange(isLoading);
+    }
+  }, [isLoading, onLoadingStateChange]);
 
   // Process a new question when it arrives
   useEffect(() => {

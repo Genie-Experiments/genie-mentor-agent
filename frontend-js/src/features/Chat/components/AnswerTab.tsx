@@ -8,6 +8,7 @@ import type {
 import ContextModal from './ContextModal';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import CitationRenderer from './CitationRenderer';
 import './markdown-styles.css';
 
 interface AnswerTabProps {
@@ -85,13 +86,21 @@ const AnswerTab: React.FC<AnswerTabProps> = ({ finalAnswer, executorAgent }) => 
     title: '',
     content: '',
   });
-
   const openContextModal = (index: number) => {
-    if (!executorAgent?.documents_by_source?.knowledgebase) return;
+    if (!executorAgent?.documents_by_source?.knowledgebase) return; // The citation index should directly correspond to the array index
+    // Since citation numbers in the text start from 1, and array indices start from 0
+    const arrayIndex = index - 1;
+    console.log(`Citation clicked: ${index}, using array index: ${arrayIndex}`);
 
-    const content = executorAgent.documents_by_source.knowledgebase[index] || '';
+    // Make sure the index is valid
+    if (arrayIndex < 0 || arrayIndex >= executorAgent.documents_by_source.knowledgebase.length) {
+      console.warn(`Citation index ${index} is out of bounds`);
+      return;
+    }
+
+    const content = executorAgent.documents_by_source.knowledgebase[arrayIndex] || '';
     const title =
-      executorAgent.metadata_by_source?.knowledgebase?.[index]?.title || `Context ${index + 1}`;
+      executorAgent.metadata_by_source?.knowledgebase?.[arrayIndex]?.title || `Context ${index}`;
 
     setActiveContext({ title, content });
     setModalVisible(true);
@@ -305,7 +314,6 @@ const AnswerTab: React.FC<AnswerTabProps> = ({ finalAnswer, executorAgent }) => 
           </div>
         </div>
       )}
-
       {/* Context Section - Only shown if contexts are available */}
       {contextsAvailable && (
         <div>
@@ -336,7 +344,6 @@ const AnswerTab: React.FC<AnswerTabProps> = ({ finalAnswer, executorAgent }) => 
           </div>
         </div>
       )}
-
       {/* Context Modal */}
       <ContextModal
         isVisible={modalVisible}
@@ -344,8 +351,7 @@ const AnswerTab: React.FC<AnswerTabProps> = ({ finalAnswer, executorAgent }) => 
         content={activeContext.content}
         onClose={closeContextModal}
       />
-
-      {/* Answer Section */}
+      {/* Answer Section */}{' '}
       <div>
         {' '}
         <div
@@ -372,7 +378,27 @@ const AnswerTab: React.FC<AnswerTabProps> = ({ finalAnswer, executorAgent }) => 
           }}
           className="markdown-content"
         >
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{finalAnswer}</ReactMarkdown>
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            components={{
+              // Custom renderer for paragraphs that might contain citations
+              p: ({ children }) => {
+                // Convert children to string if it's a text node
+                if (typeof children === 'string') {
+                  return (
+                    <p>
+                      <CitationRenderer onCitationClick={openContextModal}>
+                        {children}
+                      </CitationRenderer>
+                    </p>
+                  );
+                }
+                return <p>{children}</p>;
+              },
+            }}
+          >
+            {finalAnswer}
+          </ReactMarkdown>
         </div>
       </div>
     </div>
