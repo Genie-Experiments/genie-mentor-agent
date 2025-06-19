@@ -108,6 +108,7 @@ class WorkbenchAgent(RoutedAgent):
             
             # Use our new parser that handles GitHub and Notion content
             result_json = parse_source_response(create_result.content)
+
             return Message(content=json.dumps(result_json))
         except Exception as e:
             print(f"Error extracting JSON from response: {e}")
