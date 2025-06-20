@@ -54,7 +54,7 @@ const Sidebar: React.FC<SidebarProps> = ({ conversations = [] }) => {
             transitionDelay: isCollapsed ? '0ms' : '150ms',
           }}
         >
-          <h1 className="text-3xl leading-normal font-bold">GEN AI</h1>
+          <h1 className="text-3xl leading-normal font-bold">GENIE</h1>
           <h2 className="text-3xl leading-normal font-medium">MENTOR AGENT</h2>
         </div>
 

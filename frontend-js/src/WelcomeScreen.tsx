@@ -17,7 +17,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onQuestionSubmit }) => {
   };
 
   const predefinedQuestions = [
-    'What is Genie AI Mentor?',
+    'What is Genie Mentor?',
     'How can Genie help me learn AI?',
     'What concepts should I start with?',
     'Show me the learning path',
@@ -39,7 +39,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onQuestionSubmit }) => {
             Welcome to
           </p>
           <h1 className="font-['Inter'] text-[54px] font-bold text-[#002835]">
-            Genie AI Mentor Agent
+            Genie Mentor Agent
           </h1>
         </div>
         <p className="mb-4 text-center font-['Inter'] text-[22px] font-normal text-[#002835]">

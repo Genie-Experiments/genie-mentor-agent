@@ -27,10 +27,11 @@ const Sidebar: React.FC<SidebarProps> = ({ conversations = [], onNewChat }) => {
     } else {
       console.log('New chat started');
     }
-  };return (
+  };
+  return (
     <div
       className={cn(
-        'flex h-screen flex-col overflow-hidden bg-[#00A599] transition-all duration-300 ease-in-out sticky top-0 left-0',
+        'sticky top-0 left-0 flex h-screen flex-col overflow-hidden bg-[#00A599] transition-all duration-300 ease-in-out',
         isCollapsed ? 'w-[90px]' : 'w-[300px]',
         'rounded-r-[26px]'
       )}
@@ -58,7 +59,7 @@ const Sidebar: React.FC<SidebarProps> = ({ conversations = [], onNewChat }) => {
             transitionDelay: isCollapsed ? '0ms' : '150ms',
           }}
         >
-          <h1 className="text-3xl leading-normal font-bold">GEN AI</h1>
+          <h1 className="text-3xl leading-normal font-bold">GENIE</h1>
           <h2 className="text-3xl leading-normal font-medium">MENTOR AGENT</h2>
         </div>
         {/* Button Container - with fixed width to prevent overflow */}
