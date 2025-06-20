@@ -138,3 +138,6 @@ credentials.json
 *.key
 services/knowledge-base-chroma-index/
 services/genie-kbdocs-v1/
+
+#temp
+!frontend-js/src/lib/
