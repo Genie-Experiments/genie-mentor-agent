@@ -316,10 +316,10 @@ Dont stop until you have a definite answer, with code extracted and code snippet
 ```json
 {{
   "answer": "<A comprehensive, detailed answer to the sub-query, including code examples and explanations derived from the tool results. Should be a definitive answer only, not simply directing user towards files and repositories. Its very important that this answer be detailed and include all code and file content extracted from repo. Answer should not only direct user to files, instead include content from any files mentioned. It should only be educational, not say relevant information wasnt found, always an answer based on the information retrieved>",
-  "metadata": {{
+  "metadata": [{{
       "repo_links": ["<A list of links to the repositories that were actually used.>"],
       "repo_names": ["<A list of names of the repositories that were used.>"] 
-    }},
+    }}],
 }}
 ```
 
@@ -363,10 +363,10 @@ The final answer must be informative and as descriptive as you can make it. It s
 ```json
 {{
   "answer": "<A comprehensive, detailed answer to the sub-query, synthesized from the information retrieved from Notion. It should not only direct user to files, instead include content from any files mentioned. It should only be educational, not say relevant information wasnt found, always an answer based on the information retrieved>",
-  "metadata": {{
+  "metadata": [{{
       "doc_links": ["<A list of links to the Notion documents that were used.>"],
       "doc_names": ["<A list of the names of the Notion documents that were used.>"] 
-    }},
+    }}],
 }}
 
 **CRITICAL JSON FORMATTING INSTRUCTIONS:**
