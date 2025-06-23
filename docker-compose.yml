@@ -3,6 +3,7 @@ version: '3.3'
 services:
   notion-mcp-gateway:
     image: node:18-alpine
+    container_name: notion-mcp-gateway
     ports:
       - "8009:8009"
     environment:
@@ -13,6 +14,7 @@ services:
 
   github-mcp-gateway:
     image: node:18-alpine
+    container_name: github-mcp-gateway
     ports:
       - "8010:8010"
     environment:
@@ -21,6 +23,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     command: sh -c "apk add --no-cache docker-cli && npx -y supergateway --stdio 'docker run -i --rm -e GITHUB_PERSONAL_ACCESS_TOKEN=$$GITHUB_PERSONAL_ACCESS_TOKEN ghcr.io/github/github-mcp-server' --port 8010 --baseUrl http://0.0.0.0:8010 --ssePath /sse --messagePath /message --cors --logLevel info"
     restart: unless-stopped
+
   agent-service:
     build:
       context: ./services/agent_service
@@ -29,7 +32,7 @@ services:
       - .env
     container_name: agent-service
     ports:
-      - "8080:8000"
+      - "8000:8000"
     volumes:
       - ./services/agent_service/src:/app/src
     environment:
@@ -40,7 +43,7 @@ services:
 
   data-ingestion-service:
     build:
-      context: ./services/data-ingestion-service
+      context: ./services/data_ingestion_service
       dockerfile: Dockerfile
     env_file:
       - .env
@@ -48,7 +51,7 @@ services:
     ports:
       - "8003:8003"
     volumes:
-      - ./services/data-ingestion-service/src:/app/src
+      - ./services/data_ingestion_service/src:/app/src
     environment:
       - PYTHONUNBUFFERED=1
 

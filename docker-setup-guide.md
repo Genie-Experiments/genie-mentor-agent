@@ -1,6 +1,6 @@
 # Genie Mentor Agent Setup Guide for New Developers
 
-Welcome to the Genie Mentor Agent project! This guide will help you set up the entire system using Docker, with a special focus on the frontend component.
+Welcome to the Genie Mentor Agent project! This guide will help you set up the entire system using Docker
 
 ## Project Overview
 
@@ -14,11 +14,9 @@ Genie Mentor Agent is a system consisting of multiple services:
 
 ## Prerequisites
 
-- [Docker](https://www.docker.com/products/docker-desktop/) and Docker Compose installed
-- Git for version control
-- A code editor (VS Code recommended)
-- Basic knowledge of React, TypeScript, and Python
-
+- [Docker](https://www.docker.com/products/docker-desktop/) installed
+- [Docker Compose](https://docs.docker.com/compose/install/) installed
+- 
 ## Quick Start with Docker
 
 To get the entire system running with minimal configuration:
@@ -44,11 +42,11 @@ To get the entire system running with minimal configuration:
    docker-compose up -d
    ```
 
-   This will start all services defined in the main docker-compose.yml file, including the frontend.
+   This will build and start all services defined in the main docker-compose.yml file, including the frontend.
 
 4. **Access the application:**
    - Frontend: http://localhost:3001
-   - Agent Service API: http://localhost:8080
+   - Agent Service API: http://localhost:8000
    - Data Ingestion Service: http://localhost:8003
 
 ## Frontend Development
