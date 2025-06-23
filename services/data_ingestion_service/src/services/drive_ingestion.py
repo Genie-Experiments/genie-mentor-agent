@@ -32,7 +32,6 @@ class DriveIngestionError(Exception):
 def init_drive() -> GoogleDrive:
     """Initialize Google Drive API client with service account"""
     try:
-        
         service_account_file = os.getenv("GOOGLE_SERVICE_ACCOUNT_FILE")
         if not service_account_file:
             raise DriveIngestionError("GOOGLE_SERVICE_ACCOUNT_FILE environment variable not set")
