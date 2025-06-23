@@ -54,3 +54,10 @@ class WebSearchResponse(BaseModel):
     sources: List[str]
     metadata: List[WebSearchMetadata]
     error: Optional[str]
+
+class WorkbenchResponse(BaseModel):
+    answer: str
+    sources: List[str]
+    metadata: List
+    error: Optional[str]
+    
