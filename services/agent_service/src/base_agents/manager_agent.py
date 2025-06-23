@@ -204,44 +204,26 @@ class ManagerAgent(RoutedAgent):
             documents = q_output.get("all_documents", [])
             documents_by_source = q_output.get("documents_by_source", {})
             
-            # Check if Notion or GitHub sources are used
-            skip_evaluation = False
-            skip_reason = None
-            
-            for source_name in documents_by_source.keys():
-                source_lower = source_name.lower() if isinstance(source_name, str) else ""
-                if "notion" in source_lower or "github" in source_lower:
-                    skip_evaluation = True
-                    skip_reason = f"Evaluation skipped because {source_name} source was used"
-                    break
-                    
-            if skip_evaluation:
-                # Skip evaluation and return the answer directly
-                final_answer = answer
-                eval_history = []
-                editor_history = []
-                logger.info(f"[ManagerAgent] {skip_reason}")
-            else:
-                
-                try:
-                    final_answer, eval_history, editor_history = await self.run_evaluation_loop(
-                        question=user_query,
-                        initial_answer=answer,
-                        contexts=documents,
-                        documents_by_source=documents_by_source,
-                    )
-                except Exception as e:
-                    logger.error(f"[ManagerAgent] Evaluation failed, using executor output. Reason: {e}")
-                    self.trace_info.update({
-                        'final_answer': answer,
-                        'evaluation_agent': [],
-                        'editor_agent': [],
-                        'evaluation_skipped': False,
-                        'skip_reason': "Evaluation or Editor failed.",
-                        'total_time': time.time() - start_time
-                    })
-                    self._update_history(session_id, message.content, self.trace_info['final_answer'])
-                    return Message(content=json.dumps({'trace_info': self.trace_info}))
+            # Always perform evaluation, regardless of data source
+            try:
+                final_answer, eval_history, editor_history = await self.run_evaluation_loop(
+                    question=user_query,
+                    initial_answer=answer,
+                    contexts=documents,
+                    documents_by_source=documents_by_source,
+                )
+            except Exception as e:
+                logger.error(f"[ManagerAgent] Evaluation failed, using executor output. Reason: {e}")
+                self.trace_info.update({
+                    'final_answer': answer,
+                    'evaluation_agent': [],
+                    'editor_agent': [],
+                    'evaluation_skipped': False,
+                    'skip_reason': "Evaluation or Editor failed.",
+                    'total_time': time.time() - start_time
+                })
+                self._update_history(session_id, message.content, self.trace_info['final_answer'])
+                return Message(content=json.dumps({'trace_info': self.trace_info}))
 
 
             self.trace_info.update({
@@ -249,8 +231,8 @@ class ManagerAgent(RoutedAgent):
                 'editor_agent': editor_history,
                 'final_answer': final_answer,
                 'total_time': time.time() - start_time,
-                'evaluation_skipped': skip_evaluation,
-                'skip_reason': skip_reason
+                'evaluation_skipped': False,
+                'skip_reason': None
             })
             self._update_history(session_id, message.content, final_answer)
 
