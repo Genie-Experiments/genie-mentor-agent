@@ -61,6 +61,9 @@ class Settings(BaseSettings):
     KB_PROCESSED_FILES: str = Field(
         ..., description="Path to the file tracking already processed KB documents"
     )
+    KB_DATA_STORAGE_DRIVE_ID: str = Field(
+        ..., description="Path to the google drive where KB documents are stored"
+    )
     WEBRAG_OPENAI_API_KEY: str = Field(..., description="OpenAI API key for WebRAG")
     WEBRAG_GROQ_API_KEY: str = Field(..., description="Groq API key for WebRAG")
     WEBRAG_GOOGLE_API_KEY: str = Field(..., description="Google API key for WebRAG")
@@ -173,3 +176,4 @@ ENABLE_EDITING = settings.ENABLE_EDITING
 
 GOOGLE_SERVICE_ACCOUNT_FILE = settings.GOOGLE_SERVICE_ACCOUNT_FILE
 KB_PROCESSED_FILES = settings.KB_PROCESSED_FILES
+KB_DATA_STORAGE_DRIVE_ID= settings.KB_DATA_STORAGE_DRIVE_ID
