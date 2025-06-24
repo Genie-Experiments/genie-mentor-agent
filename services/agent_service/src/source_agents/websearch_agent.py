@@ -69,7 +69,7 @@ class WebSearchAgent(RoutedAgent):
 
         except Exception as e:
             return Message(content=json.dumps({
-                "answer": "An error occured while processing Query from WebSearch",
+                "answer": "An error occurred while processing Query from WebSearch",
                 "sources": [],
                 "metadata":[],
                 "error":str(e)

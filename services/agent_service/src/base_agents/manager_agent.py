@@ -82,7 +82,7 @@ class ManagerAgent(RoutedAgent):
 
         # If there's context, prepend it to the query
         if context:
-            user_query = f"{context}\nCurrent question: {user_query}"
+            user_query = user_query
 
         self.trace_info = {
             "start_time": start_time,

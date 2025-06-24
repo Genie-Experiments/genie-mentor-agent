@@ -22,6 +22,7 @@ def get_embedding_model() -> HuggingFaceEmbeddings:
     return HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
 
 
+
 class KBAgent(RoutedAgent):
     def __init__(self, persist_directory: str = None):
         super().__init__("knowledgebase_agent")
@@ -35,6 +36,7 @@ class KBAgent(RoutedAgent):
         self.groq_api_key = os.environ.get("GROQ_API_KEY")
         if not self.groq_api_key:
             raise ValueError("GROQ_API_KEY environment variable not set")
+
 
     def query_knowledgebase(
         self, query: str, model_name: str = "meta-llama/llama-4-scout-17b-16e-instruct"

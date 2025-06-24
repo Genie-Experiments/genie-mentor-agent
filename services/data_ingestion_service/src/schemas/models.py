@@ -2,7 +2,6 @@ from pydantic import BaseModel
 from typing import Dict, Optional
 
 class DriveIngestRequest(BaseModel):
-    folder_id: str
     force_reprocess: Optional[bool] = False
 
 class FileProcessResult(BaseModel):
