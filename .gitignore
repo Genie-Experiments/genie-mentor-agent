@@ -136,7 +136,7 @@ yarn-error.log
 credentials.json
 *.pem
 *.key
-services/data_ingestion_service/secrets
+services/data_ingestion_service/secrets/
 
 #temp
 !frontend-js/src/lib/
