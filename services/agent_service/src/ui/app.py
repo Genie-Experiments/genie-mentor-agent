@@ -264,7 +264,7 @@ if submit_btn and user_query.strip():
 
     # Combined answer
     st.subheader("Source Agents Worked Together To Produce this Answer")
-    st.write(executor.get("combined_answer_of_sources", "No answer returned."))
+    st.write(executor.get("executor_answer", "No answer returned."))
 
     # Per-source metadata
     metadata_map = executor.get("metadata_by_source", {})

@@ -78,7 +78,7 @@ class ExecutorAgent(RoutedAgent):
                 only_result = list(valid_results.values())[0]
                 logger.info("Only one valid source present. Skipping aggregation, proceeding with single valid result.")
                 return Message(content=json.dumps({
-                    "combined_answer_of_sources": only_result["answer"],
+                    "executor_answer": only_result["answer"],
                     "all_documents": [
                         doc for docs in self._sources_documents.values() for doc in docs
                     ],
@@ -90,7 +90,7 @@ class ExecutorAgent(RoutedAgent):
             elif len(valid_results) < 1:
                 logger.warning("No valid sources. Returning error.")
                 return Message(content=json.dumps({
-                    "combined_answer_of_sources": None,
+                    "executor_answer": None,
                     "all_documents": [],
                     "documents_by_source": self._sources_documents,
                     "metadata_by_source": self._sources_metadata,
@@ -114,8 +114,8 @@ class ExecutorAgent(RoutedAgent):
             return Message(
                 content=json.dumps(
                     {
-                        "combined_answer_of_sources": combined_execution_results[
-                            "combined_answer_of_sources"
+                        "executor_answer": combined_execution_results[
+                            "executor_answer"
                         ],
                         "all_documents": all_documents,
                         "documents_by_source": self._sources_documents,
@@ -146,7 +146,7 @@ class ExecutorAgent(RoutedAgent):
                 response_message = await self.send_message(
                     Message(content=sub_query), self.kb_agent_id
                 )
-                response = KBResponse.model_validate_json(response_message.content).dict()
+                response = json.loads(response_message.content)
                 logger.info(f"[KB] Agent Response : {response}")
 
             elif source == "notion":
@@ -227,10 +227,10 @@ class ExecutorAgent(RoutedAgent):
                 f"Extracted and parsed aggregated answer successfully : {result}"
             )
             return {
-                "combined_answer_of_sources": result["answer"],
+                "executor_answer": result["answer"],
             }
         except Exception as e:
             logger.error(f"Failed to parse structured JSON: {e}")
             return {
-                "combined_answer_of_sources": content,
+                "executor_answer": content,
             }

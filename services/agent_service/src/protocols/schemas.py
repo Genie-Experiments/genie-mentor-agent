@@ -41,6 +41,8 @@ class KBResponse(BaseModel):
     sources: List[str]
     metadata: List[KBMetadata]
     error: Optional[str]
+    agent_response_status: str
+
 
 
 
@@ -54,3 +56,4 @@ class WebSearchResponse(BaseModel):
     sources: List[str]
     metadata: List[WebSearchMetadata]
     error: Optional[str]
+    agent_response_status=str

@@ -8,11 +8,10 @@ from langchain.prompts import PromptTemplate
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
 from langchain_groq import ChatGroq
-
 from ..prompts.kb_agent_prompt import response_generation_prompt
 from ..protocols.message import Message
 from ..utils.logging import get_logger, setup_logger
-from ..protocols.schemas import KBResponse
+from ..protocols.schemas import KBResponse,KBMetadata
 
 setup_logger()
 logger = get_logger("KBAgent")
@@ -86,21 +85,26 @@ class KBAgent(RoutedAgent):
                     entry["document_title"] = meta["title"]
                 metadata_list.append(entry)
 
-            return {
-                "answer": result_text,
-                "sources": context_chunks,
-                "metadata": metadata_list,
-                "error": None,
-            }
+            response = KBResponse(
+                answer=result_text,
+                sources=context_chunks,
+                metadata=[KBMetadata(**item) for item in metadata_list],
+                error=None,
+                agent_response_status='found'
+            )
+            return Message(content=response.model_dump_json())
+
 
         except Exception as e:
             logger.error(f"Error querying knowledge base : {e}")
-            return {
-                "answer": "Knowledge Base is currently unavailable",
-                "sources": [],
-                "metadata": [],
-                "error": str(e),
-            }
+            response = KBResponse(
+                answer="An error occurred while processing Query from knowledge base",
+                sources=[],
+                metadata=[],
+                error=str(e),
+                agent_response_status='not_found'
+            )
+            return Message(content=response.model_dump_json())
 
     @message_handler
     async def handle(self, message: Message, ctx: MessageContext) -> Message:

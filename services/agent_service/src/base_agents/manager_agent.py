@@ -189,7 +189,7 @@ class ManagerAgent(RoutedAgent):
                 self._update_history(session_id, message.content, self.trace_info['final_answer'])
                 return Message(content=json.dumps({'trace_info': self.trace_info}))
 
-            answer = q_output.get("combined_answer_of_sources")
+            answer = q_output.get("executor_answer")
             
             if not answer or not isinstance(answer, str) or answer.strip() == "":
                 self.trace_info.update({

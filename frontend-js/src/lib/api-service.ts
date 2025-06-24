@@ -70,7 +70,7 @@ export interface PlannerRefinerAgent { // Exporting PlannerRefinerAgent
 // Executor Agent (Handles both success and error cases)
 export interface ExecutorAgent { // Exporting ExecutorAgent
   error: any | null;
-  combined_answer_of_sources?: string;
+  executor_answer?: string;
   all_documents?: string[];
   documents_by_source?: DocumentsBySource;
   metadata_by_source?: MetadataBySource;

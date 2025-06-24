@@ -63,14 +63,19 @@ class WebSearchAgent(RoutedAgent):
                 answer=answer,
                 sources=context,
                 metadata=[WebSearchMetadata(**item) for item in metadata],
-                error=None
+                error=None,
+                agent_response_status= 'found'
             )
             return Message(content=response.model_dump_json())
 
         except Exception as e:
-            return Message(content=json.dumps({
-                "answer": "An error occurred while processing Query from WebSearch",
-                "sources": [],
-                "metadata":[],
-                "error":str(e)
-            }))
+            logger.error(f"[WebSearch] Error: {e}")
+            response = WebSearchResponse(
+                answer="An error occurred while processing Query from WebSearch",
+                sources=[],
+                metadata=[],
+                error=str(e),
+                agent_response_status='not_found'
+            )
+            return Message(content=response.model_dump_json())
+
