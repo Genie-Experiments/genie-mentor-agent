@@ -6,8 +6,8 @@ langchain-community==0.3.24
 sqlalchemy==2.0.41
 httpx==0.28.1
 sentence-transformers==4.1.0
+pydrive2==1.21.3
+python-multipart==0.0.20
 python-pptx==1.0.2
 llama-index==0.12.37
 llama-index-embeddings-langchain==0.3.0
-pydrive==1.21.3
-python-multipart==0.0.23
