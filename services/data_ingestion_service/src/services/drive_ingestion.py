@@ -9,11 +9,15 @@ from pptx import Presentation
 from pydrive2.auth import GoogleAuth
 from pydrive2.drive import GoogleDrive
 from langchain_community.document_loaders import PyPDFLoader
-from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_core.documents import Document
+from dotenv import load_dotenv
+from llama_index.core.node_parser import SemanticSplitterNodeParser
+from llama_index.embeddings.langchain import LangchainEmbedding
+from llama_index.core import Document as LlamaDocument
 
+load_dotenv(override=True)
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -67,17 +71,36 @@ def load_pptx(file_path: str) -> List[Document]:
         logger.error(f"Failed to process PPTX file {file_path}: {str(e)}")
         raise DriveIngestionError(f"PPTX processing failed: {str(e)}")
 
-def split_documents(documents: List[Dict], chunk_size: int = 1200, chunk_overlap: int = 100) -> List:
-    """Split documents into chunks for embedding"""
+def split_documents(documents: List[Dict], chunk_size: int = 300) -> List:
+    """Split documents using semantic chunking"""
     try:
-        splitter = RecursiveCharacterTextSplitter(
-            chunk_size=chunk_size,
-            chunk_overlap=chunk_overlap
+
+        llama_docs = [
+            LlamaDocument(text=doc.page_content, metadata=doc.metadata)
+            for doc in documents
+        ]
+
+        embedding = get_embedding_model()
+        langchain_embed_wrapper = LangchainEmbedding(embedding)
+
+        splitter = SemanticSplitterNodeParser(
+            embed_model=langchain_embed_wrapper,
+            chunk_size=chunk_size  # token count
         )
-        return splitter.split_documents(documents)
+
+        nodes = []
+        for doc in llama_docs:
+            nodes.extend(splitter.get_nodes_from_documents([doc]))
+
+        from langchain_core.documents import Document as LangchainDoc
+        return [
+            LangchainDoc(page_content=node.text, metadata=node.metadata)
+            for node in nodes
+        ]
     except Exception as e:
-        logger.error(f"Document splitting failed: {str(e)}")
-        raise DriveIngestionError(f"Document splitting failed: {str(e)}")
+        logger.error(f"Semantic document splitting failed: {str(e)}")
+        raise DriveIngestionError(f"Semantic splitting failed: {str(e)}")
+
 
 def get_embedding_model() -> HuggingFaceEmbeddings:
     """Initialize the embedding model"""
@@ -139,6 +162,10 @@ def process_drive_folder(
         file_list = drive.ListFile({'q': f"'{folder_id}' in parents and trashed=false"}).GetList()
         logger.info(f"Total files fetched from Drive: {len(file_list)}")
 
+        if not os.path.exists(tracker_txt):
+            logger.info(f"KB Agent Tracker file not found. Creating: {tracker_txt}")
+            Path(tracker_txt).touch()
+
         processed_files = load_processed_set(tracker_txt)
         logger.info(f"Already processed files loaded: {len(processed_files)} entries")
 
@@ -175,6 +202,9 @@ def process_drive_folder(
                         docs = PyPDFLoader(temp_path).load()
                     elif file_ext == '.pptx':
                         docs = load_pptx(temp_path)
+
+                    for doc in docs:
+                        doc.metadata["source"] = file_name
 
                     logger.info(f"Splitting document: {file_name}")
                     chunks = split_documents(docs)

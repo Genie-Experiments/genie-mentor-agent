@@ -5,7 +5,7 @@ from .api.routes import register_routes
 
 app = FastAPI(
     title="Data Ingestion Service",
-    description="Document management and RAG pipeline for Genie Mentor Agent",
+    description="Document management and RAG Ingestion pipeline for Genie Mentor Agent",
     version="1.0.0"
 )
 
