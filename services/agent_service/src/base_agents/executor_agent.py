@@ -1,6 +1,7 @@
 import json
 import os
 from typing import Any, Dict, Optional
+from enum import Enum
 
 from autogen_core import AgentId, MessageContext, RoutedAgent, message_handler
 from groq import Groq
@@ -22,6 +23,11 @@ from ..utils.exceptions import (
 setup_logger()
 logger = get_logger("ExecutorAgent")
 
+class SourceType(Enum):
+    KNOWLEDGEBASE = "knowledgebase"
+    NOTION = "notion"
+    GITHUB = "github"
+    WEBSEARCH = "websearch"
 
 class ExecutorAgent(RoutedAgent):
     def __init__(
@@ -126,7 +132,7 @@ class ExecutorAgent(RoutedAgent):
                 # Must have a non-empty answer and no error regardless of source
                 if not res.get("answer") or res.get("error"):
                     continue
-                if source_type in {"github", "notion"}:
+                if source_type in {SourceType.GITHUB.value, SourceType.NOTION.value}:
                     # For GitHub/Notion we don't require sources to be present.
                     valid_results[qid] = res
                     # Ensure we have an entry so downstream aggregation doesn't fail.
@@ -214,7 +220,8 @@ class ExecutorAgent(RoutedAgent):
         logger.info(f"Executing sub-query from source: {source}")
 
         try:
-            if source == "knowledgebase":
+            # Use enum for all source checks
+            if source == SourceType.KNOWLEDGEBASE.value:
                 logger.info(f"[{qid}] Querying Knowledgebase: {sub_query}")
                 try:
                     response_message = await self.send_message(
@@ -226,11 +233,11 @@ class ExecutorAgent(RoutedAgent):
                     logger.error(f"[KB] Error: {e}")
                     raise ExternalServiceError(
                         message=f"Knowledge base query failed: {str(e)}",
-                        service="knowledgebase",
+                        service=SourceType.KNOWLEDGEBASE.value,
                         details={"sub_query": sub_query, "original_error": str(e)}
                     )
 
-            elif source == "notion":
+            elif source == SourceType.NOTION.value:
                 logger.info(f"[{qid}] Querying Notion")
                 try:
                     prompt = NOTION_QUERY_PROMPT.format(sub_query=sub_query)
@@ -243,11 +250,11 @@ class ExecutorAgent(RoutedAgent):
                     logger.error(f"[Notion] Error: {e}")
                     raise ExternalServiceError(
                         message=f"Notion query failed: {str(e)}",
-                        service="notion",
+                        service=SourceType.NOTION.value,
                         details={"sub_query": sub_query, "original_error": str(e)}
                     )
 
-            elif source == "websearch":
+            elif source == SourceType.WEBSEARCH.value:
                 logger.info(f"[{qid}] Querying WebRAG")
                 try:
                     response_message = await self.send_message(
@@ -259,11 +266,11 @@ class ExecutorAgent(RoutedAgent):
                     logger.error(f"[WebSearch] Error: {e}")
                     raise ExternalServiceError(
                         message=f"Web search failed: {str(e)}",
-                        service="websearch",
+                        service=SourceType.WEBSEARCH.value,
                         details={"sub_query": sub_query, "original_error": str(e)}
                     )
 
-            elif source == "github":
+            elif source == SourceType.GITHUB.value:
                 logger.info(f"[{qid}] Querying GitHub")
                 try:
                     prompt = GITHUB_PROMPT.format(sub_query=sub_query)
@@ -276,7 +283,7 @@ class ExecutorAgent(RoutedAgent):
                     logger.error(f"[GitHub] Error: {e}")
                     raise ExternalServiceError(
                         message=f"GitHub query failed: {str(e)}",
-                        service="github",
+                        service=SourceType.GITHUB.value,
                         details={"sub_query": sub_query, "original_error": str(e)}
                     )
 
@@ -284,7 +291,7 @@ class ExecutorAgent(RoutedAgent):
                 raise ValidationError(
                     message=f"Unknown source: {source}",
                     field="source",
-                    details={"available_sources": ["knowledgebase", "notion", "websearch", "github"]}
+                    details={"available_sources": [s.value for s in SourceType]}
                 )
 
             if "sources" in response:
