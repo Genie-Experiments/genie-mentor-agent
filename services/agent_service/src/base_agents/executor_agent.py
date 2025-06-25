@@ -14,6 +14,10 @@ from ..utils.parsing import extract_json_with_regex
 from ..utils.settings import settings
 from ..protocols.schemas import KBResponse
 from ..utils.logging import setup_logger, get_logger
+from ..utils.exceptions import (
+    ExecutionError, ExternalServiceError, ValidationError, TimeoutError,
+    NetworkError, AgentServiceException, handle_agent_error, create_error_response
+)
 
 setup_logger()
 logger = get_logger("ExecutorAgent")
@@ -32,16 +36,72 @@ class ExecutorAgent(RoutedAgent):
         self.github_workbench_agent_id = github_workbench_agent_id
         self.webrag_agent_id = webrag_agent_id
         self.kb_agent_id = kb_agent_id
+        
+        # Validate API key
+        if not settings.GROQ_API_KEY:
+            raise ValidationError(
+                message="GROQ_API_KEY is required for ExecutorAgent",
+                field="GROQ_API_KEY"
+            )
+        
         self.client = Groq(api_key=settings.GROQ_API_KEY)
         self.model = settings.DEFAULT_MODEL
+
+    def _handle_source_error(self, error: Exception, source: str, sub_query: str) -> Dict[str, Any]:
+        """Handle errors from specific data sources with structured error handling."""
+        logger.error(f"[ExecutorAgent] Error in {source} source: {error}")
+        
+        if isinstance(error, ExternalServiceError):
+            return {
+                "answer": f"Unable to retrieve information from {source} at this time.",
+                "sources": [],
+                "metadata": [],
+                "error": error.to_dict()
+            }
+        elif isinstance(error, TimeoutError):
+            return {
+                "answer": f"Request to {source} timed out. Please try again.",
+                "sources": [],
+                "metadata": [],
+                "error": error.to_dict()
+            }
+        elif isinstance(error, NetworkError):
+            return {
+                "answer": f"Network error while accessing {source}. Please check your connection.",
+                "sources": [],
+                "metadata": [],
+                "error": error.to_dict()
+            }
+        else:
+            # Convert generic errors to structured format
+            structured_error = handle_agent_error(error, f"{source}_execution")
+            return {
+                "answer": f"Error occurred while processing {source} request.",
+                "sources": [],
+                "metadata": [],
+                "error": structured_error
+            }
 
     @message_handler
     async def handle_query_plan(self, message: Message, ctx: MessageContext) -> Message:
         try:
+            # Validate input
+            if not message.content:
+                raise ValidationError(
+                    message="Query plan content is required",
+                    field="message.content"
+                )
+
             content = json.loads(message.content)
             plan = content.get(
                 "plan", content
             )  # Handle both direct plan and wrapped plan
+
+            if not plan:
+                raise ValidationError(
+                    message="Plan is required in message content",
+                    field="plan"
+                )
 
             query_components = {q["id"]: q for q in plan["query_components"]}
             execution_order = plan["execution_order"]
@@ -52,8 +112,12 @@ class ExecutorAgent(RoutedAgent):
 
             for qid in execution_order["nodes"]:
                 logger.info(f"Executing query ID: {qid}")
-                result = await self.execute_query(qid, query_components)
-                results[qid] = result
+                try:
+                    result = await self.execute_query(qid, query_components)
+                    results[qid] = result
+                except Exception as e:
+                    logger.error(f"Error executing query {qid}: {e}")
+                    results[qid] = self._handle_source_error(e, query_components[qid].get("source", "unknown"), query_components[qid].get("sub_query", ""))
 
             # Build valid_results with custom rules:
             valid_results = {}
@@ -89,22 +153,29 @@ class ExecutorAgent(RoutedAgent):
 
             elif len(valid_results) < 1:
                 logger.warning("No valid sources. Returning error.")
-                return Message(content=json.dumps({
-                    "combined_answer_of_sources": None,
-                    "all_documents": [],
-                    "documents_by_source": self._sources_documents,
-                    "metadata_by_source": self._sources_metadata,
-                    "error": "All sources failed. No valid response to evaluate."
-                }))
-
+                raise ExecutionError(
+                    message="All data sources failed to provide valid responses",
+                    details={
+                        "failed_sources": list(results.keys()),
+                        "total_sources": len(results)
+                    },
+                    user_message="I'm unable to retrieve information from any of my data sources at the moment. Please try again later."
+                )
 
             logger.info("Combining answers from all data sources.")
 
-            combined_execution_results = await self._combine_answer_from_sources(
-                plan["user_query"],
-                valid_results,
-                strategy=execution_order.get("aggregation")
-            )
+            try:
+                combined_execution_results = await self._combine_answer_from_sources(
+                    plan["user_query"],
+                    valid_results,
+                    strategy=execution_order.get("aggregation")
+                )
+            except Exception as e:
+                logger.error(f"Error combining answers: {e}")
+                raise ExecutionError(
+                    message=f"Failed to combine answers from sources: {str(e)}",
+                    details={"valid_sources": list(valid_results.keys())}
+                )
 
             all_documents = [
                 doc for docs in self._sources_documents.values() for doc in docs
@@ -125,9 +196,13 @@ class ExecutorAgent(RoutedAgent):
                 )
             )
 
+        except AgentServiceException:
+            # Re-raise our custom exceptions
+            raise
         except Exception as e:
-            logger.error("Error while executing query plan : {e}")
-            return Message(content=json.dumps({"error": str(e)}))
+            logger.error(f"Error while executing query plan: {e}")
+            error_response = handle_agent_error(e, "query_plan_execution")
+            return Message(content=json.dumps(error_response))
 
     async def execute_query(
         self, qid: str, query_components: Dict[str, Any]
@@ -139,48 +214,78 @@ class ExecutorAgent(RoutedAgent):
         logger.info(f"Executing sub-query from source: {source}")
 
         try:
-
             if source == "knowledgebase":
-
                 logger.info(f"[{qid}] Querying Knowledgebase: {sub_query}")
-                response_message = await self.send_message(
-                    Message(content=sub_query), self.kb_agent_id
-                )
-                response = KBResponse.model_validate_json(response_message.content).dict()
-                logger.info(f"[KB] Agent Response : {response}")
+                try:
+                    response_message = await self.send_message(
+                        Message(content=sub_query), self.kb_agent_id
+                    )
+                    response = KBResponse.model_validate_json(response_message.content).dict()
+                    logger.info(f"[KB] Agent Response : {response}")
+                except Exception as e:
+                    logger.error(f"[KB] Error: {e}")
+                    raise ExternalServiceError(
+                        message=f"Knowledge base query failed: {str(e)}",
+                        service="knowledgebase",
+                        details={"sub_query": sub_query, "original_error": str(e)}
+                    )
 
             elif source == "notion":
                 logger.info(f"[{qid}] Querying Notion")
-
-                prompt = NOTION_QUERY_PROMPT.format(sub_query=sub_query)
-                response_message = await self.send_message(
-                    Message(content=prompt), self.notion_workbench_agent_id
-                )
-                response = json.loads(response_message.content)
-                logger.info(f"[Notion] Agent Response : {response}")
+                try:
+                    prompt = NOTION_QUERY_PROMPT.format(sub_query=sub_query)
+                    response_message = await self.send_message(
+                        Message(content=prompt), self.notion_workbench_agent_id
+                    )
+                    response = json.loads(response_message.content)
+                    logger.info(f"[Notion] Agent Response : {response}")
+                except Exception as e:
+                    logger.error(f"[Notion] Error: {e}")
+                    raise ExternalServiceError(
+                        message=f"Notion query failed: {str(e)}",
+                        service="notion",
+                        details={"sub_query": sub_query, "original_error": str(e)}
+                    )
 
             elif source == "websearch":
-
                 logger.info(f"[{qid}] Querying WebRAG")
-                response_message = await self.send_message(
-                    Message(content=sub_query), self.webrag_agent_id
-                )
-                response = json.loads(response_message.content)
-                logger.info(f"[WebSearch] Agent Response : {response}")
+                try:
+                    response_message = await self.send_message(
+                        Message(content=sub_query), self.webrag_agent_id
+                    )
+                    response = json.loads(response_message.content)
+                    logger.info(f"[WebSearch] Agent Response : {response}")
+                except Exception as e:
+                    logger.error(f"[WebSearch] Error: {e}")
+                    raise ExternalServiceError(
+                        message=f"Web search failed: {str(e)}",
+                        service="websearch",
+                        details={"sub_query": sub_query, "original_error": str(e)}
+                    )
 
             elif source == "github":
-
                 logger.info(f"[{qid}] Querying GitHub")
-
-                prompt = GITHUB_PROMPT.format(sub_query=sub_query)
-                response_message = await self.send_message(
-                    Message(content=prompt), self.github_workbench_agent_id
-                )
-                response = json.loads(response_message.content)
-                logger.info(f"[GitHub] Agent Response : {response}")
+                try:
+                    prompt = GITHUB_PROMPT.format(sub_query=sub_query)
+                    response_message = await self.send_message(
+                        Message(content=prompt), self.github_workbench_agent_id
+                    )
+                    response = json.loads(response_message.content)
+                    logger.info(f"[GitHub] Agent Response : {response}")
+                except Exception as e:
+                    logger.error(f"[GitHub] Error: {e}")
+                    raise ExternalServiceError(
+                        message=f"GitHub query failed: {str(e)}",
+                        service="github",
+                        details={"sub_query": sub_query, "original_error": str(e)}
+                    )
 
             else:
-                raise ValueError(f"Unknown source: {source}")
+                raise ValidationError(
+                    message=f"Unknown source: {source}",
+                    field="source",
+                    details={"available_sources": ["knowledgebase", "notion", "websearch", "github"]}
+                )
 
             if "sources" in response:
                 source_docs = response["sources"]
@@ -203,34 +308,67 @@ class ExecutorAgent(RoutedAgent):
 
             return response
 
+        except AgentServiceException:
+            # Re-raise our custom exceptions
+            raise
         except Exception as e:
             logger.exception(f"Error during execution of sub-query {qid} - {e}")
-            raise
+            raise ExecutionError(
+                message=f"Failed to execute query from {source}: {str(e)}",
+                source=source,
+                details={"qid": qid, "sub_query": sub_query, "original_error": str(e)}
+            )
 
     async def _combine_answer_from_sources(
         self, user_query: str, results: Dict[str, Any], strategy: Optional[str] = None
     ) -> Dict[str, Any]:
-        prompt = generate_aggregated_answer.format(
-            user_query=user_query, results=results, strategy=strategy
-        )
-
-        logger.info(f"[Executor] Sending aggregation prompt to model : {prompt}")
-        response = self.client.chat.completions.create(
-            messages=[{"role": "user", "content": prompt}], model=self.model
-        )
-
-        content = response.choices[0].message.content
-
         try:
-            result = extract_json_with_regex(content)
-            logger.info(
-                f"Extracted and parsed aggregated answer successfully : {result}"
+            prompt = generate_aggregated_answer.format(
+                user_query=user_query, results=results, strategy=strategy
             )
-            return {
-                "combined_answer_of_sources": result["answer"],
-            }
+
+            logger.info(f"[Executor] Sending aggregation prompt to model : {prompt}")
+            
+            # Add timeout for LLM call
+            import asyncio
+            try:
+                response = await asyncio.wait_for(
+                    asyncio.to_thread(
+                        self.client.chat.completions.create,
+                        messages=[{"role": "user", "content": prompt}],
+                        model=self.model
+                    ),
+                    timeout=60  # 1 minute timeout for LLM call
+                )
+            except asyncio.TimeoutError:
+                raise TimeoutError(
+                    message="LLM aggregation request timed out",
+                    timeout_seconds=60,
+                    details={"user_query": user_query, "strategy": strategy}
+                )
+
+            content = response.choices[0].message.content
+
+            try:
+                result = extract_json_with_regex(content)
+                logger.info(
+                    f"Extracted and parsed aggregated answer successfully : {result}"
+                )
+                return {
+                    "combined_answer_of_sources": result["answer"],
+                }
+            except Exception as e:
+                logger.error(f"Failed to parse structured JSON: {e}")
+                return {
+                    "combined_answer_of_sources": content,
+                }
+
+        except AgentServiceException:
+            # Re-raise our custom exceptions
+            raise
         except Exception as e:
-            logger.error(f"Failed to parse structured JSON: {e}")
-            return {
-                "combined_answer_of_sources": content,
-            }
+            logger.error(f"Error in answer aggregation: {e}")
+            raise ExecutionError(
+                message=f"Failed to combine answers from sources: {str(e)}",
+                details={"user_query": user_query, "strategy": strategy, "original_error": str(e)}
+            )
