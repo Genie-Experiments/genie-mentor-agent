@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { callBackend } from '../../lib/api-service';
 import type { ApiResponse } from '../../lib/api-service';
 import { TabsContainer, QuestionBadge, AnswerTab, ResearchTab, SourcesTab } from './components';
+import './components/scroll-behavior.css';
+import { useAutoScroll } from './hooks/useAutoScroll';
 
 interface ChatProps {
   question: string;
@@ -23,6 +25,9 @@ const Chat: React.FC<ChatProps> = ({ question, questionId = 0, onLoadingStateCha
   const [error, setError] = useState<string | null>(null);
   const [conversationHistory, setConversationHistory] = useState<ConversationItem[]>([]);
   const chatAreaRef = useRef<HTMLDivElement>(null);
+
+  // Use our custom auto-scroll hook to ensure scrolling happens even when cursor is not in chat area
+  useAutoScroll(chatAreaRef, [conversationHistory, isLoading, apiResponse]);
 
   // Update parent component's loading state when our loading state changes
   useEffect(() => {
@@ -68,18 +73,6 @@ const Chat: React.FC<ChatProps> = ({ question, questionId = 0, onLoadingStateCha
 
             return updated;
           });
-
-          // Auto-scroll to the bottom when response is received
-          setTimeout(() => {
-            if (chatAreaRef.current) {
-              chatAreaRef.current.scrollTop = chatAreaRef.current.scrollHeight;
-            }
-          }, 100);
-
-          // Scroll to view the new content
-          if (chatAreaRef.current) {
-            chatAreaRef.current.scrollTop = chatAreaRef.current.scrollHeight;
-          }
         } catch (err) {
           setError('Failed to fetch response from the backend.');
           console.error(err);
@@ -112,11 +105,9 @@ const Chat: React.FC<ChatProps> = ({ question, questionId = 0, onLoadingStateCha
       {' '}
       <div
         ref={chatAreaRef}
-        className="scrollbar-hide flex w-full max-w-[760px] flex-col items-start overflow-y-auto px-4 pt-8"
+        className="auto-scroll-chat flex w-full max-w-[760px] flex-col items-start px-4 pt-8"
         style={{
           maxHeight: 'calc(100vh - 150px)',
-          scrollbarWidth: 'none',
-          msOverflowStyle: 'none',
         }}
       >
         {/* Display conversation history */}
