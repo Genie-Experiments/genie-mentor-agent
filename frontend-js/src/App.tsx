@@ -9,12 +9,12 @@ function App() {
   const sampleConversations = [{ id: '1', title: 'Machine learning algorithms' }];
   const [showWelcomeScreen, setShowWelcomeScreen] = useState(true);
   const [question, setQuestion] = useState('');
-  const [questionId, setQuestionId] = useState(0); // Add an identifier for each question
+  const [questionId, setQuestionId] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const handleQuestionSubmit = (value: string) => {
     if (value.trim()) {
       setQuestion(value);
-      setQuestionId((prevId) => prevId + 1); // Increment the question ID to make React treat it as a new prop
+      setQuestionId((prevId) => prevId + 1);
       setShowWelcomeScreen(false);
       setIsLoading(true);
     }
@@ -26,8 +26,9 @@ function App() {
 
   const handleStartNewChat = () => {
     setQuestion('');
-    setShowWelcomeScreen(false);
+    setShowWelcomeScreen(true);
     setIsLoading(false);
+    setQuestionId(0);
   };
   return (
     <div className="flex h-screen w-full overflow-hidden">
