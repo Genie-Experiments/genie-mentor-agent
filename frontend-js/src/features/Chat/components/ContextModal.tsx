@@ -1,4 +1,5 @@
 import React from 'react';
+import useClickOutside from '@/hooks/useClickOutside';
 
 interface ContextModalProps {
   isVisible: boolean;
@@ -15,12 +16,18 @@ const ContextModal: React.FC<ContextModalProps> = ({
   onClose,
   isHtml = false,
 }) => {
+  const modalRef = useClickOutside<HTMLDivElement>({
+    onClickOutside: onClose,
+    enabled: isVisible,
+  });
+
   if (!isVisible) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
       {' '}
       <div
+        ref={modalRef}
         className="animate-slide-in-right h-full w-[450px] overflow-auto bg-white shadow-xl"
         style={{
           transition: 'transform 0.3s ease-out',
