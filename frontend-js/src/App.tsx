@@ -9,10 +9,12 @@ function App() {
   const sampleConversations = [{ id: '1', title: 'Machine learning algorithms' }];
   const [showWelcomeScreen, setShowWelcomeScreen] = useState(true);
   const [question, setQuestion] = useState('');
+  const [questionId, setQuestionId] = useState(0); // Add an identifier for each question
   const [isLoading, setIsLoading] = useState(false);
   const handleQuestionSubmit = (value: string) => {
     if (value.trim()) {
       setQuestion(value);
+      setQuestionId((prevId) => prevId + 1); // Increment the question ID to make React treat it as a new prop
       setShowWelcomeScreen(false);
       setIsLoading(true);
     }
@@ -38,7 +40,11 @@ function App() {
           {showWelcomeScreen ? (
             <WelcomeScreen onQuestionSubmit={handleQuestionSubmit} />
           ) : (
-            <Chat question={question} onLoadingStateChange={handleLoadingStateChange} />
+            <Chat
+              question={question}
+              questionId={questionId}
+              onLoadingStateChange={handleLoadingStateChange}
+            />
           )}
         </div>{' '}
         {!showWelcomeScreen && (

@@ -5,6 +5,7 @@ import { TabsContainer, QuestionBadge, AnswerTab, ResearchTab, SourcesTab } from
 
 interface ChatProps {
   question: string;
+  questionId?: number; // Add an optional identifier to track question changes
   onLoadingStateChange?: (isLoading: boolean) => void;
 }
 
@@ -16,7 +17,7 @@ interface ConversationItem {
   error?: string | null;
 }
 
-const Chat: React.FC<ChatProps> = ({ question, onLoadingStateChange }) => {
+const Chat: React.FC<ChatProps> = ({ question, questionId = 0, onLoadingStateChange }) => {
   const [apiResponse, setApiResponse] = useState<ApiResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -105,7 +106,7 @@ const Chat: React.FC<ChatProps> = ({ question, onLoadingStateChange }) => {
 
       fetchResponse();
     }
-  }, [question]);
+  }, [question, questionId]); // Add questionId to dependencies to react to the same question text being asked again
   return (
     <div className="flex w-full justify-center">
       {' '}

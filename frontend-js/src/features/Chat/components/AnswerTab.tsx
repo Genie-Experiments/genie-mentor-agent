@@ -286,29 +286,12 @@ const AnswerTab: React.FC<AnswerTabProps> = ({ finalAnswer, executorAgent }) => 
                     WebkitLineClamp: 2,
                     WebkitBoxOrient: 'vertical',
                     maxWidth: 200,
+                    marginBottom: '7px',
                   }}
                 >
                   {source.title}
                 </div>
-                <div style={{ height: '7px' }} />
-                <div
-                  style={{
-                    color: '#002835',
-                    fontFamily: 'Inter',
-                    fontSize: 14,
-                    fontStyle: 'normal',
-                    fontWeight: 400,
-                    lineHeight: 'normal',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    display: '-webkit-box',
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: 'vertical',
-                    maxWidth: 200,
-                  }}
-                >
-                  {source.description}
-                </div>
+                {/* Description removed as per requirement */}
               </a>
             ))}
           </div>
