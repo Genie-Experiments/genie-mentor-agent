@@ -9,6 +9,7 @@ import ContextModal from './ContextModal';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import CitationRenderer from './CitationRenderer';
+import CodeBlock from '../../../components/ui/CodeBlock';
 import './markdown-styles.css';
 
 interface AnswerTabProps {
@@ -377,6 +378,7 @@ const AnswerTab: React.FC<AnswerTabProps> = ({ finalAnswer, executorAgent }) => 
           }}
           className="markdown-content"
         >
+          {' '}
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
             components={{
@@ -393,6 +395,41 @@ const AnswerTab: React.FC<AnswerTabProps> = ({ finalAnswer, executorAgent }) => 
                   );
                 }
                 return <p>{children}</p>;
+              }, // Custom renderer for code blocks
+              pre: ({ children }) => {
+                // Find the code element
+                const codeElement = React.Children.toArray(children).find(
+                  (child) => React.isValidElement(child) && child.type === 'code'
+                );
+
+                if (React.isValidElement(codeElement)) {
+                  // Need to cast to access props safely
+                  const element = codeElement as React.ReactElement<{
+                    className?: string;
+                    children?: React.ReactNode;
+                  }>;
+
+                  // Extract the language from className (format: "language-xxx")
+                  const className = element.props.className || '';
+                  const match = className.match(/language-(\w+)/);
+                  const language = match ? match[1] : 'plaintext';
+
+                  // Get the code content
+                  let code = '';
+                  if (element.props.children) {
+                    if (typeof element.props.children === 'string') {
+                      code = element.props.children;
+                    } else if (Array.isArray(element.props.children)) {
+                      code = element.props.children.join('');
+                    }
+                  }
+
+                  // Use our custom CodeBlock component
+                  return <CodeBlock code={code} language={language} />;
+                }
+
+                // Fallback for non-code pre elements
+                return <pre>{children}</pre>;
               },
             }}
           >
