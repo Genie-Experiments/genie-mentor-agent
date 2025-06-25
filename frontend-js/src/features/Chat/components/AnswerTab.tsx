@@ -28,7 +28,7 @@ const ContextCard: React.FC<ContextCardProps> = ({ title, content, index, onClic
   <div
     onClick={() => onClick(index)}
     className="flex cursor-pointer flex-col items-start justify-center gap-[10px] rounded-[8px] border border-[#9CBFBC] bg-white transition-shadow hover:shadow-[0px_12px_21px_0px_#CDE6E5]"
-    style={{ width: 243, padding: '15px 18px' }}
+    style={{ padding: '15px 18px' }}
   >
     <div className="flex items-center gap-2">
       <span style={{ width: 16, height: 16, display: 'inline-flex', alignItems: 'center' }}>
@@ -230,7 +230,10 @@ const AnswerTab: React.FC<AnswerTabProps> = ({ finalAnswer, executorAgent }) => 
           >
             Top sources
           </div>
-          <div className="flex w-full gap-4" style={{ rowGap: 13 }}>
+          <div
+            className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3"
+            style={{ rowGap: 13 }}
+          >
             {topSources.map((source, i) => (
               <a
                 key={i}
@@ -238,7 +241,7 @@ const AnswerTab: React.FC<AnswerTabProps> = ({ finalAnswer, executorAgent }) => 
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex flex-col items-start justify-center rounded-[8px] border border-[#9CBFBC] bg-white transition-shadow hover:shadow-[0px_12px_21px_0px_#CDE6E5]"
-                style={{ width: 243, padding: '15px 18px', textDecoration: 'none', gap: 0 }}
+                style={{ padding: '15px 18px', textDecoration: 'none', gap: 0 }}
               >
                 {' '}
                 <div className="flex items-center gap-2">
@@ -314,7 +317,10 @@ const AnswerTab: React.FC<AnswerTabProps> = ({ finalAnswer, executorAgent }) => 
           >
             Context
           </div>
-          <div className="flex w-full gap-4" style={{ rowGap: 13 }}>
+          <div
+            className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3"
+            style={{ rowGap: 13 }}
+          >
             {contexts.map((context, index) => (
               <ContextCard
                 key={index}
