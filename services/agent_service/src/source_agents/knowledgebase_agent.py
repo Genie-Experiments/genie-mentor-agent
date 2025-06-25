@@ -66,9 +66,11 @@ class KBAgent(RoutedAgent):
             result_text = (
                 message.content if hasattr(message, "content") else str(message)
             )
-
+            print("llllllllllllllllllll")
+            print(result_text)
             metadata_list = []
             for doc in documents:
+                print(doc)
                 meta = doc.metadata
                 pdf_name = (
                     os.path.basename(meta.get("source", ""))
@@ -112,14 +114,17 @@ class KBAgent(RoutedAgent):
             try:
                 loop = asyncio.get_event_loop()
                 result = await loop.run_in_executor(None, self.query_knowledgebase, query)
-                validated = KBResponse(**result)
+                result_data = json.loads(result.content)
+                validated = KBResponse(**result_data)
                 return Message(content=validated.model_dump_json())
-           
+
             except Exception as e:
                 logger.error(f"Error in KnowledgeBaseAgent handler : {e}")
-                return Message(content=json.dumps({
-                    "answer": "An error occurred while processing your request",
-                    "sources": [],
-                    "metadata": [],
-                    "error": str(e)
-                }))
+                error_response = KBResponse(
+                    answer="An error occurred while processing your request",
+                    sources=[],
+                    metadata=[],
+                    error=str(e),
+                    agent_response_status="not_found"
+                )
+                return Message(content=error_response.model_dump_json())
