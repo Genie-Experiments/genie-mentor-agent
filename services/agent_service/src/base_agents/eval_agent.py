@@ -2,26 +2,22 @@ import json
 import os
 from itertools import chain
 from typing import List
-from itertools import chain
-from autogen_core import RoutedAgent, MessageContext, message_handler
-from autogen_core import MessageContext, RoutedAgent, message_handler
-from ..protocols.message import Message
-from ..prompts.evaluation_agent_prompts import (
-    FACT_EXTRACT_PROMPT_TEMPLATE, 
-    FACT_EXTRACT_SCENARIO_DESCRIPTION, 
-    FACT_EXTRACT_FEW_SHOT_EXAMPLES, 
-    FACT_EXTRACT_OUTPUT_FORMAT,
-    FACT_EVAL_PROMPT_TEMPLATE,
-    EVALUATE_PROMPTING_INSTRUCTIONS,
-    EVALUATE_FEW_SHOT_EXAMPLES,
-    EVALUATE_OUTPUT_FORMAT,
-    EVALUATE_SCENARIO_DESCRIPTION )
-from ..utils.parsing import extract_json_with_brace_counting
-from ..protocols.schemas import EvalAgentInput,EvalAgentOutput
 
+from autogen_core import MessageContext, RoutedAgent, message_handler
 from groq import Groq
+
+from ..prompts.evaluation_agent_prompts import (
+    EVALUATE_FEW_SHOT_EXAMPLES, EVALUATE_OUTPUT_FORMAT,
+    EVALUATE_PROMPTING_INSTRUCTIONS, EVALUATE_SCENARIO_DESCRIPTION,
+    FACT_EVAL_PROMPT_TEMPLATE, FACT_EXTRACT_FEW_SHOT_EXAMPLES,
+    FACT_EXTRACT_OUTPUT_FORMAT, FACT_EXTRACT_PROMPT_TEMPLATE,
+    FACT_EXTRACT_SCENARIO_DESCRIPTION)
+from ..protocols.message import Message
+from ..protocols.schemas import EvalAgentInput, EvalAgentOutput, LLMUsage
 from ..utils.logging import get_logger, setup_logger
+from ..utils.parsing import extract_json_with_brace_counting
 from ..utils.settings import settings
+from ..utils.token_tracker import token_tracker
 
 setup_logger()
 logger = get_logger("EvalAgent")
@@ -50,6 +46,9 @@ class EvalAgent(RoutedAgent):
             temperature=0.2
         )
 
+        # Track token usage for fact extraction
+        token_tracker.track_completion("eval_agent_fact_extraction", result, self.model)
+
         content = result.choices[0].message.content
         logger.info(f"[EvalAgent] Fact Extraction Output: {content}")
         parsed = extract_json_with_brace_counting(content)
@@ -72,6 +71,9 @@ class EvalAgent(RoutedAgent):
             messages=[{"role": "user", "content": prompt}],
             temperature=0.2
         )
+
+        # Track token usage for fact evaluation
+        token_tracker.track_completion("eval_agent_fact_evaluation", result, self.model)
 
         content = result.choices[0].message.content
         logger.info(f"[EvalAgent] Fact Evaluation Output: {content}")
@@ -110,11 +112,43 @@ class EvalAgent(RoutedAgent):
 
             evaluations = await self._evaluate_facts(facts, context_text)
             score, reasoning = self._compute_score_and_reasoning(evaluations)
+            
+            # Get combined token usage for both fact extraction and evaluation
+            fact_extraction_usage = token_tracker.get_agent_usage("eval_agent_fact_extraction")
+            fact_evaluation_usage = token_tracker.get_agent_usage("eval_agent_fact_evaluation")
+            
+            # Combine token usage
+            combined_usage = None
+            if fact_extraction_usage and fact_evaluation_usage:
+                combined_usage = LLMUsage(
+                    model=fact_extraction_usage.model,
+                    input_tokens=fact_extraction_usage.input_tokens + fact_evaluation_usage.input_tokens,
+                    output_tokens=fact_extraction_usage.output_tokens + fact_evaluation_usage.output_tokens,
+                    total_tokens=fact_extraction_usage.total_tokens + fact_evaluation_usage.total_tokens
+                )
+            elif fact_extraction_usage:
+                combined_usage = LLMUsage(
+                    model=fact_extraction_usage.model,
+                    input_tokens=fact_extraction_usage.input_tokens,
+                    output_tokens=fact_extraction_usage.output_tokens,
+                    total_tokens=fact_extraction_usage.total_tokens
+                )
+            elif fact_evaluation_usage:
+                combined_usage = LLMUsage(
+                    model=fact_evaluation_usage.model,
+                    input_tokens=fact_evaluation_usage.input_tokens,
+                    output_tokens=fact_evaluation_usage.output_tokens,
+                    total_tokens=fact_evaluation_usage.total_tokens
+                )
            
-            return Message(content=EvalAgentOutput
-                           (score=score, 
-                            reasoning=reasoning, 
-                            error=None).model_dump_json())
+            eval_output = EvalAgentOutput(
+                score=score, 
+                reasoning=reasoning, 
+                error=None,
+                llm_usage=combined_usage
+            )
+            
+            return Message(content=eval_output.model_dump_json())
             
         except Exception as e:
             logger.error(f"[EvalAgent] Evaluation Failed: {e}")
