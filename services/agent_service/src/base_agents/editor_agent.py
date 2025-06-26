@@ -24,11 +24,9 @@ class EditorAgent(RoutedAgent):
     @message_handler
     async def fix_answer(self, message: Message, ctx: MessageContext) -> Message:
         try:
-            print("---------Received Message-----------")
-            print(message.content)
+
             payload = EditorAgentInput.model_validate_json(message.content)
-            print("---------Payload-----------")
-            print(payload)
+            logger.info(f"[EditorAgent] Received Payload : {payload.model_dump_json()}")
             prompt = EDITOR_PROMPT.format(
                 question=payload.question,
                 previous_answer=payload.previous_answer,

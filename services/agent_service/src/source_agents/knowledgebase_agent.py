@@ -8,7 +8,7 @@ from langchain.prompts import PromptTemplate
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
 from langchain_groq import ChatGroq
-from ..prompts.kb_agent_prompt import response_generation_prompt
+from ..prompts.kb_agent_prompt import kb_assistant_prompt
 from ..protocols.message import Message
 from ..utils.logging import get_logger, setup_logger
 from ..protocols.schemas import KBResponse,KBMetadata
@@ -54,7 +54,7 @@ class KBAgent(RoutedAgent):
 
             prompt = PromptTemplate(
                 input_variables=["context", "query"],
-                template=response_generation_prompt,
+                template=kb_assistant_prompt,
             )
             context_chunks = []
 
@@ -66,8 +66,7 @@ class KBAgent(RoutedAgent):
             result_text = (
                 message.content if hasattr(message, "content") else str(message)
             )
-            print("llllllllllllllllllll")
-            print(result_text)
+
             metadata_list = []
             for doc in documents:
                 print(doc)

@@ -93,10 +93,8 @@ class EvalAgent(RoutedAgent):
     @message_handler
     async def evaluate_answer(self, message: Message, ctx: MessageContext) -> Message:
         try:
-            print("---------Received Message-----------")
-            print(message.content)
             payload = EvalAgentInput.model_validate_json(message.content)
-            print(payload)
+            logger.info(f"[EvalAgent] Received Payload: {payload}")
             question = payload.question
             response = payload.answer
             contexts = payload.contexts

@@ -1,19 +1,14 @@
 import json
-import os
 from typing import Any, Dict, Optional
-
 from autogen_core import AgentId, MessageContext, RoutedAgent, message_handler
-from groq import Groq
-from ..protocols.message import Message
 from groq import Groq
 from ..prompts.aggregation_prompt import generate_aggregated_answer
 from ..prompts.prompts import (NOTION_QUERY_PROMPT, GITHUB_PROMPT)
 from ..protocols.message import Message
-from ..utils.logging import get_logger, setup_logger
 from ..utils.parsing import extract_json_with_regex
 from ..utils.settings import settings
-from ..protocols.schemas import KBResponse
 from ..utils.logging import setup_logger, get_logger
+import string
 
 setup_logger()
 logger = get_logger("ExecutorAgent")
@@ -39,9 +34,7 @@ class ExecutorAgent(RoutedAgent):
     async def handle_query_plan(self, message: Message, ctx: MessageContext) -> Message:
         try:
             content = json.loads(message.content)
-            plan = content.get(
-                "plan", content
-            )  # Handle both direct plan and wrapped plan
+            plan = content.get("plan", content)  # Handle both direct plan and wrapped plan
 
             query_components = {q["id"]: q for q in plan["query_components"]}
             execution_order = plan["execution_order"]
@@ -100,9 +93,19 @@ class ExecutorAgent(RoutedAgent):
 
             logger.info("Combining answers from all data sources.")
 
+            original_ids = list(valid_results.keys())
+            id_mapping = {qid: string.ascii_uppercase[i] for i, qid in enumerate(original_ids)}
+            minimal_results = {
+                id_mapping[qid]: {
+                    "id": id_mapping[qid],
+                    "source": query_components[qid].get("source"),
+                    "answer": res["answer"]
+                }
+                for qid, res in valid_results.items()
+            }
             combined_execution_results = await self._combine_answer_from_sources(
                 plan["user_query"],
-                valid_results,
+                minimal_results,
                 strategy=execution_order.get("aggregation")
             )
 
@@ -126,7 +129,7 @@ class ExecutorAgent(RoutedAgent):
             )
 
         except Exception as e:
-            logger.error("Error while executing query plan : {e}")
+            logger.error(f"Error while executing query plan : {e}")
             return Message(content=json.dumps({"error": str(e)}))
 
     async def execute_query(
@@ -183,6 +186,12 @@ class ExecutorAgent(RoutedAgent):
                 raise ValueError(f"Unknown source: {source}")
 
             if "sources" in response:
+                self._append_sources(source, response["sources"])
+            if "metadata" in response:
+                self._append_metadata(source, response["metadata"])
+
+            '''
+            if "sources" in response:
                 source_docs = response["sources"]
 
                 if source not in self._sources_documents:
@@ -199,7 +208,7 @@ class ExecutorAgent(RoutedAgent):
                     source_meta = []
                 if source not in self._sources_metadata:
                     self._sources_metadata[source] = []
-                self._sources_metadata[source].extend(source_meta)
+                self._sources_metadata[source].extend(source_meta)'''
 
             return response
 
@@ -210,6 +219,8 @@ class ExecutorAgent(RoutedAgent):
     async def _combine_answer_from_sources(
         self, user_query: str, results: Dict[str, Any], strategy: Optional[str] = None
     ) -> Dict[str, Any]:
+
+
         prompt = generate_aggregated_answer.format(
             user_query=user_query, results=results, strategy=strategy
         )
@@ -230,7 +241,18 @@ class ExecutorAgent(RoutedAgent):
                 "executor_answer": result["answer"],
             }
         except Exception as e:
-            logger.error(f"Failed to parse structured JSON: {e}")
+            logger.warning("Returning raw content due to parsing failure.")
+
             return {
                 "executor_answer": content,
             }
+
+
+    def _append_sources(self, source, docs):
+        self._sources_documents.setdefault(source, []).extend(docs)
+
+
+    def _append_metadata(self, source, meta):
+        if isinstance(meta, dict): meta = [meta]
+        if isinstance(meta, list):
+            self._sources_metadata.setdefault(source, []).extend(meta)

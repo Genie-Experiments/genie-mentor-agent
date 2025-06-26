@@ -11,7 +11,7 @@ from .webrag_utils.config import (
     LLM_DEFAULT_MODEL, 
     TOP_K
 )
-from ..prompts.websearch_agent_prompt import response_generation_prompt
+from ..prompts.websearch_agent_prompt import websearch_assistant_prompt
 from ..utils.logging import setup_logger, get_logger
 from ..protocols.schemas import WebSearchMetadata,WebSearchResponse
 setup_logger()
@@ -45,7 +45,7 @@ class WebSearchAgent(RoutedAgent):
         answer, used_context = rag.query_llm(
             query=query,
             context=contexts,
-            template=response_generation_prompt
+            template=websearch_assistant_prompt
         )
         return answer, used_context
 
