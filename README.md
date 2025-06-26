@@ -43,7 +43,7 @@ To run the Genie Mentor Agent system, follow these steps:
 OPENAI_API_KEY=your-openai-api-key
 GROQ_API_KEY=your-groq-api-key
 DATABASE_URL="sqlite:///./memory.db"
-CHROMA_DB_PATH="/app/knowledge-base-chroma-index/chroma_db"
+CHROMA_DB_PATH="/app/genie-kbdocs-v1/chroma_db"
 BACKEND_URL=http://127.0.0.1:8000 # for local development
 NOTION_API_KEY=your-notion-api-key
 WEBRAG_LLM_DEFAULT_MODEL=llama-3.3-70b-versatile

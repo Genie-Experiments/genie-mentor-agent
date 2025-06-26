@@ -89,7 +89,9 @@ async def initialize_agent() -> None:
 
                     # Register all agents with error handling
                     try:
-                        await PlannerAgent.register(RUNTIME, "planner_agent", PlannerAgent)
+                        await PlannerAgent.register(
+                            RUNTIME, "planner_agent", lambda: PlannerAgent()
+                        )
                         await PlannerRefinerAgent.register(
                             RUNTIME, "planner_refiner_agent", lambda: PlannerRefinerAgent()
                         )
