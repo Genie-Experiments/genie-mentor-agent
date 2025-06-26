@@ -13,12 +13,13 @@ from ..protocols.message import Message
 from ..utils.logging import get_logger, setup_logger
 from ..utils.parsing import extract_json_with_regex
 from ..utils.settings import settings
-from ..protocols.schemas import KBResponse
+from ..protocols.schemas import KBResponse, LLMUsage
 from ..utils.logging import setup_logger, get_logger
 from ..utils.exceptions import (
     ExecutionError, ExternalServiceError, ValidationError, TimeoutError,
     NetworkError, AgentServiceException, handle_agent_error, create_error_response
 )
+from ..utils.token_tracker import token_tracker
 
 setup_logger()
 logger = get_logger("ExecutorAgent")
@@ -154,7 +155,8 @@ class ExecutorAgent(RoutedAgent):
                     ],
                     "documents_by_source": self._sources_documents,
                     "metadata_by_source": self._sources_metadata,
-                    "error": None
+                    "error": None,
+                    "llm_usage": None  # No LLM call made for single source aggregation
                 }))
 
             elif len(valid_results) < 1:
@@ -198,6 +200,7 @@ class ExecutorAgent(RoutedAgent):
                         "documents_by_source": self._sources_documents,
                         "metadata_by_source": self._sources_metadata,
                         "error": None,
+                        "llm_usage": combined_execution_results.get("llm_usage"),
                     }
                 )
             )
@@ -354,6 +357,9 @@ class ExecutorAgent(RoutedAgent):
                     details={"user_query": user_query, "strategy": strategy}
                 )
 
+            # Track token usage
+            token_usage = token_tracker.track_completion("executor_agent", response, self.model)
+
             content = response.choices[0].message.content
 
             try:
@@ -361,13 +367,37 @@ class ExecutorAgent(RoutedAgent):
                 logger.info(
                     f"Extracted and parsed aggregated answer successfully : {result}"
                 )
+                
+                # Create LLMUsage object if token usage is available
+                llm_usage_obj = None
+                if token_usage:
+                    llm_usage_obj = LLMUsage(
+                        model=token_usage.model,
+                        input_tokens=token_usage.input_tokens,
+                        output_tokens=token_usage.output_tokens,
+                        total_tokens=token_usage.total_tokens
+                    )
+                
                 return {
                     "combined_answer_of_sources": result["answer"],
+                    "llm_usage": llm_usage_obj.model_dump() if llm_usage_obj else None,
                 }
             except Exception as e:
                 logger.error(f"Failed to parse structured JSON: {e}")
+                
+                # Create LLMUsage object if token usage is available
+                llm_usage_obj = None
+                if token_usage:
+                    llm_usage_obj = LLMUsage(
+                        model=token_usage.model,
+                        input_tokens=token_usage.input_tokens,
+                        output_tokens=token_usage.output_tokens,
+                        total_tokens=token_usage.total_tokens
+                    )
+                
                 return {
                     "combined_answer_of_sources": content,
+                    "llm_usage": llm_usage_obj.model_dump() if llm_usage_obj else None,
                 }
 
         except AgentServiceException:

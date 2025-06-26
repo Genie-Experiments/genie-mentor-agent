@@ -16,6 +16,7 @@ from ..utils.exceptions import (
     ExternalServiceError, ValidationError, TimeoutError, NetworkError,
     handle_agent_error, create_error_response
 )
+from ..utils.token_tracker import token_tracker
 
 setup_logger()
 logger = get_logger("ManagerAgent")
@@ -140,6 +141,9 @@ class ManagerAgent(RoutedAgent):
     ) -> Message:
         start_time = time.time()
         session_id = ctx.session_id if hasattr(ctx, "session_id") else "default"
+
+        # Reset token tracker for new request
+        token_tracker.reset()
 
         # Get conversation context
         context = self._get_context(session_id)
@@ -374,13 +378,15 @@ class ManagerAgent(RoutedAgent):
                             "error": error,
                         },
                         "attempt": attempts + 1,
+                        "llm_usage": eval_result.llm_usage.model_dump() if eval_result.llm_usage else None,
                     }
                 )
 
                 if error is None and score >= EVALUATION_PASS_THRESHOLD:
                     # Evaluation passed, editor never called
                     editor_agent.append({
-                        "attempt": attempts
+                        "attempt": attempts,
+                        "llm_usage": None  # No LLM call made - evaluation passed
                     })
                     break
 
@@ -410,7 +416,8 @@ class ManagerAgent(RoutedAgent):
                         "error": editor_error,
                         "skipped": False
                     },
-                    "attempt": attempts + 1
+                    "attempt": attempts + 1,
+                    "llm_usage": editor_result.llm_usage.model_dump() if editor_result.llm_usage else None,
                 })
 
                 current_answer = new_answer

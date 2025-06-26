@@ -9,7 +9,8 @@ from ..protocols.message import Message
 from ..utils.logging import get_logger, setup_logger
 from ..utils.parsing import extract_json_with_brace_counting
 from ..utils.settings import settings
-from ..protocols.schemas import EditorAgentInput,EditorAgentOutput
+from ..protocols.schemas import EditorAgentInput,EditorAgentOutput, LLMUsage
+from ..utils.token_tracker import token_tracker
 
 setup_logger()
 logger = get_logger("EditorAgent")
@@ -42,14 +43,32 @@ class EditorAgent(RoutedAgent):
                 messages=[{"role": "user", "content": prompt}], model=self.model
             )
 
+            # Track token usage
+            token_usage = token_tracker.track_completion("editor_agent", response, self.model)
+
             content = response.choices[0].message.content
 
             result = extract_json_with_brace_counting(content)
             final_answer = result.get("edited_answer")
             logger.info(f"[EditorAgent] Final Answer : {final_answer}")
-            return Message(content=EditorAgentOutput(
+            
+            # Create LLMUsage object if token usage is available
+            llm_usage_obj = None
+            if token_usage:
+                llm_usage_obj = LLMUsage(
+                    model=token_usage.model,
+                    input_tokens=token_usage.input_tokens,
+                    output_tokens=token_usage.output_tokens,
+                    total_tokens=token_usage.total_tokens
+                )
+            
+            editor_output = EditorAgentOutput(
                 answer=final_answer, 
-                error=None).model_dump_json())
+                error=None,
+                llm_usage=llm_usage_obj
+            )
+            
+            return Message(content=editor_output.model_dump_json())
 
 
         except Exception as e:
