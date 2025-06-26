@@ -65,99 +65,122 @@ async def initialize_agent() -> None:
 
                 if not agent_initialized:
                     # Validate required environment variables
-                    groq_api_key = os.environ.get("GROQ_API_KEY")
-                    if not groq_api_key:
+                    openai_api_key = os.environ.get("OPENAI_API_KEY")
+                    if not openai_api_key:
                         raise ValidationError(
-                            message="GROQ_API_KEY environment variable is required",
-                            field="GROQ_API_KEY",
+                            message="OPENAI_API_KEY environment variable is required",
+                            field="OPENAI_API_KEY",
                             user_message="Service configuration error. Please contact support."
                         )
 
-                    groq_client = OpenAIChatCompletionClient(
-                        model="meta-llama/llama-4-scout-17b-16e-instruct",
-                        api_key=groq_api_key,
-                        base_url="https://api.groq.com/openai/v1",
+                    gpt_client = OpenAIChatCompletionClient(
+                        model="gpt-4o",
+                        api_key=os.environ.get("OPENAI_API_KEY"),
+                        base_url="https://api.openai.com/v1",
                         model_info={
                             "context_length": 128000,
                             "vision": False,
                             "function_calling": True,
                             "json_output": True,
                             "structured_output": True,
-                            "family": "llama"
+                            "family": "gpt"
                         }
                     )
+                # 2. Update the WorkbenchAgent for Notion to use the Groq client.
+                await WorkbenchAgent.register(
+                    RUNTIME,
+                    "notion_workbench_agent",
+                    factory=lambda: WorkbenchAgent(
+                        model_client=gpt_client, # Use the configured Groq client
+                        model_context=BufferedChatCompletionContext(buffer_size=10),
+                        workbench=notion_workbench,
+                    ),
+                )
 
+                # 3. Update the WorkbenchAgent for GitHub to use the Groq client.
+                await WorkbenchAgent.register(
+                    RUNTIME,
+                    "github_workbench_agent",
+                    factory=lambda: WorkbenchAgent(
+                        model_client=gpt_client, # Use the configured Groq client
+                        model_context=BufferedChatCompletionContext(buffer_size=10),
+                        workbench=github_workbench,
+                    ),
+                )
+                
+                await WebSearchAgent.register(RUNTIME, 'websearch_agent', WebSearchAgent)
+                await KBAgent.register(RUNTIME, 'kb_agent', KBAgent)
                     # Register all agents with error handling
-                    try:
-                        await PlannerAgent.register(
-                            RUNTIME, "planner_agent", lambda: PlannerAgent()
-                        )
-                        await PlannerRefinerAgent.register(
-                            RUNTIME, "planner_refiner_agent", lambda: PlannerRefinerAgent()
-                        )
+                try:
+                    await PlannerAgent.register(
+                        RUNTIME, "planner_agent", lambda: PlannerAgent()
+                    )
+                    await PlannerRefinerAgent.register(
+                        RUNTIME, "planner_refiner_agent", lambda: PlannerRefinerAgent()
+                    )
 
-                        await ExecutorAgent.register(
-                            RUNTIME,
-                            "executor_agent",
-                            lambda: ExecutorAgent(
-                                notion_workbench_agent_id=NOTION_WORKBENCH_AGENT_ID,
-                                github_workbench_agent_id=GITHUB_WORKBENCH_AGENT_ID,
-                                webrag_agent_id=WEBSEARCH_AGENT_ID,
-                                kb_agent_id=KB_AGENT_ID
-                            )
+                    await ExecutorAgent.register(
+                        RUNTIME,
+                        "executor_agent",
+                        lambda: ExecutorAgent(
+                            notion_workbench_agent_id=NOTION_WORKBENCH_AGENT_ID,
+                            github_workbench_agent_id=GITHUB_WORKBENCH_AGENT_ID,
+                            webrag_agent_id=WEBSEARCH_AGENT_ID,
+                            kb_agent_id=KB_AGENT_ID
                         )
+                    )
 
-                        # 2. Update the WorkbenchAgent for Notion to use the Groq client.
-                        await WorkbenchAgent.register(
-                            RUNTIME,
-                            "notion_workbench_agent",
-                            factory=lambda: WorkbenchAgent(
-                                model_client=groq_client, # Use the configured Groq client
-                                model_context=BufferedChatCompletionContext(buffer_size=10),
-                                workbench=notion_workbench,
-                            ),
-                        )
+                    # 2. Update the WorkbenchAgent for Notion to use the Groq client.
+                    await WorkbenchAgent.register(
+                        RUNTIME,
+                        "notion_workbench_agent",
+                        factory=lambda: WorkbenchAgent(
+                            model_client=gpt_client, # Use the configured Groq client
+                            model_context=BufferedChatCompletionContext(buffer_size=10),
+                            workbench=notion_workbench,
+                        ),
+                    )
 
-                        # 3. Update the WorkbenchAgent for GitHub to use the Groq client.
-                        await WorkbenchAgent.register(
-                            RUNTIME,
-                            "github_workbench_agent",
-                            factory=lambda: WorkbenchAgent(
-                                model_client=groq_client, # Use the configured Groq client
-                                model_context=BufferedChatCompletionContext(buffer_size=10),
-                                workbench=github_workbench,
-                            ),
-                        )
-                        
-                        await WebSearchAgent.register(RUNTIME, 'websearch_agent', WebSearchAgent)
-                        await KBAgent.register(RUNTIME, 'kb_agent', KBAgent)
+                    # 3. Update the WorkbenchAgent for GitHub to use the Groq client.
+                    await WorkbenchAgent.register(
+                        RUNTIME,
+                        "github_workbench_agent",
+                        factory=lambda: WorkbenchAgent(
+                            model_client=gpt_client, # Use the configured Groq client
+                            model_context=BufferedChatCompletionContext(buffer_size=10),
+                            workbench=github_workbench,
+                        ),
+                    )
+                    
+                    await WebSearchAgent.register(RUNTIME, 'websearch_agent', WebSearchAgent)
+                    await KBAgent.register(RUNTIME, 'kb_agent', KBAgent)
 
-                        await EvalAgent.register(RUNTIME, "eval_agent", EvalAgent)
-                        await EditorAgent.register(RUNTIME, "editor_agent", EditorAgent)
+                    await EvalAgent.register(RUNTIME, "eval_agent", EvalAgent)
+                    await EditorAgent.register(RUNTIME, "editor_agent", EditorAgent)
 
-                        await ManagerAgent.register(
-                            RUNTIME,
-                            "manager_agent",
-                            lambda: ManagerAgent(
-                                planner_agent_id=PLANNER_AGENT_ID,
-                                planner_refiner_agent_id=PLANNER_REFINER_AGENT_ID,
-                                executor_agent_id=EXECUTOR_AGENT_ID,
-                                eval_agent_id=EVAL_AGENT_ID,
-                                editor_agent_id=EDITOR_AGENT_ID,
-                            ),
-                        )
+                    await ManagerAgent.register(
+                        RUNTIME,
+                        "manager_agent",
+                        lambda: ManagerAgent(
+                            planner_agent_id=PLANNER_AGENT_ID,
+                            planner_refiner_agent_id=PLANNER_REFINER_AGENT_ID,
+                            executor_agent_id=EXECUTOR_AGENT_ID,
+                            eval_agent_id=EVAL_AGENT_ID,
+                            editor_agent_id=EDITOR_AGENT_ID,
+                        ),
+                    )
 
-                        RUNTIME.start()
-                        agent_initialized = True
-                        logging.info("Agent service initialized successfully")
-                        
-                    except Exception as e:
-                        logging.error(f"Failed to register agents: {e}")
-                        raise AgentServiceException(
-                            message=f"Failed to initialize agent service: {str(e)}",
-                            error_code="AGENT_REGISTRATION_ERROR",
-                            details={"original_error": str(e)}
-                        )
+                    RUNTIME.start()
+                    agent_initialized = True
+                    logging.info("Agent service initialized successfully")
+                    
+                except Exception as e:
+                    logging.error(f"Failed to register agents: {e}")
+                    raise AgentServiceException(
+                        message=f"Failed to initialize agent service: {str(e)}",
+                        error_code="AGENT_REGISTRATION_ERROR",
+                        details={"original_error": str(e)}
+                    )
 
     except Exception as e:
         logging.error(f"Failed to initialize agent service: {e}")

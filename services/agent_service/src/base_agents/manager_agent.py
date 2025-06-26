@@ -317,8 +317,8 @@ class ManagerAgent(RoutedAgent):
                 'editor_agent': editor_history,
                 'final_answer': final_answer,
                 'total_time': time.time() - start_time,
-                'evaluation_skipped': skip_evaluation,
-                'skip_reason': skip_reason
+                'evaluation_skipped': False,
+                'skip_reason': None
             })
             self._update_history(session_id, message.content, final_answer)
 
