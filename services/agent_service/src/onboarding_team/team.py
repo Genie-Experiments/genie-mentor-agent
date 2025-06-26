@@ -48,7 +48,7 @@ github_mcp_server_params = SseServerParams(
     url="http://github-mcp-gateway:8010/sse",
 )
 # For local testing
-'''
+
 notion_mcp_server_params = SseServerParams(
     url="http://localhost:8009/sse",
 )
@@ -56,7 +56,7 @@ notion_mcp_server_params = SseServerParams(
 github_mcp_server_params = SseServerParams(
     url="http://localhost:8010/sse",
 )
-'''
+
 async def initialize_agent() -> None:
     global agent_initialized
     try:

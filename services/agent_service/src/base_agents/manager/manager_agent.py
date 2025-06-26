@@ -289,14 +289,20 @@ class ManagerAgent(RoutedAgent):
                 final_answer, eval_history, editor_history = answer, [], []
             else:
                 try:
-                    final_answer, eval_history, editor_history =await run_evaluation_loop(
+                    final_answer, eval_history, editor_history = await run_evaluation_loop(
+                        send_message_func=self.send_message,
+                        eval_agent_id=self.eval_agent_id,
+                        editor_agent_id=self.editor_agent_id,
                         question=user_query,
                         initial_answer=answer,
                         contexts=documents,
                         documents_by_source=documents_by_source,
                     )
                 except Exception as e:
-                    return self._handle_evaluation_error(e, user_query, session_id, answer)
+                    logger.error(f"[ManagerAgent] Evaluation loop failed: {e}")
+                    final_answer, eval_history, editor_history = answer, [], []
+                    skip_reason = "Evaluation or Editor failed."
+                    skip_evaluation = False
 
             self.trace_info.update({
                 'evaluation_agent': eval_history,
