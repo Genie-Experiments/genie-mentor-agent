@@ -126,7 +126,7 @@ class ExecutorAgent(RoutedAgent):
             )
 
         except Exception as e:
-            logger.error("Error while executing query plan : {e}")
+            logger.error(f"Error while executing query plan : {e}")
             return Message(content=json.dumps({"error": str(e)}))
 
     async def execute_query(

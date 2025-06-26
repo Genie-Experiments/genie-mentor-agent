@@ -59,17 +59,17 @@ async def initialize_agent() -> None:
         async with McpWorkbench(github_mcp_server_params) as github_workbench:
 
             if not agent_initialized:
-                groq_client = OpenAIChatCompletionClient(
-                    model="meta-llama/llama-4-scout-17b-16e-instruct",
-                    api_key=os.environ.get("GROQ_API_KEY"),
-                    base_url="https://api.groq.com/openai/v1",
+                gpt_client = OpenAIChatCompletionClient(
+                    model="gpt-4o",
+                    api_key=os.environ.get("OPENAI_API_KEY"),
+                    base_url="https://api.openai.com/v1",
                     model_info={
                         "context_length": 128000,
-                        "vision": False,
+                        "vision": True,
                         "function_calling": True,
                         "json_output": True,
                         "structured_output": True,
-                        "family": "llama"
+                        "family": "gpt"
                     }
                 )
 
@@ -94,7 +94,7 @@ async def initialize_agent() -> None:
                     RUNTIME,
                     "notion_workbench_agent",
                     factory=lambda: WorkbenchAgent(
-                        model_client=groq_client, # Use the configured Groq client
+                        model_client=gpt_client, # Use the configured Groq client
                         model_context=BufferedChatCompletionContext(buffer_size=10),
                         workbench=notion_workbench,
                     ),
@@ -105,7 +105,7 @@ async def initialize_agent() -> None:
                     RUNTIME,
                     "github_workbench_agent",
                     factory=lambda: WorkbenchAgent(
-                        model_client=groq_client, # Use the configured Groq client
+                        model_client=gpt_client, # Use the configured Groq client
                         model_context=BufferedChatCompletionContext(buffer_size=10),
                         workbench=github_workbench,
                     ),

@@ -150,6 +150,8 @@ Respond ONLY with a well-formatted JSON object using the schema below:
 - Always include detailed reasoning in the "think" field
 - Match the query type with the appropriate data source based on the examples provided
 - If feedback is provided, carefully consider and incorporate it into your plan
+
+VERY IMPORTANT: ONCE THE FINAL ANSWER IS GENERATED, DO NOT MAKE ANY MORE TOOL CALLS OR ADDITIONAL TEXT. THE FINAL ANSWER MUST BE COMPLETE AND SELF-CONTAINED.
 """
 
 
@@ -332,6 +334,7 @@ Dont stop until you have a definite answer, with code extracted and code snippet
 7. Make sure all quotes and control characters in strings are properly escaped
 
 IMPORTANT: ANY violation of these formatting rules may cause the entire workflow to fail.
+VERY IMPORTANT: ONCE THE FINAL ANSWER IS GENERATED, DO NOT MAKE ANY MORE TOOL CALLS OR ADDITIONAL TEXT. THE FINAL ANSWER MUST BE COMPLETE AND SELF-CONTAINED.
 """
 
 NOTION_QUERY_PROMPT = """

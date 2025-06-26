@@ -30,6 +30,19 @@ class WorkbenchAgent(RoutedAgent):
         self._workbench = workbench
         self._response_context = []
 
+    def contains_answer(self, messages):
+        for m in messages:
+            if isinstance(m, dict) and "answer" in m:
+                return True
+            if isinstance(m, str):
+                try:
+                    parsed = json.loads(m)
+                    if isinstance(parsed, dict) and "answer" in parsed:
+                        return True
+                except json.JSONDecodeError:
+                    continue
+        return False
+
     @message_handler
     async def handle_user_message(
         self, message: Message, ctx: MessageContext
@@ -92,10 +105,16 @@ class WorkbenchAgent(RoutedAgent):
             
 
             # Run the chat completion again to reflect on the history and function execution results.
+            # Check if this is the final response phase
+            messages = self._system_messages + (await self._model_context.get_messages())
+
+            if self.contains_answer(messages):
+                tools = []
+            else:
+                tools = await self._workbench.list_tools()
             create_result = await self._model_client.create(
-                messages=self._system_messages
-                + (await self._model_context.get_messages()),
-                tools=(await self._workbench.list_tools()),
+                messages=messages,
+                tools=tools,
                 cancellation_token=ctx.cancellation_token,
             )
         assert isinstance(create_result.content, str)
