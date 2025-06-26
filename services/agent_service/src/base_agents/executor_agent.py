@@ -1,23 +1,18 @@
 import json
-import os
 from typing import Any, Dict, Optional
 from enum import Enum
-
 from autogen_core import AgentId, MessageContext, RoutedAgent, message_handler
-from groq import Groq
-from ..protocols.message import Message
 from groq import Groq
 from ..prompts.aggregation_prompt import generate_aggregated_answer
 from ..prompts.prompts import (NOTION_QUERY_PROMPT, GITHUB_PROMPT)
 from ..protocols.message import Message
-from ..utils.logging import get_logger, setup_logger
 from ..utils.parsing import extract_json_with_regex
 from ..utils.settings import settings
 from ..protocols.schemas import KBResponse
 from ..utils.logging import setup_logger, get_logger
 from ..utils.exceptions import (
     ExecutionError, ExternalServiceError, ValidationError, TimeoutError,
-    NetworkError, AgentServiceException, handle_agent_error, create_error_response
+    NetworkError, AgentServiceException, handle_agent_error
 )
 
 setup_logger()
@@ -148,7 +143,7 @@ class ExecutorAgent(RoutedAgent):
                 only_result = list(valid_results.values())[0]
                 logger.info("Only one valid source present. Skipping aggregation, proceeding with single valid result.")
                 return Message(content=json.dumps({
-                    "combined_answer_of_sources": only_result["answer"],
+                    "executor_answer": only_result["answer"],
                     "all_documents": [
                         doc for docs in self._sources_documents.values() for doc in docs
                     ],
@@ -191,8 +186,8 @@ class ExecutorAgent(RoutedAgent):
             return Message(
                 content=json.dumps(
                     {
-                        "combined_answer_of_sources": combined_execution_results[
-                            "combined_answer_of_sources"
+                        "executor_answer": combined_execution_results[
+                            "executor_answer"
                         ],
                         "all_documents": all_documents,
                         "documents_by_source": self._sources_documents,
@@ -362,12 +357,12 @@ class ExecutorAgent(RoutedAgent):
                     f"Extracted and parsed aggregated answer successfully : {result}"
                 )
                 return {
-                    "combined_answer_of_sources": result["answer"],
+                    "executor_answer": result["answer"],
                 }
             except Exception as e:
                 logger.error(f"Failed to parse structured JSON: {e}")
                 return {
-                    "combined_answer_of_sources": content,
+                    "executor_answer": content,
                 }
 
         except AgentServiceException:

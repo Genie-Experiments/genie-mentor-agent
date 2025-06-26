@@ -117,7 +117,7 @@ export const mockAgentResponses = {
 
   executor_agent: {
     execution_time_ms: 74,
-    combined_answer_of_sources: '',
+    executor_answer: '',
     top_documents: [],
     all_documents: [],
     documents_by_source: [],
