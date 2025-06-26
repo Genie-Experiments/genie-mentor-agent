@@ -2,25 +2,20 @@ import json
 import os
 from itertools import chain
 from typing import List
-from itertools import chain
-from autogen_core import RoutedAgent, MessageContext, message_handler
-from autogen_core import MessageContext, RoutedAgent, message_handler
-from ..protocols.message import Message
-from ..prompts.evaluation_agent_prompts import (
-    FACT_EXTRACT_PROMPT_TEMPLATE, 
-    FACT_EXTRACT_SCENARIO_DESCRIPTION, 
-    FACT_EXTRACT_FEW_SHOT_EXAMPLES, 
-    FACT_EXTRACT_OUTPUT_FORMAT,
-    FACT_EVAL_PROMPT_TEMPLATE,
-    EVALUATE_PROMPTING_INSTRUCTIONS,
-    EVALUATE_FEW_SHOT_EXAMPLES,
-    EVALUATE_OUTPUT_FORMAT,
-    EVALUATE_SCENARIO_DESCRIPTION )
-from ..utils.parsing import extract_json_with_brace_counting
-from ..protocols.schemas import EvalAgentInput,EvalAgentOutput, LLMUsage
 
+from autogen_core import MessageContext, RoutedAgent, message_handler
 from groq import Groq
+
+from ..prompts.evaluation_agent_prompts import (
+    EVALUATE_FEW_SHOT_EXAMPLES, EVALUATE_OUTPUT_FORMAT,
+    EVALUATE_PROMPTING_INSTRUCTIONS, EVALUATE_SCENARIO_DESCRIPTION,
+    FACT_EVAL_PROMPT_TEMPLATE, FACT_EXTRACT_FEW_SHOT_EXAMPLES,
+    FACT_EXTRACT_OUTPUT_FORMAT, FACT_EXTRACT_PROMPT_TEMPLATE,
+    FACT_EXTRACT_SCENARIO_DESCRIPTION)
+from ..protocols.message import Message
+from ..protocols.schemas import EvalAgentInput, EvalAgentOutput, LLMUsage
 from ..utils.logging import get_logger, setup_logger
+from ..utils.parsing import extract_json_with_brace_counting
 from ..utils.settings import settings
 from ..utils.token_tracker import token_tracker
 

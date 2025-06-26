@@ -1,5 +1,5 @@
 import logging
-import os # Or from ..utils.settings import settings
+import os  # Or from ..utils.settings import settings
 
 from autogen_core import AgentId, SingleThreadedAgentRuntime
 from autogen_core.model_context import BufferedChatCompletionContext
@@ -15,12 +15,11 @@ from ..base_agents.planner_agent import PlannerAgent
 from ..base_agents.planner_refiner_agent import PlannerRefinerAgent
 from ..protocols.message import Message
 from ..source_agents.knowledgebase_agent import KBAgent
-from ..source_agents.workbench_agent import WorkbenchAgent
 from ..source_agents.websearch_agent import WebSearchAgent
-from ..utils.exceptions import (
-    AgentServiceException, ExternalServiceError, ValidationError,
-    handle_agent_error, create_error_response
-)
+from ..source_agents.workbench_agent import WorkbenchAgent
+from ..utils.exceptions import (AgentServiceException, ExternalServiceError,
+                                ValidationError, create_error_response,
+                                handle_agent_error)
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"

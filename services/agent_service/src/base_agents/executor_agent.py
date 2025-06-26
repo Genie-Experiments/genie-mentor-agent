@@ -1,24 +1,22 @@
 import json
 import os
-from typing import Any, Dict, Optional
 from enum import Enum
+from typing import Any, Dict, Optional
 
 from autogen_core import AgentId, MessageContext, RoutedAgent, message_handler
 from groq import Groq
-from ..protocols.message import Message
-from groq import Groq
+
 from ..prompts.aggregation_prompt import generate_aggregated_answer
-from ..prompts.prompts import (NOTION_QUERY_PROMPT, GITHUB_PROMPT)
+from ..prompts.prompts import GITHUB_PROMPT, NOTION_QUERY_PROMPT
 from ..protocols.message import Message
+from ..protocols.schemas import KBResponse, LLMUsage
+from ..utils.exceptions import (AgentServiceException, ExecutionError,
+                                ExternalServiceError, NetworkError,
+                                TimeoutError, ValidationError,
+                                create_error_response, handle_agent_error)
 from ..utils.logging import get_logger, setup_logger
 from ..utils.parsing import extract_json_with_regex
 from ..utils.settings import settings
-from ..protocols.schemas import KBResponse, LLMUsage
-from ..utils.logging import setup_logger, get_logger
-from ..utils.exceptions import (
-    ExecutionError, ExternalServiceError, ValidationError, TimeoutError,
-    NetworkError, AgentServiceException, handle_agent_error, create_error_response
-)
 from ..utils.token_tracker import token_tracker
 
 setup_logger()

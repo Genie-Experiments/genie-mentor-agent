@@ -10,11 +10,11 @@ from groq import Groq
 from ..prompts.prompts import PLANNER_PROMPT
 from ..protocols.message import Message
 from ..protocols.planner_schema import QueryPlan
+from ..protocols.schemas import LLMUsage
 from ..utils.logging import get_logger, setup_logger
 from ..utils.parsing import extract_json_with_regex
 from ..utils.settings import settings
 from ..utils.token_tracker import token_tracker
-from ..protocols.schemas import LLMUsage
 
 setup_logger()
 logger = get_logger("PlannerAgent")
