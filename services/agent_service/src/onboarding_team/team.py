@@ -10,7 +10,7 @@ from autogen_ext.tools.mcp import McpWorkbench, SseServerParams
 from ..base_agents.editor_agent import EditorAgent
 from ..base_agents.eval_agent import EvalAgent
 from ..base_agents.executor_agent import ExecutorAgent
-from ..base_agents.manager_agent import ManagerAgent
+from services.agent_service.src.base_agents.manager.manager_agent import ManagerAgent
 from ..base_agents.planner_agent import PlannerAgent
 from ..base_agents.planner_refiner_agent import PlannerRefinerAgent
 from ..protocols.message import Message
@@ -19,7 +19,7 @@ from ..source_agents.workbench_agent import WorkbenchAgent
 from ..source_agents.websearch_agent import WebSearchAgent
 from ..utils.exceptions import (
     AgentServiceException, ExternalServiceError, ValidationError,
-    handle_agent_error, create_error_response
+    handle_agent_error
 )
 
 logging.basicConfig(

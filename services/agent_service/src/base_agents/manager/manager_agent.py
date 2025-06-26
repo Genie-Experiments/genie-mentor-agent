@@ -1,21 +1,15 @@
 import json
-import time
-from typing import Any, Dict, List
-
+from typing import Dict, List
 from autogen_core import AgentId, MessageContext, RoutedAgent, message_handler
-
-from ..protocols.message import Message
-from ..utils.logging import get_logger, setup_logger
-from ..utils.parsing import extract_all_sources_from_plan, safe_json_parse
+from services.agent_service.src.protocols.message import Message
+from services.agent_service.src.utils.parsing import  safe_json_parse
 import time
-from ..utils.logging import setup_logger, get_logger
-from ..protocols.schemas import EvalAgentInput,EvalAgentOutput
-from ..protocols.schemas import EditorAgentInput,EditorAgentOutput
-from ..utils.exceptions import (
-    AgentServiceException, PlanningError, ExecutionError, EvaluationError,
-    ExternalServiceError, ValidationError, TimeoutError, NetworkError,
+from services.agent_service.src.utils.logging import setup_logger, get_logger
+from services.agent_service.src.utils.exceptions import (
+    PlanningError, ExecutionError, EvaluationError,
     handle_agent_error, create_error_response
 )
+from services.agent_service.src.base_agents.manager.manager_utils import run_evaluation_loop
 
 setup_logger()
 logger = get_logger("ManagerAgent")
@@ -285,25 +279,17 @@ class ManagerAgent(RoutedAgent):
             documents_by_source = q_output.get("documents_by_source", {})
             
             # Check if Notion or GitHub sources are used
-            skip_evaluation = False
-            skip_reason = None
-            
-            for source_name in documents_by_source.keys():
-                source_lower = source_name.lower() if isinstance(source_name, str) else ""
-                if "notion" in source_lower or "github" in source_lower:
-                    skip_evaluation = True
-                    skip_reason = f"Evaluation skipped because {source_name} source was used"
-                    break
-                    
+            skip_evaluation = any(
+                src.lower().find("notion") != -1 or src.lower().find("github") != -1
+                for src in documents_by_source
+            )
+            skip_reason = "Evaluation skipped because Notion/GitHub source was used" if skip_evaluation else None
+
             if skip_evaluation:
-                # Skip evaluation and return the answer directly
-                final_answer = answer
-                eval_history = []
-                editor_history = []
-                logger.info(f"[ManagerAgent] {skip_reason}")
+                final_answer, eval_history, editor_history = answer, [], []
             else:
                 try:
-                    final_answer, eval_history, editor_history = await self.run_evaluation_loop(
+                    final_answer, eval_history, editor_history =await run_evaluation_loop(
                         question=user_query,
                         initial_answer=answer,
                         contexts=documents,
@@ -336,91 +322,3 @@ class ManagerAgent(RoutedAgent):
             self._update_history(session_id, message.content, error_response.get("user_message", "Workflow failed"))
             return Message(content=json.dumps(error_response))
 
-    async def run_evaluation_loop(
-        self,
-        question: str,
-        initial_answer: str,
-        contexts: List[str],
-        documents_by_source: List[str],
-    ) -> tuple:
-        current_answer = initial_answer
-        max_attempts = 2
-        attempts = 0
-        eval_history = []
-        editor_agent = []
-
-        try:
-            while attempts < max_attempts:
-                logger.info(f"[EvaluationAgent] Input (Attempt {attempts + 1})")
-                eval_payload = EvalAgentInput(
-                    question=question,
-                    answer=current_answer,
-                    contexts=contexts,
-                )
-                eval_resp = await self.send_message(
-                    Message(content=eval_payload.model_dump_json()), self.eval_agent_id
-                )
-                eval_result = EvalAgentOutput.model_validate_json(eval_resp.content)
-
-                score = float(eval_result.score)
-                reasoning = eval_result.reasoning or ""
-                error = eval_result.error
-
-                eval_history.append(
-                    {
-                        "evaluation_history": {
-                            "score": score,
-                            "reasoning": reasoning,
-                            "error": error,
-                        },
-                        "attempt": attempts + 1,
-                    }
-                )
-
-                if error is None and score >= EVALUATION_PASS_THRESHOLD:
-                    # Evaluation passed, editor never called
-                    editor_agent.append({
-                        "attempt": attempts
-                    })
-                    break
-
-                if attempts == max_attempts - 1:
-                    # Final evaluation attempt failed
-                    break
-
-                logger.info(f"[EditorAgent] Input (Attempt {attempts + 1})")
-                editor_payload = EditorAgentInput(
-                    question=question,
-                    previous_answer=current_answer,
-                    score=score,
-                    reasoning=reasoning,
-                    contexts=documents_by_source,
-                )
-                editor_resp = await self.send_message(
-                    Message(content=editor_payload.json()), self.editor_agent_id
-                )
-                editor_result = EditorAgentOutput.model_validate_json(editor_resp.content)
-
-                new_answer = editor_result.get("answer", current_answer)
-                editor_error = editor_result.get("error", None)
-
-                editor_agent.append({
-                    "editor_history": {
-                        "answer": new_answer,
-                        "error": editor_error,
-                        "skipped": False
-                    },
-                    "attempt": attempts + 1
-                })
-
-                current_answer = new_answer
-                attempts += 1
-
-            return current_answer, eval_history, editor_agent
-
-        except Exception as e:
-            logger.error(f"[ManagerAgent] Evaluation or editing failed: {e}")
-            raise EvaluationError(
-                message=f"Evaluation loop failed: {str(e)}",
-                details={"attempts": attempts, "max_attempts": max_attempts}
-            )
