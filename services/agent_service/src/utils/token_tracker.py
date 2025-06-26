@@ -1,8 +1,10 @@
 import json
-from typing import Dict, Any, Optional
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
+from typing import Any, Dict, Optional
+
 from groq import Groq
 from groq.types.chat import ChatCompletion
+
 
 @dataclass
 class TokenUsage:
