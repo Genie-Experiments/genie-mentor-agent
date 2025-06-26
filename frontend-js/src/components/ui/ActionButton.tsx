@@ -21,7 +21,7 @@ const ActionButton: React.FC<ActionButtonProps> = ({
         'flex items-center justify-center gap-2.5 rounded-lg',
         variant === 'primary' && 'bg-white font-semibold text-[#00A599]',
         variant === 'secondary' && 'bg-transparent text-white',
-        size === 'default' && 'w-[266px] px-[10px] py-[17px] text-lg',
+        size === 'default' && 'w-full px-[10px] py-[17px] text-lg',
         size === 'small' && 'p-1.5 text-sm',
         size === 'large' && 'p-4 text-xl',
         className

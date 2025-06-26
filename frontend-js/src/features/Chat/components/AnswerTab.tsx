@@ -9,6 +9,7 @@ import ContextModal from './ContextModal';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import CitationRenderer from './CitationRenderer';
+import CodeBlock from '../../../components/ui/CodeBlock';
 import './markdown-styles.css';
 
 interface AnswerTabProps {
@@ -27,7 +28,7 @@ const ContextCard: React.FC<ContextCardProps> = ({ title, content, index, onClic
   <div
     onClick={() => onClick(index)}
     className="flex cursor-pointer flex-col items-start justify-center gap-[10px] rounded-[8px] border border-[#9CBFBC] bg-white transition-shadow hover:shadow-[0px_12px_21px_0px_#CDE6E5]"
-    style={{ width: 243, padding: '15px 18px' }}
+    style={{ padding: '15px 18px' }}
   >
     <div className="flex items-center gap-2">
       <span style={{ width: 16, height: 16, display: 'inline-flex', alignItems: 'center' }}>
@@ -229,7 +230,10 @@ const AnswerTab: React.FC<AnswerTabProps> = ({ finalAnswer, executorAgent }) => 
           >
             Top sources
           </div>
-          <div className="flex w-full gap-4" style={{ rowGap: 13 }}>
+          <div
+            className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3"
+            style={{ rowGap: 13 }}
+          >
             {topSources.map((source, i) => (
               <a
                 key={i}
@@ -237,7 +241,7 @@ const AnswerTab: React.FC<AnswerTabProps> = ({ finalAnswer, executorAgent }) => 
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex flex-col items-start justify-center rounded-[8px] border border-[#9CBFBC] bg-white transition-shadow hover:shadow-[0px_12px_21px_0px_#CDE6E5]"
-                style={{ width: 243, padding: '15px 18px', textDecoration: 'none', gap: 0 }}
+                style={{ padding: '15px 18px', textDecoration: 'none', gap: 0 }}
               >
                 {' '}
                 <div className="flex items-center gap-2">
@@ -285,29 +289,12 @@ const AnswerTab: React.FC<AnswerTabProps> = ({ finalAnswer, executorAgent }) => 
                     WebkitLineClamp: 2,
                     WebkitBoxOrient: 'vertical',
                     maxWidth: 200,
+                    marginBottom: '7px',
                   }}
                 >
                   {source.title}
                 </div>
-                <div style={{ height: '7px' }} />
-                <div
-                  style={{
-                    color: '#002835',
-                    fontFamily: 'Inter',
-                    fontSize: 14,
-                    fontStyle: 'normal',
-                    fontWeight: 400,
-                    lineHeight: 'normal',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    display: '-webkit-box',
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: 'vertical',
-                    maxWidth: 200,
-                  }}
-                >
-                  {source.description}
-                </div>
+                {/* Description removed as per requirement */}
               </a>
             ))}
           </div>
@@ -330,7 +317,10 @@ const AnswerTab: React.FC<AnswerTabProps> = ({ finalAnswer, executorAgent }) => 
           >
             Context
           </div>
-          <div className="flex w-full gap-4" style={{ rowGap: 13 }}>
+          <div
+            className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3"
+            style={{ rowGap: 13 }}
+          >
             {contexts.map((context, index) => (
               <ContextCard
                 key={index}
@@ -377,6 +367,7 @@ const AnswerTab: React.FC<AnswerTabProps> = ({ finalAnswer, executorAgent }) => 
           }}
           className="markdown-content"
         >
+          {' '}
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
             components={{
@@ -393,6 +384,41 @@ const AnswerTab: React.FC<AnswerTabProps> = ({ finalAnswer, executorAgent }) => 
                   );
                 }
                 return <p>{children}</p>;
+              }, // Custom renderer for code blocks
+              pre: ({ children }) => {
+                // Find the code element
+                const codeElement = React.Children.toArray(children).find(
+                  (child) => React.isValidElement(child) && child.type === 'code'
+                );
+
+                if (React.isValidElement(codeElement)) {
+                  // Need to cast to access props safely
+                  const element = codeElement as React.ReactElement<{
+                    className?: string;
+                    children?: React.ReactNode;
+                  }>;
+
+                  // Extract the language from className (format: "language-xxx")
+                  const className = element.props.className || '';
+                  const match = className.match(/language-(\w+)/);
+                  const language = match ? match[1] : 'plaintext';
+
+                  // Get the code content
+                  let code = '';
+                  if (element.props.children) {
+                    if (typeof element.props.children === 'string') {
+                      code = element.props.children;
+                    } else if (Array.isArray(element.props.children)) {
+                      code = element.props.children.join('');
+                    }
+                  }
+
+                  // Use our custom CodeBlock component
+                  return <CodeBlock code={code} language={language} />;
+                }
+
+                // Fallback for non-code pre elements
+                return <pre>{children}</pre>;
               },
             }}
           >
