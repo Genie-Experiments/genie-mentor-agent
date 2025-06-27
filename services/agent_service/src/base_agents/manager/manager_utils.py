@@ -5,14 +5,14 @@ Shared helpers for ManagerAgent:
 """
 from typing import List, Tuple
 
-from services.agent_service.src.protocols.message import Message
-from services.agent_service.src.protocols.schemas import (
+from ...protocols.message import Message
+from ...protocols.schemas import (
     EvalAgentInput,
     EvalAgentOutput,
     EditorAgentInput,
     EditorAgentOutput,
 )
-from services.agent_service.src.utils.logging import get_logger
+from ...utils.logging import get_logger
 
 logger = get_logger("ManagerUtils")
 

@@ -1,10 +1,7 @@
 import json
 from typing import Dict, List
 from autogen_core import AgentId, MessageContext, RoutedAgent, message_handler
-from services.agent_service.src.protocols.message import Message
-from services.agent_service.src.utils.parsing import  safe_json_parse
 import time
-from services.agent_service.src.base_agents.manager.manager_utils import run_evaluation_loop
 
 from ...protocols.message import Message
 from ...utils.exceptions import (EvaluationError,
@@ -15,6 +12,7 @@ from ...utils.exceptions import (EvaluationError,
 from ...utils.logging import get_logger, setup_logger
 from ...utils.parsing import  safe_json_parse
 from ...utils.token_tracker import token_tracker
+from ...base_agents.manager.manager_utils import run_evaluation_loop
 
 setup_logger()
 logger = get_logger("ManagerAgent")
