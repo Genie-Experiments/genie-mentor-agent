@@ -1,0 +1,26 @@
+/* Custom scroll behavior for chat component */
+.auto-scroll-chat {
+  overflow-y: auto;
+  scroll-behavior: smooth;
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera while maintaining scroll functionality */
+.auto-scroll-chat::-webkit-scrollbar {
+  width: 0;
+  background: transparent;
+}
+
+/* Hide scrollbar for Firefox */
+.auto-scroll-chat {
+  scrollbar-width: none;
+}
+
+/* Hide scrollbar for IE and Edge */
+.auto-scroll-chat {
+  -ms-overflow-style: none;
+}
+
+/* Allow content to be scrollable while ignoring mouse position */
+.auto-scroll-chat {
+  pointer-events: auto;
+}

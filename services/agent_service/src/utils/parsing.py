@@ -166,7 +166,7 @@ def parse_source_response(text: str) -> Dict[str, Any]:
         # First try to parse as normal JSON
         parsed_json = json.loads(text)
         
-        # Check if the answer field itself contains nested JSON (common for GitHub responses)
+        # Check if the answer field itself contains nested JSON
         if isinstance(parsed_json, dict) and "answer" in parsed_json:
             answer_text = parsed_json["answer"]
             if isinstance(answer_text, str) and (answer_text.strip().startswith('{') or answer_text.strip().startswith('[')):
@@ -178,19 +178,25 @@ def parse_source_response(text: str) -> Dict[str, Any]:
                         if "answer" in inner_json:
                             parsed_json["answer"] = inner_json["answer"]
                             # Merge metadata if present
-                            if "metadata" in inner_json and isinstance(parsed_json.get("metadata"), dict):
-                                parsed_json["metadata"].update(inner_json["metadata"])
+                            if "metadata" in inner_json and isinstance(parsed_json.get("metadata"), list):
+                                parsed_json["metadata"].extend(inner_json["metadata"])
                 except json.JSONDecodeError:
                     # If inner parsing fails, keep original answer text
                     pass
         
         # Ensure 'answer' and 'metadata' keys always exist
         if not isinstance(parsed_json, dict):
-            parsed_json = {"answer": str(parsed_json), "metadata": {}}
+            parsed_json = {"answer": str(parsed_json), "metadata": []}
         if 'answer' not in parsed_json:
             parsed_json['answer'] = 'Error parsing agent response'
         if 'metadata' not in parsed_json:
-            parsed_json['metadata'] = {}
+            parsed_json['metadata'] = []
+        
+        # Sanitize strings to remove unescaped control characters
+        for key, value in parsed_json.items():
+            if isinstance(value, str):
+                parsed_json[key] = ''.join(c for c in value if c.isprintable())
+        
         return parsed_json
     except json.JSONDecodeError:
         # Next try the brace counting method
@@ -206,18 +212,24 @@ def parse_source_response(text: str) -> Dict[str, Any]:
                         if isinstance(inner_json, dict):
                             if "answer" in inner_json:
                                 parsed_json["answer"] = inner_json["answer"]
-                                if "metadata" in inner_json and isinstance(parsed_json.get("metadata"), dict):
-                                    parsed_json["metadata"].update(inner_json["metadata"])
+                                if "metadata" in inner_json and isinstance(parsed_json.get("metadata"), list):
+                                    parsed_json["metadata"].extend(inner_json["metadata"])
                     except json.JSONDecodeError:
                         pass
                         
             # Ensure 'answer' and 'metadata' keys always exist
             if not isinstance(parsed_json, dict):
-                parsed_json = {"answer": str(parsed_json), "metadata": {}}
+                parsed_json = {"answer": str(parsed_json), "metadata": []}
             if 'answer' not in parsed_json:
                 parsed_json['answer'] = ''
             if 'metadata' not in parsed_json:
-                parsed_json['metadata'] = {}
+                parsed_json['metadata'] = []
+            
+            # Sanitize strings to remove unescaped control characters
+            for key, value in parsed_json.items():
+                if isinstance(value, str):
+                    parsed_json[key] = ''.join(c for c in value if c.isprintable())
+            
             return parsed_json
             
         except ValueError:
@@ -225,16 +237,21 @@ def parse_source_response(text: str) -> Dict[str, Any]:
             has_github = "github.com" in text
             has_notion = "notion.so" in text
             
-            result = {"answer": text, "metadata": {}, "error": ""}
+            result = {"answer": text, "metadata": [], "error": ""}
             
             # Extract and add GitHub metadata if present
             if has_github:
-                result["metadata"].update(extract_github_metadata(text))
+                result["metadata"].extend(extract_github_metadata(text))
                 
             # Extract and add Notion metadata if present
             if has_notion:
-                result["metadata"].update(extract_notion_metadata(text))
+                result["metadata"].extend(extract_notion_metadata(text))
                 
+            # Sanitize strings to remove unescaped control characters
+            for key, value in result.items():
+                if isinstance(value, str):
+                    result[key] = ''.join(c for c in value if c.isprintable())
+            
             return result
 
 

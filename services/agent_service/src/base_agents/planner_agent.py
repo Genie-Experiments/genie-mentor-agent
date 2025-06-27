@@ -10,9 +10,11 @@ from groq import Groq
 from ..prompts.prompts import PLANNER_PROMPT
 from ..protocols.message import Message
 from ..protocols.planner_schema import QueryPlan
+from ..protocols.schemas import LLMUsage
 from ..utils.logging import get_logger, setup_logger
 from ..utils.parsing import extract_json_with_regex
 from ..utils.settings import settings
+from ..utils.token_tracker import token_tracker
 
 setup_logger()
 logger = get_logger("PlannerAgent")
@@ -63,6 +65,7 @@ class PlannerAgent(RoutedAgent):
         start_time = time.time()
         retry_count = 0
         current_plan = None
+        token_usage = None
 
         while retry_count < self.max_retries:
             try:
@@ -93,6 +96,9 @@ class PlannerAgent(RoutedAgent):
                     messages=[{"role": "user", "content": prompt}], model=self.model
                 )
 
+                # Track token usage
+                token_usage = token_tracker.track_completion("planner_agent", response, self.model)
+
                 content = response.choices[0].message.content
                 logger.info(f"Raw planner response: {content}")
 
@@ -105,13 +111,24 @@ class PlannerAgent(RoutedAgent):
 
                 execution_time = int((time.time() - start_time) * 1000)
 
-                # Return the plan
+                # Create LLMUsage object if token usage is available
+                llm_usage_obj = None
+                if token_usage:
+                    llm_usage_obj = LLMUsage(
+                        model=token_usage.model,
+                        input_tokens=token_usage.input_tokens,
+                        output_tokens=token_usage.output_tokens,
+                        total_tokens=token_usage.total_tokens
+                    )
+
+                # Return the plan with token usage
                 return Message(
                     content=json.dumps(
                         {
                             "plan": current_plan,
                             "execution_time_ms": execution_time,
                             "retry_count": retry_count,
+                            "llm_usage": llm_usage_obj.model_dump() if llm_usage_obj else None,
                         }
                     )
                 )
@@ -133,6 +150,7 @@ class PlannerAgent(RoutedAgent):
                     "execution_time_ms": int((time.time() - start_time) * 1000),
                     "retry_count": retry_count,
                     "warning": "Max retries reached",
+                    "llm_usage": llm_usage_obj.model_dump() if llm_usage_obj else None,
                 }
             )
         )

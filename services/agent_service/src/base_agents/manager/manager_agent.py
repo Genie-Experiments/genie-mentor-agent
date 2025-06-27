@@ -4,12 +4,17 @@ from autogen_core import AgentId, MessageContext, RoutedAgent, message_handler
 from services.agent_service.src.protocols.message import Message
 from services.agent_service.src.utils.parsing import  safe_json_parse
 import time
-from services.agent_service.src.utils.logging import setup_logger, get_logger
-from services.agent_service.src.utils.exceptions import (
-    PlanningError, ExecutionError, EvaluationError,
-    handle_agent_error, create_error_response
-)
 from services.agent_service.src.base_agents.manager.manager_utils import run_evaluation_loop
+
+from ...protocols.message import Message
+from ...utils.exceptions import (EvaluationError,
+                                ExecutionError,
+                                 PlanningError,
+                                create_error_response,
+                                handle_agent_error)
+from ...utils.logging import get_logger, setup_logger
+from ...utils.parsing import  safe_json_parse
+from ...utils.token_tracker import token_tracker
 
 setup_logger()
 logger = get_logger("ManagerAgent")
@@ -134,6 +139,9 @@ class ManagerAgent(RoutedAgent):
     ) -> Message:
         start_time = time.time()
         session_id = ctx.session_id if hasattr(ctx, "session_id") else "default"
+
+        # Reset token tracker for new request
+        token_tracker.reset()
 
         # Get conversation context
         context = self._get_context(session_id)
@@ -309,8 +317,8 @@ class ManagerAgent(RoutedAgent):
                 'editor_agent': editor_history,
                 'final_answer': final_answer,
                 'total_time': time.time() - start_time,
-                'evaluation_skipped': skip_evaluation,
-                'skip_reason': skip_reason
+                'evaluation_skipped': False,
+                'skip_reason': None
             })
             self._update_history(session_id, message.content, final_answer)
 
