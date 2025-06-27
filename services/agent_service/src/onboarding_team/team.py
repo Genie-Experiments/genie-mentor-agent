@@ -10,7 +10,7 @@ from autogen_ext.tools.mcp import McpWorkbench, SseServerParams
 from ..base_agents.editor_agent import EditorAgent
 from ..base_agents.eval_agent import EvalAgent
 from ..base_agents.executor_agent import ExecutorAgent
-from ..base_agents.manager_agent import ManagerAgent
+from services.agent_service.src.base_agents.manager.manager_agent import ManagerAgent
 from ..base_agents.planner_agent import PlannerAgent
 from ..base_agents.planner_refiner_agent import PlannerRefinerAgent
 from ..protocols.message import Message
@@ -54,8 +54,7 @@ notion_mcp_server_params = SseServerParams(
 
 github_mcp_server_params = SseServerParams(
     url="http://localhost:8010/sse",
-)
-'''
+)'''
 async def initialize_agent() -> None:
     global agent_initialized
     try:
@@ -106,7 +105,7 @@ async def initialize_agent() -> None:
                         workbench=github_workbench,
                     ),
                 )
-                
+
                 await WebSearchAgent.register(RUNTIME, 'websearch_agent', WebSearchAgent)
                 await KBAgent.register(RUNTIME, 'kb_agent', KBAgent)
                     # Register all agents with error handling
@@ -150,7 +149,7 @@ async def initialize_agent() -> None:
                             workbench=github_workbench,
                         ),
                     )
-                    
+
                     await WebSearchAgent.register(RUNTIME, 'websearch_agent', WebSearchAgent)
                     await KBAgent.register(RUNTIME, 'kb_agent', KBAgent)
 
@@ -172,7 +171,7 @@ async def initialize_agent() -> None:
                     RUNTIME.start()
                     agent_initialized = True
                     logging.info("Agent service initialized successfully")
-                    
+
                 except Exception as e:
                     logging.error(f"Failed to register agents: {e}")
                     raise AgentServiceException(

@@ -32,9 +32,9 @@ const ResearchTab: React.FC<ResearchTabProps> = ({ traceInfo }) => {
     let content = '';
 
     // Combined Answer of Sources
-    if (executor.combined_answer_of_sources) {
+    if (executor.executor_answer) {
       content += `<div style="${keyStyle}">Combined Answer</div>`;
-      content += `<div style="${valueStyle}">${executor.combined_answer_of_sources}</div>`;
+      content += `<div style="${valueStyle}">${executor.executor_answer}</div>`;
       content += `<div style="margin-bottom: 20px;"></div>`;
     }
 
@@ -511,10 +511,10 @@ const ResearchTab: React.FC<ResearchTabProps> = ({ traceInfo }) => {
           <div style={sectionTitleStyle}>EXECUTOR AGENT</div>
           <div style={{ marginBottom: '11px' }}>
             {/* Displaying general info about executor agent */}
-            {traceInfo.executor_agent.combined_answer_of_sources &&
+            {traceInfo.executor_agent.executor_answer &&
               renderKeyValue(
                 'Combined Answer',
-                traceInfo.executor_agent.combined_answer_of_sources
+                traceInfo.executor_agent.executor_answer
               )}
             {traceInfo.executor_agent.error && renderKeyValue('Error', 'Yes')}
           </div>

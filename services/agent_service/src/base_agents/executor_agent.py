@@ -1,5 +1,4 @@
 import json
-import os
 from enum import Enum
 from typing import Any, Dict, Optional
 
@@ -9,16 +8,18 @@ from groq import Groq
 from ..prompts.aggregation_prompt import generate_aggregated_answer
 from ..prompts.prompts import GITHUB_PROMPT, NOTION_QUERY_PROMPT
 from ..protocols.message import Message
-from ..protocols.schemas import KBResponse, LLMUsage
-from ..utils.exceptions import (AgentServiceException, ExecutionError,
-                                ExternalServiceError, NetworkError,
-                                TimeoutError, ValidationError,
-                                create_error_response, handle_agent_error)
-from ..utils.logging import get_logger, setup_logger
+from ..protocols.schemas import  LLMUsage
 from ..utils.parsing import extract_json_with_regex
 from ..utils.settings import settings
 from ..utils.token_tracker import token_tracker
 
+from ..protocols.schemas import KBResponse
+from ..utils.logging import setup_logger, get_logger
+from ..utils.exceptions import (
+    ExecutionError, ExternalServiceError, ValidationError, TimeoutError,
+    NetworkError, AgentServiceException, handle_agent_error
+)
+import string
 setup_logger()
 logger = get_logger("ExecutorAgent")
 
@@ -147,7 +148,7 @@ class ExecutorAgent(RoutedAgent):
                 only_result = list(valid_results.values())[0]
                 logger.info("Only one valid source present. Skipping aggregation, proceeding with single valid result.")
                 return Message(content=json.dumps({
-                    "combined_answer_of_sources": only_result["answer"],
+                    "executor_answer": only_result["answer"],
                     "all_documents": [
                         doc for docs in self._sources_documents.values() for doc in docs
                     ],
@@ -171,9 +172,19 @@ class ExecutorAgent(RoutedAgent):
             logger.info("Combining answers from all data sources.")
 
             try:
+                original_ids = list(valid_results.keys())
+                id_mapping = {qid: string.ascii_uppercase[i] for i, qid in enumerate(original_ids)}
+                minimal_results = {
+                    id_mapping[qid]: {
+                        "id": id_mapping[qid],
+                        "source": query_components[qid].get("source"),
+                        "answer": res["answer"]
+                    }
+                    for qid, res in valid_results.items()
+                }
                 combined_execution_results = await self._combine_answer_from_sources(
                     plan["user_query"],
-                    valid_results,
+                    minimal_results,
                     strategy=execution_order.get("aggregation")
                 )
             except Exception as e:
@@ -191,8 +202,8 @@ class ExecutorAgent(RoutedAgent):
             return Message(
                 content=json.dumps(
                     {
-                        "combined_answer_of_sources": combined_execution_results[
-                            "combined_answer_of_sources"
+                        "executor_answer": combined_execution_results[
+                            "executor_answer"
                         ],
                         "all_documents": all_documents,
                         "documents_by_source": self._sources_documents,
@@ -296,23 +307,9 @@ class ExecutorAgent(RoutedAgent):
                 )
 
             if "sources" in response:
-                source_docs = response["sources"]
-
-                if source not in self._sources_documents:
-                    self._sources_documents[source] = []
-
-                self._sources_documents[source].extend(source_docs)
-
+                self._append_sources(source, response["sources"])
             if "metadata" in response:
-                source_meta = response["metadata"]
-                # Normalize to list of dicts
-                if isinstance(source_meta, dict):
-                    source_meta = [source_meta]
-                elif not isinstance(source_meta, list):
-                    source_meta = []
-                if source not in self._sources_metadata:
-                    self._sources_metadata[source] = []
-                self._sources_metadata[source].extend(source_meta)
+                self._append_metadata(source, response["metadata"])
 
             return response
 
@@ -365,7 +362,7 @@ class ExecutorAgent(RoutedAgent):
                 logger.info(
                     f"Extracted and parsed aggregated answer successfully : {result}"
                 )
-                
+
                 # Create LLMUsage object if token usage is available
                 llm_usage_obj = None
                 if token_usage:
@@ -375,14 +372,15 @@ class ExecutorAgent(RoutedAgent):
                         output_tokens=token_usage.output_tokens,
                         total_tokens=token_usage.total_tokens
                     )
-                
+
                 return {
-                    "combined_answer_of_sources": result["answer"],
+                    "executor_answer": result["answer"],
+
                     "llm_usage": llm_usage_obj.model_dump() if llm_usage_obj else None,
                 }
             except Exception as e:
                 logger.error(f"Failed to parse structured JSON: {e}")
-                
+
                 # Create LLMUsage object if token usage is available
                 llm_usage_obj = None
                 if token_usage:
@@ -392,9 +390,10 @@ class ExecutorAgent(RoutedAgent):
                         output_tokens=token_usage.output_tokens,
                         total_tokens=token_usage.total_tokens
                     )
-                
+
                 return {
-                    "combined_answer_of_sources": content,
+                    "executor_answer": content,
+
                     "llm_usage": llm_usage_obj.model_dump() if llm_usage_obj else None,
                 }
 
@@ -407,3 +406,11 @@ class ExecutorAgent(RoutedAgent):
                 message=f"Failed to combine answers from sources: {str(e)}",
                 details={"user_query": user_query, "strategy": strategy, "original_error": str(e)}
             )
+
+    def _append_sources(self, source, docs):
+        self._sources_documents.setdefault(source, []).extend(docs)
+
+    def _append_metadata(self, source, meta):
+        if isinstance(meta, dict): meta = [meta]
+        if isinstance(meta, list):
+            self._sources_metadata.setdefault(source, []).extend(meta)
