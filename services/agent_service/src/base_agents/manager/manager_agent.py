@@ -18,7 +18,6 @@ from ...utils.token_tracker import token_tracker
 
 setup_logger()
 logger = get_logger("ManagerAgent")
-EVALUATION_PASS_THRESHOLD=1.0
 class ManagerAgent(RoutedAgent):
 
     def __init__(

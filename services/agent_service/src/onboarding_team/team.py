@@ -84,30 +84,8 @@ async def initialize_agent() -> None:
                             "family": "gpt"
                         }
                     )
-                # 2. Update the WorkbenchAgent for Notion to use the Groq client.
-                await WorkbenchAgent.register(
-                    RUNTIME,
-                    "notion_workbench_agent",
-                    factory=lambda: WorkbenchAgent(
-                        model_client=gpt_client, # Use the configured Groq client
-                        model_context=BufferedChatCompletionContext(buffer_size=10),
-                        workbench=notion_workbench,
-                    ),
-                )
 
-                # 3. Update the WorkbenchAgent for GitHub to use the Groq client.
-                await WorkbenchAgent.register(
-                    RUNTIME,
-                    "github_workbench_agent",
-                    factory=lambda: WorkbenchAgent(
-                        model_client=gpt_client, # Use the configured Groq client
-                        model_context=BufferedChatCompletionContext(buffer_size=10),
-                        workbench=github_workbench,
-                    ),
-                )
 
-                await WebSearchAgent.register(RUNTIME, 'websearch_agent', WebSearchAgent)
-                await KBAgent.register(RUNTIME, 'kb_agent', KBAgent)
                     # Register all agents with error handling
                 try:
                     await PlannerAgent.register(
