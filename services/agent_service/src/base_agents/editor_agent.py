@@ -25,11 +25,8 @@ class EditorAgent(RoutedAgent):
     @message_handler
     async def fix_answer(self, message: Message, ctx: MessageContext) -> Message:
         try:
-            print("---------Received Message-----------")
-            print(message.content)
+
             payload = EditorAgentInput.model_validate_json(message.content)
-            print("---------Payload-----------")
-            print(payload)
             prompt = EDITOR_PROMPT.format(
                 question=payload.question,
                 previous_answer=payload.previous_answer,
@@ -61,14 +58,12 @@ class EditorAgent(RoutedAgent):
                     output_tokens=token_usage.output_tokens,
                     total_tokens=token_usage.total_tokens
                 )
-            
-            editor_output = EditorAgentOutput(
-                answer=final_answer, 
-                error=None,
-                llm_usage=llm_usage_obj
-            )
-            
-            return Message(content=editor_output.model_dump_json())
+
+
+            return Message(content=EditorAgentOutput(
+                answer=final_answer,
+                llm_usage=llm_usage_obj,
+                error=None).model_dump_json())
 
 
         except Exception as e:
