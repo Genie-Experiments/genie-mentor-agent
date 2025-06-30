@@ -7,7 +7,7 @@ from autogen_core import MessageContext, RoutedAgent, message_handler
 from autogen_core.models import UserMessage
 from groq import Groq
 
-from ..prompts.prompts import PLANNER_PROMPT
+from ..prompts.prompts import PLANNER_PROMPT, IS_GREETING_PROMPT_CONTEXT
 from ..protocols.message import Message
 from ..protocols.planner_schema import QueryPlan
 from ..protocols.schemas import LLMUsage
@@ -59,6 +59,17 @@ class PlannerAgent(RoutedAgent):
                 )
             )
 
+    async def is_greeting(self, query: str) -> (bool, str):
+        """Classify if the query is a greeting or chit-chat using the LLM, and generate a response if so."""
+        prompt = IS_GREETING_PROMPT_CONTEXT.replace("{{query}}", query)
+        response = self.client.chat.completions.create(
+            messages=[{"role": "user", "content": prompt}], model=self.model
+        )
+        content = response.choices[0].message.content.strip()
+        if content.lower() == "no":
+            return False, ""
+        return True, content
+
     async def process_query(
         self, query: str, feedback: Optional[dict] = None
     ) -> Message:
@@ -66,6 +77,33 @@ class PlannerAgent(RoutedAgent):
         retry_count = 0
         current_plan = None
         token_usage = None
+
+        # Greeting detection step
+        is_greet, greet_response = await self.is_greeting(query)
+        if is_greet:
+            return Message(content=json.dumps({
+                "plan": {
+                    "is_greeting": True,
+                    "greeting_response": greet_response,
+                    "user_query": query,
+                    "query_intent": "greeting",
+                    "data_sources": [],
+                    "query_components": [],
+                    "execution_order": {
+                        "nodes": [],
+                        "edges": [],
+                        "aggregation": "single_source"
+                    },
+                    "think": {
+                        "query_analysis": "Greeting detected.",
+                        "sub_query_reasoning": "",
+                        "source_selection": "",
+                        "execution_strategy": ""
+                    }
+                },
+                "execution_time_ms": 0,
+                "llm_usage": None,
+            }))
 
         while retry_count < self.max_retries:
             try:
