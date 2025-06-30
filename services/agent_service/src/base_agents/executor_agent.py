@@ -36,12 +36,14 @@ class ExecutorAgent(RoutedAgent):
         github_workbench_agent_id: AgentId,
         webrag_agent_id: AgentId,
         kb_agent_id: AgentId,
+        answer_cleaner_agent_id: AgentId,
     ) -> None:
         super().__init__("executor_agent")
         self.notion_workbench_agent_id = notion_workbench_agent_id
         self.github_workbench_agent_id = github_workbench_agent_id
         self.webrag_agent_id = webrag_agent_id
         self.kb_agent_id = kb_agent_id
+        self.answer_cleaner_agent_id = answer_cleaner_agent_id
         
         # Validate API key
         if not settings.GROQ_API_KEY:
@@ -258,6 +260,15 @@ class ExecutorAgent(RoutedAgent):
                     )
                     response = json.loads(response_message.content)
                     logger.info(f"[Notion] Agent Response : {response}")
+                    try:
+                        cleaner_response = await self.send_message(
+                            Message(content=json.dumps(response.get("answer", ""))), self.answer_cleaner_agent_id
+                        )
+                        cleaned_payload = json.loads(cleaner_response.content)
+                        cleaned_answer = cleaned_payload.get("cleaned_answer", response.get("answer", ""))
+                        response["answer"] = cleaned_answer
+                    except Exception as cleaning_error:
+                        logger.warning(f"[Notion] Failed to clean answer, using raw: {cleaning_error}")
                 except Exception as e:
                     logger.error(f"[Notion] Error: {e}")
                     raise ExternalServiceError(
@@ -291,6 +302,15 @@ class ExecutorAgent(RoutedAgent):
                     )
                     response = json.loads(response_message.content)
                     logger.info(f"[GitHub] Agent Response : {response}")
+                    try:
+                        cleaner_response = await self.send_message(
+                            Message(content=json.dumps(response)), self.answer_cleaner_agent_id
+                        )
+                        cleaned_payload = json.loads(cleaner_response.content)
+                        cleaned_answer = cleaned_payload.get("cleaned_answer", response.get("answer", ""))
+                        response["answer"] = cleaned_answer
+                    except Exception as cleaning_error:
+                        logger.warning(f"[GitHub] Failed to clean answer, using raw: {cleaning_error}")
                 except Exception as e:
                     logger.error(f"[GitHub] Error: {e}")
                     raise ExternalServiceError(
