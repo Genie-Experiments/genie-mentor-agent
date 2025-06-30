@@ -59,7 +59,7 @@ class PlannerAgent(RoutedAgent):
                 )
             )
 
-    async def is_greeting(self, query: str) -> (bool, str):
+    async def is_greeting(self, query: str) -> tuple[bool, str]:
         """Classify if the query is a greeting or chit-chat using the LLM, and generate a response if so."""
         prompt = IS_GREETING_PROMPT_CONTEXT.replace("{{query}}", query)
         response = self.client.chat.completions.create(
