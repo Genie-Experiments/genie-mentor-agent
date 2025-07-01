@@ -174,6 +174,18 @@ class ManagerAgent(RoutedAgent):
             except Exception as e:
                 return self._handle_planning_error(e, user_query, session_id)
 
+            # Handle greeting plan
+            if plan_data.get("plan", {}).get("is_greeting"):
+                final_answer = plan_data["plan"].get("greeting_response", "Hello! How can I assist you today?")
+                self.trace_info.update({
+                    'final_answer': final_answer,
+                    'evaluation_skipped': True,
+                    'skip_reason': "Greeting detected, no further processing required.",
+                    'total_time': time.time() - start_time
+                })
+                self._update_history(session_id, message.content, final_answer)
+                return Message(content=json.dumps({'trace_info': self.trace_info}))
+
             # Store original plan
             plan_versions = [plan_data]
             self.trace_info["planner_agent"] = plan_versions

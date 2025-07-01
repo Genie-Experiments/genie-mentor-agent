@@ -47,7 +47,7 @@ Return the aggregated result as a well-formatted JSON object with this structure
 {{
   "answer": "<your aggregated response here>"
 }}
-
+IMPORTANT: All string values in your JSON must be valid JSON strings. Do NOT include literal newlines, tabs, or control characters inside string values. Escape all newlines as \\n.
 Now, here is the data you have to work with:
 User Query: "{user_query}"
 Results: {results}
