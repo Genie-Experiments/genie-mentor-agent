@@ -37,7 +37,7 @@ FEEDBACK:
 3. **Assign a source** to each sub-query based on the following rules and examples:
 
    - `"knowledgebase"`:
-     - Use for technical concepts or implementation approaches involving:
+     - Use for technical concepts, research papers present in the knowledgebase, or implementation approaches involving:
        - Advanced RAG techniques (e.g., document indexing, reranking, context expansion).
        - Embedding models, LLM behavior, and hallucination metrics.
        - General architecture or design methodologies.
