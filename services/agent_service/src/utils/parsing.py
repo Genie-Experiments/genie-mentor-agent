@@ -292,8 +292,13 @@ def extract_all_sources_from_plan(plan_data: Any) -> List[str]:
 def escape_unescaped_newlines_in_json_strings(text: str) -> str:
     """Escape unescaped newlines inside double-quoted JSON string values with \\n."""
     def replacer(match):
-        # Replace unescaped newlines with \n
-        # This will replace all newlines in the matched string (which is inside quotes)
-        return '"' + match.group(1).replace('\n', '\\n').replace('\r', '').replace('\u2028', '').replace('\u2029', '').replace('\x0b', '').replace('\x0c', '').replace('\x1c', '').replace('\x1d', '').replace('\x1e', '').replace('\x85', '').replace('\x0a', '\\n').replace('\x0d', '') + '"'
+        s = match.group(1)
+        # Escape newlines
+        s = s.replace('\n', '\\n').replace('\x0a', '\\n')
+        # List of unwanted chars to remove
+        unwanted = ['\r', '\u2028', '\u2029', '\x0b', '\x0c', '\x1c', '\x1d', '\x1e', '\x85', '\x0d']
+        for ch in unwanted:
+            s = s.replace(ch, '')
+        return '"' + s + '"'
     # Only operate inside double quotes
     return re.sub(r'"(.*?)"', replacer, text, flags=re.DOTALL)
