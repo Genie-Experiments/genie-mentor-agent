@@ -244,6 +244,8 @@ const SourcesTab: React.FC<SourcesTabProps> = ({ executorAgent }) => {
     renderWebSources(mapNotionToWebsearchMetadata(metadata));
   // Helper function to check if all sources are empty or missing
   const hasNoSources = () => {
+    if (!executorAgent) return true;
+
     const { metadata_by_source } = executorAgent;
 
     // If metadata_by_source is undefined or null, there are no sources
@@ -272,7 +274,7 @@ const SourcesTab: React.FC<SourcesTabProps> = ({ executorAgent }) => {
   };
   // Helper function to count how many source types are available
   const countSourceTypes = () => {
-    const { metadata_by_source } = executorAgent;
+    const { metadata_by_source } = executorAgent || {};
     let count = 0;
     if (metadata_by_source?.knowledgebase && metadata_by_source.knowledgebase.length > 0) count++;
     if (metadata_by_source?.websearch && metadata_by_source.websearch.length > 0) count++;
@@ -286,6 +288,15 @@ const SourcesTab: React.FC<SourcesTabProps> = ({ executorAgent }) => {
 
   // Track which source type we're currently rendering
   let renderedSourcesCount = 0;
+
+  // Ensure executorAgent and metadata exist to prevent errors
+  if (!executorAgent || !executorAgent.metadata_by_source) {
+    return (
+      <div className="flex w-full flex-col gap-4 font-['Inter'] text-[#002835]">
+        <div style={noSourcesMessageStyle}>No source information available.</div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex w-full flex-col gap-4 font-['Inter'] text-[#002835]">

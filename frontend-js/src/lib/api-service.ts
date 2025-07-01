@@ -28,6 +28,7 @@ export interface PlannerAgent { // Exporting PlannerAgent
   plan: Plan;
   execution_time_ms: number;
   retry_count: number;
+  llm_usage?: LLMUsage;
 }
 
 export interface Plan { // Exporting Plan
@@ -65,6 +66,7 @@ export interface PlannerRefinerAgent { // Exporting PlannerRefinerAgent
   feedback_summary: string;
   feedback_reasoning: string[];
   error: any | null;
+  llm_usage?: LLMUsage;
 }
 
 // Executor Agent (Handles both success and error cases)
@@ -74,6 +76,8 @@ export interface ExecutorAgent { // Exporting ExecutorAgent
   all_documents?: string[];
   documents_by_source?: DocumentsBySource;
   metadata_by_source?: MetadataBySource;
+  llm_usage?: LLMUsage;
+  execution_time_ms?: number;
 }
 
 // Data Sources (Handles any combination of sources)
@@ -118,10 +122,20 @@ export interface NotionMetadata { // Exporting NotionMetadata
   doc_names: string[];
 }
 
+// LLM Usage data
+export interface LLMUsage {
+  model: string;
+  input_tokens: number;
+  output_tokens: number;
+  total_tokens: number;
+}
+
 // Evaluation Agent
 export interface EvaluationAgent { // Exporting EvaluationAgent
   evaluation_history: EvaluationHistory;
   attempt: number;
+  llm_usage?: LLMUsage;
+  execution_time_ms?: number;
 }
 
 export interface EvaluationHistory { // Exporting EvaluationHistory

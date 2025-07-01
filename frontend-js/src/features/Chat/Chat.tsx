@@ -133,7 +133,9 @@ const Chat: React.FC<ChatProps> = ({ question, questionId = 0, onLoadingStateCha
                       />
                     }
                     sourcesContent={
-                      <SourcesTab executorAgent={item.apiResponse.trace_info.executor_agent} />
+                      <SourcesTab
+                        executorAgent={item.apiResponse.trace_info.executor_agent || {}}
+                      />
                     }
                     traceContent={<ResearchTab traceInfo={item.apiResponse.trace_info} />}
                   />

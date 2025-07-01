@@ -5,8 +5,52 @@ import type {
   PlannerRefinerAgent,
   EvaluationAgent,
   ExecutorAgent,
+  LLMUsage,
 } from '../../../lib/api-service';
 import ContextModal from './ContextModal';
+
+// Simple markdown to HTML conversion utility
+const convertMarkdownToHtml = (markdown: string): string => {
+  if (!markdown) return '';
+
+  const html = markdown
+    // Convert headers
+    .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+    .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+    .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+
+    // Convert bold and italic
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/__(.*?)__/g, '<strong>$1</strong>')
+    .replace(/_(.*?)_/g, '<em>$1</em>')
+
+    // Convert links
+    .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+
+    // Convert lists
+    .replace(/^\s*\n\* (.*)/gm, '<ul>\n<li>$1</li>\n</ul>')
+    .replace(/^\s*\n- (.*)/gm, '<ul>\n<li>$1</li>\n</ul>')
+    .replace(/^\s*\n\d+\. (.*)/gm, '<ol>\n<li>$1</li>\n</ol>')
+
+    // Fix lists (multiple items)
+    .replace(/<\/ul>\s*\n<ul>/g, '')
+    .replace(/<\/ol>\s*\n<ol>/g, '')
+
+    // Convert code blocks
+    .replace(/```([^`]*?)```/g, '<pre><code>$1</code></pre>')
+
+    // Convert inline code
+    .replace(/`([^`]+?)`/g, '<code>$1</code>')
+
+    // Convert paragraphs (2+ newlines followed by text)
+    .replace(/\n\n([^\n]+)\n/g, '<p>$1</p>\n')
+
+    // Convert single line breaks
+    .replace(/\n/g, '<br />');
+
+  return html;
+};
 
 interface ResearchTabProps {
   traceInfo: TraceInfo;
@@ -21,6 +65,106 @@ const ResearchTab: React.FC<ResearchTabProps> = ({ traceInfo }) => {
   const [evaluatorModalVisible, setEvaluatorModalVisible] = useState(false);
   const [evaluatorModalContent, setEvaluatorModalContent] = useState<string>('');
 
+  // LLM Usage display component
+  const renderLLMUsage = (llmUsage?: LLMUsage, executionTimeMs?: number) => {
+    if (!llmUsage) return null;
+
+    // Styles as specified
+    const valueStyle: React.CSSProperties = {
+      color: '#002835',
+      fontFamily: 'Inter',
+      fontSize: '20px',
+      fontStyle: 'normal',
+      fontWeight: '400',
+      lineHeight: 'normal',
+    };
+
+    const executionTimeValueStyle: React.CSSProperties = {
+      ...valueStyle,
+      color: '#23913F',
+    };
+
+    const labelStyle: React.CSSProperties = {
+      color: '#002835',
+      opacity: 0.6,
+      fontFamily: 'Inter',
+      fontSize: '14px',
+      fontStyle: 'normal',
+      fontWeight: '500',
+      lineHeight: 'normal',
+      marginTop: '6px',
+    };
+
+    const columnStyle: React.CSSProperties = {
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'flex-start',
+      paddingRight: '24px',
+      marginRight: '24px',
+      borderRight: '1px solid #E0E0E0',
+      minWidth: '80px',
+    };
+
+    const lastColumnStyle: React.CSSProperties = {
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'flex-start',
+      minWidth: '80px',
+    };
+
+    // Function to truncate model name if it's too long
+    const truncateModelName = (modelName: string): string => {
+      // Extract the model name without path
+      const shortName = modelName.split('/').pop() || modelName;
+
+      // If name is too long, truncate it
+      if (shortName.length > 15) {
+        return shortName.substring(0, 12) + '...';
+      }
+
+      return shortName;
+    };
+
+    return (
+      <div style={{ marginTop: '22px', marginBottom: '22px', display: 'flex' }}>
+        <div style={columnStyle}>
+          <div style={executionTimeValueStyle}>
+            <span>{executionTimeMs || 0}</span>
+            <span style={{ fontSize: '16px', textTransform: 'lowercase' }}>ms</span>
+          </div>
+          <div style={labelStyle}>Execution Time</div>
+        </div>
+
+        <div style={columnStyle}>
+          <div
+            style={{
+              ...valueStyle,
+              maxWidth: '100px',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              cursor: 'default',
+            }}
+            title={llmUsage.model}
+          >
+            {truncateModelName(llmUsage.model)}
+          </div>
+          <div style={labelStyle}>LLM Used</div>
+        </div>
+
+        <div style={columnStyle}>
+          <div style={valueStyle}>{String(llmUsage.input_tokens).padStart(2, '0')}</div>
+          <div style={labelStyle}>Input Tokens</div>
+        </div>
+
+        <div style={lastColumnStyle}>
+          <div style={valueStyle}>{String(llmUsage.output_tokens).padStart(2, '0')}</div>
+          <div style={labelStyle}>Output Tokens</div>
+        </div>
+      </div>
+    );
+  };
+
   const formatExecutorDetailedResponse = (executor: ExecutorAgent): string => {
     const keyStyle =
       'color: #002835; font-family: Inter; font-size: 18px; font-style: normal; font-weight: 600; line-height: 24px;';
@@ -34,7 +178,7 @@ const ResearchTab: React.FC<ResearchTabProps> = ({ traceInfo }) => {
     // Combined Answer of Sources
     if (executor.executor_answer) {
       content += `<div style="${keyStyle}">Combined Answer</div>`;
-      content += `<div style="${valueStyle}">${executor.executor_answer}</div>`;
+      content += `<div style="${valueStyle}">${convertMarkdownToHtml(executor.executor_answer)}</div>`;
       content += `<div style="margin-bottom: 20px;"></div>`;
     }
 
@@ -127,7 +271,7 @@ const ResearchTab: React.FC<ResearchTabProps> = ({ traceInfo }) => {
 
     // Query intent
     content += `<div style="${keyStyle}">Query intent</div>`;
-    content += `<div style="${valueStyle}">${planner.plan.query_intent}</div>`;
+    content += `<div style="${valueStyle}">${convertMarkdownToHtml(planner.plan.query_intent)}</div>`;
     content += `<div style="margin-bottom: 20px;"></div>`;
 
     // Query components
@@ -153,22 +297,22 @@ const ResearchTab: React.FC<ResearchTabProps> = ({ traceInfo }) => {
 
     // Query Analysis
     content += `<div style="${thinkingHeadingStyle}">Query Analysis:</div>`;
-    content += `<div style="${valueStyle}">${planner.plan.think.query_analysis}</div>`;
+    content += `<div style="${valueStyle}">${convertMarkdownToHtml(planner.plan.think.query_analysis)}</div>`;
     content += `<div style="margin-bottom: 20px;"></div>`;
 
     // Sub-Query Reasoning
     content += `<div style="${thinkingHeadingStyle}">Sub-Query Reasoning:</div>`;
-    content += `<div style="${valueStyle}">${planner.plan.think.sub_query_reasoning}</div>`;
+    content += `<div style="${valueStyle}">${convertMarkdownToHtml(planner.plan.think.sub_query_reasoning)}</div>`;
     content += `<div style="margin-bottom: 20px;"></div>`;
 
     // Source Selection
     content += `<div style="${thinkingHeadingStyle}">Source Selection:</div>`;
-    content += `<div style="${valueStyle}">${planner.plan.think.source_selection}</div>`;
+    content += `<div style="${valueStyle}">${convertMarkdownToHtml(planner.plan.think.source_selection)}</div>`;
     content += `<div style="margin-bottom: 20px;"></div>`;
 
     // Execution strategy
     content += `<div style="${thinkingHeadingStyle}">Execution strategy:</div>`;
-    content += `<div style="${valueStyle}">${planner.plan.think.execution_strategy}</div>`;
+    content += `<div style="${valueStyle}">${convertMarkdownToHtml(planner.plan.think.execution_strategy)}</div>`;
 
     return content;
   };
@@ -206,7 +350,7 @@ const ResearchTab: React.FC<ResearchTabProps> = ({ traceInfo }) => {
 
     // Complete Reasoning
     content += `<div style="${keyStyle}">Complete Reasoning</div>`;
-    content += `<div style="${valueStyle}">${evaluator.evaluation_history.reasoning}</div>`;
+    content += `<div style="${valueStyle}">${convertMarkdownToHtml(evaluator.evaluation_history.reasoning)}</div>`;
     content += `<div style="margin-bottom: 20px;"></div>`;
 
     // Evaluation History - Additional details
@@ -217,7 +361,7 @@ const ResearchTab: React.FC<ResearchTabProps> = ({ traceInfo }) => {
       Object.entries(evaluationHistory).forEach(([key, value]) => {
         if (key !== 'score' && key !== 'reasoning' && key !== 'error' && value) {
           content += `<div style="${sectionStyle}">${key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' ')}:</div>`;
-          content += `<div style="${valueStyle}">${value}</div>`;
+          content += `<div style="${valueStyle}">${typeof value === 'string' ? convertMarkdownToHtml(value) : value}</div>`;
           content += `<div style="margin-bottom: 10px;"></div>`;
         }
       });
@@ -365,7 +509,7 @@ const ResearchTab: React.FC<ResearchTabProps> = ({ traceInfo }) => {
           <div style={sectionTitleStyle}>PLANNER AGENT</div>
           {traceInfo.planner_agent.map((planner: PlannerAgent, index: number) => (
             <div key={index} style={{ marginBottom: '11px' }}>
-              {renderKeyValue('Execution Time', planner.execution_time_ms + 'ms', true)}
+              {renderLLMUsage(planner.llm_usage, planner.execution_time_ms)}
               {renderKeyValue('Query Intent', planner.plan.query_intent)}{' '}
               {planner.plan.query_components.length > 0 && (
                 <div style={{ display: 'flex', marginBottom: '11px' }}>
@@ -490,7 +634,7 @@ const ResearchTab: React.FC<ResearchTabProps> = ({ traceInfo }) => {
           {traceInfo.planner_refiner_agent.map(
             (refinementAgent: PlannerRefinerAgent, index: number) => (
               <div key={index} style={{ marginBottom: '11px' }}>
-                {renderKeyValue('Execution Time', refinementAgent.execution_time_ms + 'ms', true)}
+                {renderLLMUsage(refinementAgent.llm_usage, refinementAgent.execution_time_ms)}
                 {renderKeyValue(
                   'Refinement Required',
                   refinementAgent.refinement_required?.toString()?.charAt(0).toUpperCase() +
@@ -509,13 +653,14 @@ const ResearchTab: React.FC<ResearchTabProps> = ({ traceInfo }) => {
       {traceInfo.executor_agent && (
         <React.Fragment>
           <div style={sectionTitleStyle}>EXECUTOR AGENT</div>
+          {renderLLMUsage(
+            traceInfo.executor_agent.llm_usage,
+            traceInfo.executor_agent.execution_time_ms || 0
+          )}
           <div style={{ marginBottom: '11px' }}>
             {/* Displaying general info about executor agent */}
             {traceInfo.executor_agent.executor_answer &&
-              renderKeyValue(
-                'Combined Answer',
-                traceInfo.executor_agent.executor_answer
-              )}
+              renderKeyValue('Combined Answer', traceInfo.executor_agent.executor_answer)}
             {traceInfo.executor_agent.error && renderKeyValue('Error', 'Yes')}
           </div>
           <div style={viewDetailsStyle} onClick={() => openExecutorModal(traceInfo.executor_agent)}>
@@ -549,6 +694,7 @@ const ResearchTab: React.FC<ResearchTabProps> = ({ traceInfo }) => {
           <div style={sectionTitleStyle}>Evaluator agent</div>
           {traceInfo.evaluation_agent.map((evaluator: EvaluationAgent, index: number) => (
             <div key={index} style={{ marginBottom: '11px' }}>
+              {renderLLMUsage(evaluator.llm_usage, evaluator.execution_time_ms || 0)}
               {renderKeyValue('Evaluation Attempt', evaluator.attempt)}
               {renderKeyValue('Score', evaluator.evaluation_history.score)}
               {renderKeyValue('Reasoning', evaluator.evaluation_history.reasoning)}
