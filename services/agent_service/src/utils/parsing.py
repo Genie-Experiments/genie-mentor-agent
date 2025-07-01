@@ -3,6 +3,12 @@ import re
 from typing import Any, Dict, List, Optional, Tuple
 
 
+def strip_markdown_code_fence(text: str) -> str:
+    """Remove leading/trailing triple backticks and optional 'json' label from a string."""
+    # Remove leading/trailing code fences and optional 'json' after opening
+    return re.sub(r"^```(?:json)?\s*|\s*```$", "", text.strip(), flags=re.IGNORECASE | re.MULTILINE)
+
+
 def extract_json_with_regex(text: str) -> dict:
     match = re.search(r"""```json\s*(\{.*?\})\s*```""", text, re.DOTALL)
     if not match:
@@ -281,3 +287,13 @@ def extract_all_sources_from_plan(plan_data: Any) -> List[str]:
             all_sources.extend(extract_all_sources_from_plan(item))
 
     return all_sources
+
+
+def escape_unescaped_newlines_in_json_strings(text: str) -> str:
+    """Escape unescaped newlines inside double-quoted JSON string values with \\n."""
+    def replacer(match):
+        # Replace unescaped newlines with \n
+        # This will replace all newlines in the matched string (which is inside quotes)
+        return '"' + match.group(1).replace('\n', '\\n').replace('\r', '').replace('\u2028', '').replace('\u2029', '').replace('\x0b', '').replace('\x0c', '').replace('\x1c', '').replace('\x1d', '').replace('\x1e', '').replace('\x85', '').replace('\x0a', '\\n').replace('\x0d', '') + '"'
+    # Only operate inside double quotes
+    return re.sub(r'"(.*?)"', replacer, text, flags=re.DOTALL)

@@ -15,7 +15,7 @@ from ..utils.exceptions import (AgentServiceException, ExecutionError,
                                 TimeoutError, ValidationError,
                                 create_error_response, handle_agent_error)
 from ..utils.logging import get_logger, setup_logger
-from ..utils.parsing import extract_json_with_regex
+from ..utils.parsing import extract_json_with_regex, strip_markdown_code_fence, escape_unescaped_newlines_in_json_strings
 from ..utils.settings import settings
 from ..utils.token_tracker import token_tracker
 
@@ -397,7 +397,10 @@ class ExecutorAgent(RoutedAgent):
             content = response.choices[0].message.content
 
             try:
-                result = extract_json_with_regex(content)
+                # Clean LLM output of markdown code fences before parsing
+                content_clean = strip_markdown_code_fence(content)
+                content_clean = escape_unescaped_newlines_in_json_strings(content_clean)
+                result = extract_json_with_regex(content_clean)
                 logger.info(
                     f"Extracted and parsed aggregated answer successfully : {result}"
                 )
@@ -418,6 +421,7 @@ class ExecutorAgent(RoutedAgent):
                 }
             except Exception as e:
                 logger.error(f"Failed to parse structured JSON: {e}")
+                logger.error(f"Raw LLM output that failed to parse: {content}")
                 
                 # Create LLMUsage object if token usage is available
                 llm_usage_obj = None
