@@ -32,7 +32,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onQuestionSubmit }) => {
         </div>
       </div>
 
-      {/* Middle content with title and input field */}
+      {/* Middle content with title */}
       <div className="mt-[24px] flex flex-col items-center">
         <div className="mb-[6px]">
           <p className="text-center font-['Inter'] text-[34px] font-normal text-[#002835]">
@@ -42,23 +42,12 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onQuestionSubmit }) => {
             Genie Mentor Agent
           </h1>
         </div>
-        <p className="mb-4 text-center font-['Inter'] text-[22px] font-normal text-[#002835]">
-          Start by asking a question
-        </p>
-        <div className="mt-4 flex justify-center">
-          {' '}
-          <InputField
-            onSubmit={(question) => handleQuestionClick(question)}
-            placeholder="Ask Anything..."
-            width="658px"
-          />
-        </div>
       </div>
 
-      {/* Bottom content with predefined questions */}
-      <div className="mt-auto w-full">
+      {/* Predefined questions section */}
+      <div className="w-full">
         <p className="mb-6 text-center font-['Inter'] text-[18px] font-normal text-[#002835] opacity-60">
-          Or try predefined questions provided below
+          Try predefined questions provided below
         </p>
         <div className="mx-auto grid w-[658px] grid-cols-2 gap-x-4 gap-y-3">
           {predefinedQuestions.map((question, index) => (
@@ -68,6 +57,17 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onQuestionSubmit }) => {
               onClick={() => handleQuestionClick(question)}
             />
           ))}
+        </div>
+      </div>
+
+      {/* Bottom content with input field */}
+      <div className="mt-auto flex w-full flex-col items-center">
+        <div className="flex justify-center">
+          <InputField
+            onSubmit={(question) => handleQuestionClick(question)}
+            placeholder="Ask Anything..."
+            width="658px"
+          />
         </div>
       </div>
     </div>
