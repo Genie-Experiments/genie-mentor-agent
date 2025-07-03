@@ -6,7 +6,6 @@ import InputField from './components/ui/InputField';
 import { useState, useCallback } from 'react';
 
 function App() {
-  const sampleConversations = [{ id: '1', title: 'Machine learning algorithms' }];
   const [showWelcomeScreen, setShowWelcomeScreen] = useState(true);
   const [question, setQuestion] = useState('');
   const [questionId, setQuestionId] = useState(0);
@@ -32,7 +31,7 @@ function App() {
   };
   return (
     <div className="flex h-screen w-full overflow-hidden">
-      <Sidebar conversations={sampleConversations} onNewChat={handleStartNewChat} />{' '}
+      <Sidebar onNewChat={handleStartNewChat} />{' '}
       <div className="relative flex flex-1 flex-col overflow-hidden">
         <div
           className={`scrollbar-hide flex-1 overflow-y-auto ${!showWelcomeScreen ? 'pb-32' : ''}`}
