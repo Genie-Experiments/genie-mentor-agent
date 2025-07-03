@@ -6,10 +6,10 @@ interface QuestionBadgeProps {
   error: string | null;
 }
 
-const QuestionBadge: React.FC<QuestionBadgeProps> = ({ question, isLoading, error }) => {
+const QuestionBadge: React.FC<QuestionBadgeProps> = ({ question, isLoading }) => {
   return (
     <div>
-      <div className="width-[100%] mt-0 mb-0 flex max-w-[80px] items-center justify-center gap-[10px] rounded-[50px] bg-[#00A599] px-[9px] py-[5px] ">
+      <div className="width-[100%] mt-0 mb-0 flex max-w-[80px] items-center justify-center gap-[10px] rounded-[50px] bg-[#00A599] px-[9px] py-[5px]">
         <span className="font-['Inter'] text-[14px] font-semibold text-white">Question</span>
       </div>
 
@@ -26,11 +26,7 @@ const QuestionBadge: React.FC<QuestionBadgeProps> = ({ question, isLoading, erro
         </div>
       )}
 
-      {error && (
-        <div className="mt-[21px] font-['Inter'] text-[18px] font-normal text-red-500">{error}</div>
-      )}
-
-      {!isLoading && !error && (
+      {!isLoading && (
         <div className="mt-[21px]">
           <span className="font-['Inter'] text-[18px] font-normal text-[#002835]">
             It takes less than a minute to gather and compile best answers for you.
