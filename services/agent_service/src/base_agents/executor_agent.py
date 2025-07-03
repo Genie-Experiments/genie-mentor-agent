@@ -91,6 +91,8 @@ class ExecutorAgent(RoutedAgent):
 
     @message_handler
     async def handle_query_plan(self, message: Message, ctx: MessageContext) -> Message:
+        import time
+        start_time = time.time()
         try:
             # Validate input
             if not message.content:
@@ -160,6 +162,7 @@ class ExecutorAgent(RoutedAgent):
                 # Only one valid source, use it directly (and allow downstream evaluation)
                 only_result = list(valid_results.values())[0]
                 logger.info("Only one valid source present. Skipping aggregation, proceeding with single valid result.")
+                execution_time_ms = int((time.time() - start_time) * 1000)
                 return Message(content=json.dumps({
                     "combined_answer_of_sources": only_result["answer"],
                     "executor_answer": only_result["answer"],
@@ -169,7 +172,8 @@ class ExecutorAgent(RoutedAgent):
                     "documents_by_source": self._sources_documents,
                     "metadata_by_source": self._sources_metadata,
                     "error": None,
-                    "llm_usage": None  # No LLM call made for single source aggregation
+                    "llm_usage": None,  # Will be added in next step
+                    "execution_time_ms": execution_time_ms
                 }))
 
             elif len(valid_results) < 1:
@@ -203,6 +207,7 @@ class ExecutorAgent(RoutedAgent):
             ]
 
             logger.info("Returning combined results.")
+            execution_time_ms = int((time.time() - start_time) * 1000)
             return Message(
                 content=json.dumps(
                     {
@@ -217,6 +222,7 @@ class ExecutorAgent(RoutedAgent):
                         "metadata_by_source": self._sources_metadata,
                         "error": None,
                         "llm_usage": combined_execution_results.get("llm_usage"),
+                        "execution_time_ms": execution_time_ms
                     }
                 )
             )
