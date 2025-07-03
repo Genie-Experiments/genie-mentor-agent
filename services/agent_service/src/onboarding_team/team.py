@@ -76,25 +76,27 @@ async def initialize_agent() -> None:
     await github_workbench.__aenter__()
 
     if not agent_initialized:
-        if openai_api_key := os.environ.get("OPENAI_API_KEY"):
-            gpt_client = OpenAIChatCompletionClient(
-                model="gpt-4o",
-                api_key=openai_api_key,
-                base_url="https://api.openai.com/v1",
+        use_gpt = os.environ.get("USE_GPT", "").lower() == "true"
+        llm_api_key = (os.environ.get("GROQ_API_KEY") if not use_gpt else os.environ.get("OPENAI_API_KEY"))
+        if llm_api_key:
+            llm_client = OpenAIChatCompletionClient(
+                model="llama-3.3-70b-versatile" if not use_gpt else "gpt-4o",
+                api_key=llm_api_key,
+                base_url="https://api.groq.com/openai/v1" if not use_gpt else "https://api.openai.com/v1",
                 model_info={
                     "context_length": 128000,
                     "vision": False,
                     "function_calling": True,
                     "json_output": True,
                     "structured_output": True,
-                    "family": "gpt"
+                    "family": "llama" if not use_gpt else "gpt",
                 }
             )
 
         else:
             raise ValidationError(
-                message="OPENAI_API_KEY environment variable is required",
-                field="OPENAI_API_KEY",
+                message="llm_api_key environment variable is required",
+                field="llm_api_key",
                 user_message="Service configuration error. Please contact support."
             )
 
@@ -128,7 +130,7 @@ async def initialize_agent() -> None:
             RUNTIME,
             "notion_workbench_agent",
             factory=lambda: WorkbenchAgent(
-                model_client=gpt_client,  # Use the configured Groq client
+                model_client=llm_client,  # Use the configured Groq client
                 model_context=BufferedChatCompletionContext(buffer_size=10),
                 workbench=notion_workbench,
             ),
@@ -139,7 +141,7 @@ async def initialize_agent() -> None:
             RUNTIME,
             "github_workbench_agent",
             factory=lambda: WorkbenchAgent(
-                model_client=gpt_client,  # Use the configured Groq client
+                model_client=llm_client,  # Use the configured Groq client
                 model_context=BufferedChatCompletionContext(buffer_size=10),
                 workbench=github_workbench,
             ),
