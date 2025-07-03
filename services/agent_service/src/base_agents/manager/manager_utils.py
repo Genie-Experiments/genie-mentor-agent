@@ -89,6 +89,7 @@ async def run_evaluation_loop(
         score = float(eval_result.score)
         reasoning = eval_result.reasoning or ""
         error = eval_result.error
+        llm_usage = eval_result.llm_usage.model_dump() if eval_result.llm_usage else None
 
         eval_history.append(
             {
@@ -96,6 +97,7 @@ async def run_evaluation_loop(
                     "score": score,
                     "reasoning": reasoning,
                     "error": error,
+                    "llm_usage": llm_usage,
                 },
                 "attempt": attempt + 1,
             }
