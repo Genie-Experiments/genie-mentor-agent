@@ -71,6 +71,53 @@ Install required libraries:
 pip install -r requirements.txt
 ```
 
+Here's your updated `README.md` with a new section titled **🔐 How to Set Up Google Drive Access**, preserving the structure and tone of the original content:
+
+---
+
+## How to Set Up Google Drive Access
+
+Follow these steps to create your own Google Drive secret JSON file and connect it to the ingestion service:
+
+### Step 1: Create a New Google Service Account Key
+
+1. Go to the [Google Cloud Console – Credentials](https://console.cloud.google.com/apis/credentials)
+2. Create a new **Service Account** (or use an existing one)
+3. Click **"Create Key"** → Choose **JSON**
+4. Download the `.json` key file — this is your **secret**
+
+---
+
+### Step 2: Add the Secret JSON to Your Project
+
+1. Rename the file (optional) for clarity:
+
+   ```
+   promising-keep-xxxxxx.json
+   ```
+
+2. Place it inside the `secrets` folder:
+
+   ```
+   services/data_ingestion_service/secrets/
+   ```
+
+3. Update your `.env` file (if needed):
+
+   ```env
+   GOOGLE_SERVICE_ACCOUNT_FILE="services/data_ingestion_service/secrets/promising-keep-xxxxxx.json"
+   ```
+
+---
+
+### Step 3: Share the Google Drive Folder with the Service Account
+
+1. Open the `.json` file and copy the service account's email (e.g. `genie-agent@your-project.iam.gserviceaccount.com`)
+2. Go to the **Google Drive folder** containing your documents
+3. Click **"Share"** → Paste the email → Set permission to **Viewer** or **Editor**
+
+
+
 
 ## ▶️ Running the Ingestion
 

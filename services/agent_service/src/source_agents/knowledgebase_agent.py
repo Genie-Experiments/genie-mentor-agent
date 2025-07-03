@@ -8,6 +8,8 @@ from langchain.prompts import PromptTemplate
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
 from langchain_groq import ChatGroq
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
+import torch
 
 from ..prompts.kb_agent_prompt import kb_assistant_prompt
 from ..protocols.message import Message
@@ -17,6 +19,30 @@ from ..protocols.schemas import KBResponse
 setup_logger()
 logger = get_logger("KBAgent")
 
+tokenizer = AutoTokenizer.from_pretrained("BAAI/bge-reranker-base")
+reranker = AutoModelForSequenceClassification.from_pretrained("BAAI/bge-reranker-base")
+
+def rerank(query, docs):
+    if not docs:
+        return []
+    pairs = [(query, doc.page_content) for doc in docs]
+    inputs = tokenizer.batch_encode_plus(
+        pairs, padding=True, truncation=True, return_tensors="pt"
+    )
+    with torch.no_grad():
+        scores = reranker(**inputs).logits.squeeze()
+    return [doc for _, doc in sorted(zip(scores, docs), key=lambda x: x[0], reverse=True)]
+
+def boost_by_metadata(query, docs):
+    query_lower = query.lower()
+    return sorted(
+        docs,
+        key=lambda doc: (
+            query_lower in doc.metadata.get("title", "").lower() or
+            query_lower in doc.metadata.get("section_title", "").lower()
+        ),
+        reverse=True
+    )
 
 def get_embedding_model() -> HuggingFaceEmbeddings:
     return HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
@@ -47,7 +73,7 @@ class KBAgent(RoutedAgent):
                 embedding_function=self.embedding_model,
             )
 
-            retriever = vector_store.as_retriever(search_kwargs={"k": 5})
+            retriever = vector_store.as_retriever(search_kwargs={"k": 10})
 
             llm = ChatGroq(
                 temperature=0.5, groq_api_key=self.groq_api_key, model_name=model_name
@@ -60,6 +86,12 @@ class KBAgent(RoutedAgent):
             context_chunks = []
 
             documents = retriever.invoke(query)
+            documents = rerank(query, documents)
+            documents = boost_by_metadata(query, documents)
+
+            N = 5
+            documents = documents[:N]
+
             for doc in documents:
                 context_chunks.append(doc.page_content)
             chain = prompt | llm
