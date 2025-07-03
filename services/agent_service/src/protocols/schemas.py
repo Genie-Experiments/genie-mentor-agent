@@ -35,7 +35,7 @@ class FactEvaluation(BaseModel):
 
 class EvalAgentOutput(BaseModel):
     score: float = Field(..., description="Final score computed as ratio of 'yes' labels to total facts")
-    reasoning: str = Field(..., description="Combined evaluation report including fact labels and explanations")
+    reasoning: List[dict] = Field(..., description="List of fact evaluation dicts")
     error: Optional[str] = Field(None, description="Error message if evaluation failed")
     llm_usage: Optional[LLMUsage] = Field(None, description="Token usage information for the LLM call")
 
