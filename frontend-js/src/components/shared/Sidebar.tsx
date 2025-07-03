@@ -11,9 +11,10 @@ const Sidebar: React.FC<SidebarProps> = ({ onNewChat }) => {
   const sidebarRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLDivElement>(null);
 
+  // Function to toggle sidebar between collapsed and expanded states
   const toggleSidebar = () => {
     setIsCollapsed(!isCollapsed);
-    setIsHovering(!isCollapsed);
+    setIsHovering(false); // Reset hover state when explicitly toggled
   };
 
   // Effect to expand sidebar on hover if it's collapsed
@@ -30,9 +31,11 @@ const Sidebar: React.FC<SidebarProps> = ({ onNewChat }) => {
       }
     };
 
+    // Using current ref values inside the effect to ensure we have the most up-to-date elements
     const sidebarEl = sidebarRef.current;
     const buttonEl = buttonRef.current;
 
+    // Add event listeners only if the elements exist
     if (sidebarEl) {
       sidebarEl.addEventListener('mouseenter', handleSidebarHover);
       sidebarEl.addEventListener('mouseleave', handleSidebarLeave);
@@ -43,6 +46,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onNewChat }) => {
       buttonEl.addEventListener('mouseleave', handleSidebarLeave);
     }
 
+    // Cleanup function to remove event listeners when component unmounts or dependencies change
     return () => {
       if (sidebarEl) {
         sidebarEl.removeEventListener('mouseenter', handleSidebarHover);
@@ -59,17 +63,50 @@ const Sidebar: React.FC<SidebarProps> = ({ onNewChat }) => {
     <div
       ref={sidebarRef}
       className={cn(
-        'sticky top-0 left-0 flex h-screen flex-col overflow-hidden transition-all duration-700 ease-in-out',
-        isCollapsed && !isHovering ? 'w-[90px]' : 'w-auto min-w-[250px]',
+        'sticky top-0 left-0 flex h-screen flex-col overflow-hidden transition-all duration-200 ease-in-out',
+        isCollapsed && !isHovering ? 'w-[90px]' : 'w-auto min-w-[230px]',
         'border-r border-[#B9D9D7] bg-[#F0FFFE]'
       )}
+      onMouseEnter={() => isCollapsed && setIsHovering(true)}
+      onMouseLeave={() => isCollapsed && setIsHovering(false)}
       style={{
         paddingLeft: '25px',
         paddingRight: isCollapsed && !isHovering ? '0' : '25px',
+        zIndex: 100, // Ensure sidebar stays on top
       }}
     >
-      {/* Genie Logo - SVG implementation */}
-      <div className="absolute top-[24px] z-10 h-[75px] w-[47px]" style={{ left: '25px' }}>
+      {/* Toggle Button - Only visible in expanded mode */}
+      {!isCollapsed && (
+        <div
+          className="absolute top-[24px] right-[12px] z-20 cursor-pointer rounded-full p-1 hover:bg-gray-100"
+          onClick={toggleSidebar}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#002835"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
+        </div>
+      )}
+
+      {/* Genie Logo - SVG implementation - Also serves as toggle button when collapsed */}
+      <div
+        className={cn(
+          'absolute top-[24px] z-10 h-[75px] w-[47px]',
+          isCollapsed && 'cursor-pointer transition-opacity hover:opacity-80'
+        )}
+        style={{ left: '25px' }}
+        onClick={isCollapsed ? toggleSidebar : undefined}
+        title={isCollapsed ? 'Expand sidebar' : ''}
+      >
         <svg
           width="47"
           height="75"
@@ -92,8 +129,36 @@ const Sidebar: React.FC<SidebarProps> = ({ onNewChat }) => {
         </svg>
       </div>
 
+      {/* Toggle Button - Only visible in expanded mode */}
+      {!isCollapsed && (
+        <div
+          className="absolute top-[24px] right-[12px] z-20 cursor-pointer rounded-full p-1 hover:bg-gray-100"
+          onClick={toggleSidebar}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#002835"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
+        </div>
+      )}
+
       {/* New Chat Button */}
-      <div ref={buttonRef} className="absolute top-[132px] z-10" style={{ left: '25px' }}>
+      <div
+        ref={buttonRef}
+        className="absolute top-[132px] z-10"
+        style={{ left: '25px' }}
+        onMouseEnter={() => isCollapsed && setIsHovering(true)}
+        onMouseLeave={() => isCollapsed && setIsHovering(false)}
+      >
         {isCollapsed && !isHovering ? (
           <div
             className="flex h-[44px] w-[44px] cursor-pointer items-center justify-center rounded-[7px] bg-[rgba(0,165,153,0.10)]"
@@ -117,8 +182,14 @@ const Sidebar: React.FC<SidebarProps> = ({ onNewChat }) => {
           </div>
         ) : (
           <div
-            className="flex max-w-[250px] cursor-pointer items-center gap-2 rounded-[7px] bg-[rgba(0,165,153,0.10)] px-3 py-2"
-            onClick={() => onNewChat && onNewChat()}
+            className="flex max-w-[250px] cursor-pointer items-center gap-2 rounded-[7px] bg-[rgba(0,165,153,0.10)]"
+            style={{ padding: '8px 14px 8px 9px' }}
+            onClick={() => {
+              // If new chat handler is provided, call it
+              if (onNewChat) {
+                onNewChat();
+              }
+            }}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
