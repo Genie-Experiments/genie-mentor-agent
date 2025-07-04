@@ -76,20 +76,20 @@ async def initialize_agent() -> None:
     await github_workbench.__aenter__()
 
     if not agent_initialized:
-        use_gpt = os.environ.get("USE_GPT", "").lower() == "true"
-        llm_api_key = (os.environ.get("GROQ_API_KEY") if not use_gpt else os.environ.get("OPENAI_API_KEY"))
+        use_openai = os.environ.get("USE_OPENAI", "").lower() == "true"
+        llm_api_key = (os.environ.get("GROQ_API_KEY") if not use_openai else os.environ.get("OPENAI_API_KEY"))
         if llm_api_key:
             llm_client = OpenAIChatCompletionClient(
-                model="llama-3.3-70b-versatile" if not use_gpt else "gpt-4o",
+                model="llama-3.3-70b-versatile" if not use_openai else "gpt-4o",
                 api_key=llm_api_key,
-                base_url="https://api.groq.com/openai/v1" if not use_gpt else "https://api.openai.com/v1",
+                base_url="https://api.groq.com/openai/v1" if not use_openai else "https://api.openai.com/v1",
                 model_info={
                     "context_length": 128000,
                     "vision": False,
                     "function_calling": True,
                     "json_output": True,
                     "structured_output": True,
-                    "family": "llama" if not use_gpt else "gpt",
+                    "family": "llama" if not use_openai else "gpt",
                 }
             )
 
