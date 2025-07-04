@@ -2,6 +2,7 @@ import json
 import os
 from itertools import chain
 from typing import List
+import time
 
 from autogen_core import MessageContext, RoutedAgent, message_handler
 from groq import Groq
@@ -90,6 +91,7 @@ class EvalAgent(RoutedAgent):
 
     @message_handler
     async def evaluate_answer(self, message: Message, ctx: MessageContext) -> Message:
+        start_time = time.time()
         try:
 
             payload = EvalAgentInput.model_validate_json(message.content)
@@ -135,19 +137,23 @@ class EvalAgent(RoutedAgent):
                     total_tokens=fact_evaluation_usage.total_tokens
                 )
            
+            execution_time_ms = int((time.time() - start_time) * 1000)
             eval_output = EvalAgentOutput(
                 score=score, 
                 reasoning=reasoning, 
                 error=None,
-                llm_usage=combined_usage
+                llm_usage=combined_usage,
+                execution_time_ms=execution_time_ms
             )
             
             return Message(content=eval_output.model_dump_json())
             
         except Exception as e:
             logger.error(f"[EvalAgent] Evaluation Failed: {e}")
+            execution_time_ms = int((time.time() - start_time) * 1000)
             return Message(content=json.dumps({
                 "score": 0,
                 "reasoning": "Error Occured During Evaluation",
-                "error": str(e)
+                "error": str(e),
+                "execution_time_ms": execution_time_ms
             }))

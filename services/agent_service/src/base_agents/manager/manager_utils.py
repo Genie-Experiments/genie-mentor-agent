@@ -90,9 +90,11 @@ async def run_evaluation_loop(
         reasoning = eval_result.reasoning or ""
         error = eval_result.error
         llm_usage = eval_result.llm_usage.model_dump() if eval_result.llm_usage else None
+        execution_time_ms = getattr(eval_result, "execution_time_ms", None)
 
         eval_history.append(
             {
+                "execution_time_ms": execution_time_ms,
                 "evaluation_history": {
                     "score": score,
                     "reasoning": reasoning,
