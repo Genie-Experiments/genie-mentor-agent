@@ -152,21 +152,39 @@ const Chat: React.FC<ChatProps> = ({ question, questionId = 0, onLoadingStateCha
               {/* Answer section with tabs if we have a response without error */}
               {item.apiResponse && !item.error && (
                 <div className="mt-6">
-                  <TabsContainer
-                    defaultValue="answer"
-                    answerContent={
-                      <AnswerTab
-                        finalAnswer={item.apiResponse.trace_info.final_answer}
-                        executorAgent={item.apiResponse.trace_info.executor_agent}
-                      />
-                    }
-                    sourcesContent={
-                      <SourcesTab
-                        executorAgent={item.apiResponse.trace_info.executor_agent || {}}
-                      />
-                    }
-                    traceContent={<ResearchTab traceInfo={item.apiResponse.trace_info} />}
-                  />
+                  {/* Show simplified answer when all agents are null/empty or for greeting responses */}
+                  {item.apiResponse.trace_info.skip_reason?.includes('Greeting detected') ||
+                  (!item.apiResponse.trace_info.planner_agent &&
+                    !item.apiResponse.trace_info.executor_agent &&
+                    (!item.apiResponse.trace_info.evaluation_agent ||
+                      item.apiResponse.trace_info.evaluation_agent.length === 0) &&
+                    (!item.apiResponse.trace_info.editor_agent ||
+                      item.apiResponse.trace_info.editor_agent.length === 0)) ? (
+                    <div>
+                      <h3 className="mb-2 font-['Inter'] text-[16px] font-medium text-[#002835] uppercase opacity-40">
+                        Answer
+                      </h3>
+                      <div className="whitespace-pre-wrap">
+                        {item.apiResponse.trace_info.final_answer}
+                      </div>
+                    </div>
+                  ) : (
+                    <TabsContainer
+                      defaultValue="answer"
+                      answerContent={
+                        <AnswerTab
+                          finalAnswer={item.apiResponse.trace_info.final_answer}
+                          executorAgent={item.apiResponse.trace_info.executor_agent}
+                        />
+                      }
+                      sourcesContent={
+                        <SourcesTab
+                          executorAgent={item.apiResponse.trace_info.executor_agent || {}}
+                        />
+                      }
+                      traceContent={<ResearchTab traceInfo={item.apiResponse.trace_info} />}
+                    />
+                  )}
                 </div>
               )}
 

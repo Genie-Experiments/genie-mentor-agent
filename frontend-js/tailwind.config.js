@@ -3,9 +3,13 @@ module.exports = {
   content: ['./src/**/*.{js,jsx,ts,tsx}'],
   theme: {
     extend: {
+      screens: {
+        'xl-1525': '1525px',
+      },
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
-      },      animation: {
+      },      
+      animation: {
         'slide-in-left': 'slideInLeft 0.3s ease-out forwards',
         'slide-in-right': 'slideInRight 0.3s ease-out forwards',
       },
