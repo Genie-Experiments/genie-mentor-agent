@@ -38,6 +38,7 @@ class EvalAgentOutput(BaseModel):
     reasoning: List[dict] = Field(..., description="List of fact evaluation dicts")
     error: Optional[str] = Field(None, description="Error message if evaluation failed")
     llm_usage: Optional[LLMUsage] = Field(None, description="Token usage information for the LLM call")
+    execution_time_ms: Optional[int] = Field(None, description="Total execution time for evaluation in milliseconds")
 
 
 class KBMetadata(BaseModel):
