@@ -5,8 +5,40 @@ const DEFAULT_BACKEND = "http://127.0.0.1:8000";
 // Main response structure
 export type ApiResponse = {
   trace_info: TraceInfo;
+  error?: boolean;
+  message?: string;
+  user_message?: string;
+  category?: string;
+  severity?: string;
+  error_code?: string;
+  details?: {
+    failed_sources?: string[];
+    total_sources?: number;
+  };
+  recoverable?: boolean;
+  type?: string;
+  session_id?: string;
 };
 
+// Error response structure
+export interface ApiErrorResponse {
+  error: boolean;
+  message: string;
+  user_message: string;
+  category: string;
+  severity: string;
+  error_code: string;
+  details: {
+    failed_sources: string[];
+    total_sources: number;
+  };
+  recoverable: boolean;
+  type: string;
+  trace_info: TraceInfo;
+  session_id: string;
+}
+
+// Trace information structure
 export interface TraceInfo { // Exporting TraceInfo
   start_time: number;
   user_query: string;
@@ -28,6 +60,7 @@ export interface PlannerAgent { // Exporting PlannerAgent
   plan: Plan;
   execution_time_ms: number;
   retry_count: number;
+  llm_usage?: LLMUsage;
 }
 
 export interface Plan { // Exporting Plan
@@ -65,6 +98,7 @@ export interface PlannerRefinerAgent { // Exporting PlannerRefinerAgent
   feedback_summary: string;
   feedback_reasoning: string[];
   error: any | null;
+  llm_usage?: LLMUsage;
 }
 
 // Executor Agent (Handles both success and error cases)
@@ -74,6 +108,8 @@ export interface ExecutorAgent { // Exporting ExecutorAgent
   all_documents?: string[];
   documents_by_source?: DocumentsBySource;
   metadata_by_source?: MetadataBySource;
+  llm_usage?: LLMUsage;
+  execution_time_ms?: number;
 }
 
 // Data Sources (Handles any combination of sources)
@@ -118,10 +154,20 @@ export interface NotionMetadata { // Exporting NotionMetadata
   doc_names: string[];
 }
 
+// LLM Usage data
+export interface LLMUsage {
+  model: string;
+  input_tokens: number;
+  output_tokens: number;
+  total_tokens: number;
+}
+
 // Evaluation Agent
 export interface EvaluationAgent { // Exporting EvaluationAgent
   evaluation_history: EvaluationHistory;
   attempt: number;
+  llm_usage?: LLMUsage;
+  execution_time_ms?: number;
 }
 
 export interface EvaluationHistory { // Exporting EvaluationHistory
@@ -170,6 +216,14 @@ export async function callBackend(query: string, sessionId: string = "123"): Pro
     }
     
     const data = await response.json();
+    
+    // Handle error response from backend
+    if (data.error === true) {
+      console.error('Backend returned error:', data);
+      // Return the error response so the UI can handle it appropriately
+      return data as ApiResponse;
+    }
+    
     return data;
   } catch (error) {
     console.error('Error calling backend:', error);

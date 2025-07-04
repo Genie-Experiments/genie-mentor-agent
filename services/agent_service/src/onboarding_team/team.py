@@ -13,6 +13,7 @@ from ..base_agents.executor_agent import ExecutorAgent
 from ..base_agents.manager.manager_agent import ManagerAgent
 from ..base_agents.planner_agent import PlannerAgent
 from ..base_agents.planner_refiner_agent import PlannerRefinerAgent
+from ..base_agents.answer_cleaner_agent import AnswerCleanerAgent
 from ..protocols.message import Message
 from ..source_agents.knowledgebase_agent import KBAgent
 from ..source_agents.websearch_agent import WebSearchAgent
@@ -36,6 +37,7 @@ EDITOR_AGENT_ID = AgentId("editor_agent", "default")
 WEBSEARCH_AGENT_ID = AgentId("websearch_agent", "default")
 KB_AGENT_ID = AgentId("kb_agent", "default")
 MANAGER_AGENT_ID = AgentId("manager_agent", "default")
+ANSWER_CLEANER_AGENT_ID = AgentId("answer_cleaner_agent", "default")
 
 agent_initialized = False
 
@@ -74,37 +76,41 @@ async def initialize_agent() -> None:
     await github_workbench.__aenter__()
 
     if not agent_initialized:
-        # Validate required environment variables
-        openai_api_key = os.environ.get("OPENAI_API_KEY")
-        if not openai_api_key:
+        use_gpt = os.environ.get("USE_GPT", "").lower() == "true"
+        llm_api_key = (os.environ.get("GROQ_API_KEY") if not use_gpt else os.environ.get("OPENAI_API_KEY"))
+        if llm_api_key:
+            llm_client = OpenAIChatCompletionClient(
+                model="llama-3.3-70b-versatile" if not use_gpt else "gpt-4o",
+                api_key=llm_api_key,
+                base_url="https://api.groq.com/openai/v1" if not use_gpt else "https://api.openai.com/v1",
+                model_info={
+                    "context_length": 128000,
+                    "vision": False,
+                    "function_calling": True,
+                    "json_output": True,
+                    "structured_output": True,
+                    "family": "llama" if not use_gpt else "gpt",
+                }
+            )
+
+        else:
             raise ValidationError(
-                message="OPENAI_API_KEY environment variable is required",
-                field="OPENAI_API_KEY",
+                message="llm_api_key environment variable is required",
+                field="llm_api_key",
                 user_message="Service configuration error. Please contact support."
             )
 
-        gpt_client = OpenAIChatCompletionClient(
-            model="gpt-4o",
-            api_key=os.environ.get("OPENAI_API_KEY"),
-            base_url="https://api.openai.com/v1",
-            model_info={
-                "context_length": 128000,
-                "vision": False,
-                "function_calling": True,
-                "json_output": True,
-                "structured_output": True,
-                "family": "gpt"
-            }
-        )
-
-
-        # Register all agents with error handling
+            # Register all agents with error handling
     try:
         await PlannerAgent.register(
             RUNTIME, "planner_agent", lambda: PlannerAgent()
         )
         await PlannerRefinerAgent.register(
             RUNTIME, "planner_refiner_agent", lambda: PlannerRefinerAgent()
+        )
+
+        await AnswerCleanerAgent.register(
+            RUNTIME, "answer_cleaner_agent", lambda: AnswerCleanerAgent()
         )
 
         await ExecutorAgent.register(
@@ -114,7 +120,8 @@ async def initialize_agent() -> None:
                 notion_workbench_agent_id=NOTION_WORKBENCH_AGENT_ID,
                 github_workbench_agent_id=GITHUB_WORKBENCH_AGENT_ID,
                 webrag_agent_id=WEBSEARCH_AGENT_ID,
-                kb_agent_id=KB_AGENT_ID
+                kb_agent_id=KB_AGENT_ID,
+                answer_cleaner_agent_id=ANSWER_CLEANER_AGENT_ID
             )
         )
 
@@ -123,7 +130,7 @@ async def initialize_agent() -> None:
             RUNTIME,
             "notion_workbench_agent",
             factory=lambda: WorkbenchAgent(
-                model_client=gpt_client, # Use the configured Groq client
+                model_client=llm_client,  # Use the configured Groq client
                 model_context=BufferedChatCompletionContext(buffer_size=10),
                 workbench=notion_workbench,
             ),
@@ -134,7 +141,7 @@ async def initialize_agent() -> None:
             RUNTIME,
             "github_workbench_agent",
             factory=lambda: WorkbenchAgent(
-                model_client=gpt_client, # Use the configured Groq client
+                model_client=llm_client,  # Use the configured Groq client
                 model_context=BufferedChatCompletionContext(buffer_size=10),
                 workbench=github_workbench,
             ),
@@ -167,8 +174,8 @@ async def initialize_agent() -> None:
         raise AgentServiceException(
             message=f"Failed to initialize agent service: {str(e)}",
             error_code="AGENT_REGISTRATION_ERROR",
-            details={"original_error": str(e)}
-        )
+            details={"original_error": str(e)},
+        ) from e
 
     except Exception as e:
         logging.error(f"Failed to initialize agent service: {e}")
@@ -176,20 +183,20 @@ async def initialize_agent() -> None:
             raise ExternalServiceError(
                 message=f"Failed to connect to Notion service: {str(e)}",
                 service="notion",
-                details={"original_error": str(e)}
-            )
+                details={"original_error": str(e)},
+            ) from e
         elif "github" in str(e).lower():
             raise ExternalServiceError(
                 message=f"Failed to connect to GitHub service: {str(e)}",
                 service="github",
-                details={"original_error": str(e)}
-            )
+                details={"original_error": str(e)},
+            ) from e
         else:
             raise AgentServiceException(
                 message=f"Failed to initialize agent service: {str(e)}",
                 error_code="INITIALIZATION_ERROR",
-                details={"original_error": str(e)}
-            )
+                details={"original_error": str(e)},
+            ) from e
 
 
 async def send_to_agent(user_message: Message) -> str:
@@ -211,8 +218,9 @@ async def send_to_agent(user_message: Message) -> str:
                 user_message="Service is starting up. Please try again in a moment."
             )
 
-        logging.info(f"Sending message to Manager of Mentor Agent: {user_message.content}")
-        
+        logging.info(
+            f"Sending message to Manager of Mentor Agent: {user_message.content}")
+
         # Add timeout handling
         import asyncio
         try:
@@ -221,21 +229,20 @@ async def send_to_agent(user_message: Message) -> str:
                 timeout=300  # 5 minutes timeout
             )
             return response.content
-        except asyncio.TimeoutError:
+        except asyncio.TimeoutError as e:
             raise AgentServiceException(
                 message="Request timed out after 5 minutes",
                 error_code="REQUEST_TIMEOUT",
-                user_message="The request is taking longer than expected. Please try again."
-            )
-            
+                user_message="The request is taking longer than expected. Please try again.",
+            ) from e
+
     except AgentServiceException:
         # Re-raise our custom exceptions
         raise
     except Exception as e:
         # Convert any other exceptions to structured errors
         logging.error(f"Unexpected error in send_to_agent: {e}")
-        error_response = handle_agent_error(e, "send_to_agent")
-        return error_response
+        return handle_agent_error(e, "send_to_agent")
 
 
 async def shutdown_agent() -> None:

@@ -371,39 +371,40 @@ const AnswerTab: React.FC<AnswerTabProps> = ({ finalAnswer, executorAgent }) => 
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
             components={{
-              // Custom renderer for paragraphs that might contain citations
               p: ({ children }) => {
-                // Convert children to string if it's a text node
                 if (typeof children === 'string') {
                   return (
                     <p>
-                      <CitationRenderer onCitationClick={openContextModal}>
+                      <CitationRenderer
+                        onCitationClick={openContextModal}
+                        metadata={
+                          (executorAgent?.metadata_by_source as Record<string, unknown[]>) || {}
+                        }
+                        dataSources={Object.keys(executorAgent?.metadata_by_source || {})}
+                      >
                         {children}
                       </CitationRenderer>
                     </p>
                   );
                 }
                 return <p>{children}</p>;
-              }, // Custom renderer for code blocks
+              },
+
               pre: ({ children }) => {
-                // Find the code element
                 const codeElement = React.Children.toArray(children).find(
                   (child) => React.isValidElement(child) && child.type === 'code'
                 );
 
                 if (React.isValidElement(codeElement)) {
-                  // Need to cast to access props safely
                   const element = codeElement as React.ReactElement<{
                     className?: string;
                     children?: React.ReactNode;
                   }>;
 
-                  // Extract the language from className (format: "language-xxx")
                   const className = element.props.className || '';
                   const match = className.match(/language-(\w+)/);
                   const language = match ? match[1] : 'plaintext';
 
-                  // Get the code content
                   let code = '';
                   if (element.props.children) {
                     if (typeof element.props.children === 'string') {
@@ -413,12 +414,34 @@ const AnswerTab: React.FC<AnswerTabProps> = ({ finalAnswer, executorAgent }) => 
                     }
                   }
 
-                  // Use our custom CodeBlock component
                   return <CodeBlock code={code} language={language} />;
                 }
 
-                // Fallback for non-code pre elements
                 return <pre>{children}</pre>;
+              },
+
+              ul: ({ children }) => {
+                return <ul className="mb-2 list-disc pl-6">{children}</ul>;
+              },
+
+              ol: ({ children }) => {
+                return <ol className="mb-2 list-decimal pl-6">{children}</ol>;
+              },
+
+              li: ({ children }) => {
+                return (
+                  <li className="mb-1">
+                    <CitationRenderer
+                      onCitationClick={openContextModal}
+                      metadata={
+                        (executorAgent?.metadata_by_source as Record<string, unknown[]>) || {}
+                      }
+                      dataSources={Object.keys(executorAgent?.metadata_by_source || {})}
+                    >
+                      {children}
+                    </CitationRenderer>
+                  </li>
+                );
               },
             }}
           >

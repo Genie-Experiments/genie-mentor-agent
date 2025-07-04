@@ -5,6 +5,7 @@ interface InputFieldProps {
   placeholder?: string;
   isLoading?: boolean;
   width?: string;
+  maxWidth?: string;
 }
 
 const InputField: React.FC<InputFieldProps> = ({
@@ -12,6 +13,7 @@ const InputField: React.FC<InputFieldProps> = ({
   placeholder = 'Ask Anything...',
   isLoading = false,
   width = '658px',
+  maxWidth,
 }) => {
   const [inputValue, setInputValue] = useState('');
   const [webSearchActive, setWebSearchActive] = useState(false);
@@ -51,7 +53,7 @@ const InputField: React.FC<InputFieldProps> = ({
   return (
     <div
       className="flex flex-col items-start rounded-[8px] border border-[#B9D9D7] bg-white transition-all duration-200 focus-within:border-[#00A599] focus-within:shadow-[0px_4px_12px_rgba(0,165,153,0.15)]"
-      style={{ width }}
+      style={{ width, maxWidth }}
     >
       {/* First row for text input */}
       <div className="flex w-full items-center px-[18px] pt-[15px] pb-[5px]">

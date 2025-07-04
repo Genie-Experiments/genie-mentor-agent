@@ -1,4 +1,5 @@
 import json
+import os
 from enum import Enum
 from typing import Any, Dict, Optional
 
@@ -8,18 +9,16 @@ from groq import Groq
 from ..prompts.aggregation_prompt import generate_aggregated_answer
 from ..prompts.prompts import GITHUB_PROMPT, NOTION_QUERY_PROMPT
 from ..protocols.message import Message
-from ..protocols.schemas import  LLMUsage
-from ..utils.parsing import extract_json_with_regex
+from ..protocols.schemas import KBResponse, LLMUsage
+from ..utils.exceptions import (AgentServiceException, ExecutionError,
+                                ExternalServiceError, NetworkError,
+                                TimeoutError, ValidationError,
+                                create_error_response, handle_agent_error)
+from ..utils.logging import get_logger, setup_logger
+from ..utils.parsing import extract_json_with_regex, strip_markdown_code_fence, escape_unescaped_newlines_in_json_strings
 from ..utils.settings import settings
 from ..utils.token_tracker import token_tracker
 
-from ..protocols.schemas import KBResponse
-from ..utils.logging import setup_logger, get_logger
-from ..utils.exceptions import (
-    ExecutionError, ExternalServiceError, ValidationError, TimeoutError,
-    NetworkError, AgentServiceException, handle_agent_error
-)
-import string
 setup_logger()
 logger = get_logger("ExecutorAgent")
 
@@ -36,12 +35,14 @@ class ExecutorAgent(RoutedAgent):
         github_workbench_agent_id: AgentId,
         webrag_agent_id: AgentId,
         kb_agent_id: AgentId,
+        answer_cleaner_agent_id: AgentId,
     ) -> None:
         super().__init__("executor_agent")
         self.notion_workbench_agent_id = notion_workbench_agent_id
         self.github_workbench_agent_id = github_workbench_agent_id
         self.webrag_agent_id = webrag_agent_id
         self.kb_agent_id = kb_agent_id
+        self.answer_cleaner_agent_id = answer_cleaner_agent_id
         
         # Validate API key
         if not settings.GROQ_API_KEY:
@@ -90,6 +91,8 @@ class ExecutorAgent(RoutedAgent):
 
     @message_handler
     async def handle_query_plan(self, message: Message, ctx: MessageContext) -> Message:
+        import time
+        start_time = time.time()
         try:
             # Validate input
             if not message.content:
@@ -108,6 +111,18 @@ class ExecutorAgent(RoutedAgent):
                     message="Plan is required in message content",
                     field="plan"
                 )
+
+            # Handle greeting plan
+            if plan.get("is_greeting"):
+                return Message(content=json.dumps({
+                    "combined_answer_of_sources": "Hello! How can I assist you today?",
+                    "executor_answer": "Hello! How can I assist you today?",
+                    "all_documents": [],
+                    "documents_by_source": {},
+                    "metadata_by_source": {},
+                    "error": None,
+                    "llm_usage": None
+                }))
 
             query_components = {q["id"]: q for q in plan["query_components"]}
             execution_order = plan["execution_order"]
@@ -147,7 +162,9 @@ class ExecutorAgent(RoutedAgent):
                 # Only one valid source, use it directly (and allow downstream evaluation)
                 only_result = list(valid_results.values())[0]
                 logger.info("Only one valid source present. Skipping aggregation, proceeding with single valid result.")
+                execution_time_ms = int((time.time() - start_time) * 1000)
                 return Message(content=json.dumps({
+                    "combined_answer_of_sources": only_result["answer"],
                     "executor_answer": only_result["answer"],
                     "all_documents": [
                         doc for docs in self._sources_documents.values() for doc in docs
@@ -155,7 +172,8 @@ class ExecutorAgent(RoutedAgent):
                     "documents_by_source": self._sources_documents,
                     "metadata_by_source": self._sources_metadata,
                     "error": None,
-                    "llm_usage": None  # No LLM call made for single source aggregation
+                    "llm_usage": None,  # Will be added in next step
+                    "execution_time_ms": execution_time_ms
                 }))
 
             elif len(valid_results) < 1:
@@ -172,19 +190,9 @@ class ExecutorAgent(RoutedAgent):
             logger.info("Combining answers from all data sources.")
 
             try:
-                original_ids = list(valid_results.keys())
-                id_mapping = {qid: string.ascii_uppercase[i] for i, qid in enumerate(original_ids)}
-                minimal_results = {
-                    id_mapping[qid]: {
-                        "id": id_mapping[qid],
-                        "source": query_components[qid].get("source"),
-                        "answer": res["answer"]
-                    }
-                    for qid, res in valid_results.items()
-                }
                 combined_execution_results = await self._combine_answer_from_sources(
                     plan["user_query"],
-                    minimal_results,
+                    valid_results,
                     strategy=execution_order.get("aggregation")
                 )
             except Exception as e:
@@ -199,17 +207,22 @@ class ExecutorAgent(RoutedAgent):
             ]
 
             logger.info("Returning combined results.")
+            execution_time_ms = int((time.time() - start_time) * 1000)
             return Message(
                 content=json.dumps(
                     {
+                        "combined_answer_of_sources": combined_execution_results[
+                            "combined_answer_of_sources"
+                        ],
                         "executor_answer": combined_execution_results[
-                            "executor_answer"
+                            "combined_answer_of_sources"
                         ],
                         "all_documents": all_documents,
                         "documents_by_source": self._sources_documents,
                         "metadata_by_source": self._sources_metadata,
                         "error": None,
                         "llm_usage": combined_execution_results.get("llm_usage"),
+                        "execution_time_ms": execution_time_ms
                     }
                 )
             )
@@ -258,6 +271,15 @@ class ExecutorAgent(RoutedAgent):
                     )
                     response = json.loads(response_message.content)
                     logger.info(f"[Notion] Agent Response : {response}")
+                    try:
+                        cleaner_response = await self.send_message(
+                            Message(content=json.dumps(response.get("answer", ""))), self.answer_cleaner_agent_id
+                        )
+                        cleaned_payload = json.loads(cleaner_response.content)
+                        cleaned_answer = cleaned_payload.get("cleaned_answer", response.get("answer", ""))
+                        response["answer"] = cleaned_answer
+                    except Exception as cleaning_error:
+                        logger.warning(f"[Notion] Failed to clean answer, using raw: {cleaning_error}")
                 except Exception as e:
                     logger.error(f"[Notion] Error: {e}")
                     raise ExternalServiceError(
@@ -291,6 +313,15 @@ class ExecutorAgent(RoutedAgent):
                     )
                     response = json.loads(response_message.content)
                     logger.info(f"[GitHub] Agent Response : {response}")
+                    try:
+                        cleaner_response = await self.send_message(
+                            Message(content=json.dumps(response)), self.answer_cleaner_agent_id
+                        )
+                        cleaned_payload = json.loads(cleaner_response.content)
+                        cleaned_answer = cleaned_payload.get("cleaned_answer", response.get("answer", ""))
+                        response["answer"] = cleaned_answer
+                    except Exception as cleaning_error:
+                        logger.warning(f"[GitHub] Failed to clean answer, using raw: {cleaning_error}")
                 except Exception as e:
                     logger.error(f"[GitHub] Error: {e}")
                     raise ExternalServiceError(
@@ -307,9 +338,23 @@ class ExecutorAgent(RoutedAgent):
                 )
 
             if "sources" in response:
-                self._append_sources(source, response["sources"])
+                source_docs = response["sources"]
+
+                if source not in self._sources_documents:
+                    self._sources_documents[source] = []
+
+                self._sources_documents[source].extend(source_docs)
+
             if "metadata" in response:
-                self._append_metadata(source, response["metadata"])
+                source_meta = response["metadata"]
+                # Normalize to list of dicts
+                if isinstance(source_meta, dict):
+                    source_meta = [source_meta]
+                elif not isinstance(source_meta, list):
+                    source_meta = []
+                if source not in self._sources_metadata:
+                    self._sources_metadata[source] = []
+                self._sources_metadata[source].extend(source_meta)
 
             return response
 
@@ -358,11 +403,14 @@ class ExecutorAgent(RoutedAgent):
             content = response.choices[0].message.content
 
             try:
-                result = extract_json_with_regex(content)
+                # Clean LLM output of markdown code fences before parsing
+                content_clean = strip_markdown_code_fence(content)
+                content_clean = escape_unescaped_newlines_in_json_strings(content_clean)
+                result = extract_json_with_regex(content_clean)
                 logger.info(
                     f"Extracted and parsed aggregated answer successfully : {result}"
                 )
-
+                
                 # Create LLMUsage object if token usage is available
                 llm_usage_obj = None
                 if token_usage:
@@ -372,15 +420,15 @@ class ExecutorAgent(RoutedAgent):
                         output_tokens=token_usage.output_tokens,
                         total_tokens=token_usage.total_tokens
                     )
-
+                
                 return {
-                    "executor_answer": result["answer"],
-
+                    "combined_answer_of_sources": result["answer"],
                     "llm_usage": llm_usage_obj.model_dump() if llm_usage_obj else None,
                 }
             except Exception as e:
                 logger.error(f"Failed to parse structured JSON: {e}")
-
+                logger.error(f"Raw LLM output that failed to parse: {content}")
+                
                 # Create LLMUsage object if token usage is available
                 llm_usage_obj = None
                 if token_usage:
@@ -390,10 +438,9 @@ class ExecutorAgent(RoutedAgent):
                         output_tokens=token_usage.output_tokens,
                         total_tokens=token_usage.total_tokens
                     )
-
+                
                 return {
-                    "executor_answer": content,
-
+                    "combined_answer_of_sources": content,
                     "llm_usage": llm_usage_obj.model_dump() if llm_usage_obj else None,
                 }
 
@@ -406,11 +453,3 @@ class ExecutorAgent(RoutedAgent):
                 message=f"Failed to combine answers from sources: {str(e)}",
                 details={"user_query": user_query, "strategy": strategy, "original_error": str(e)}
             )
-
-    def _append_sources(self, source, docs):
-        self._sources_documents.setdefault(source, []).extend(docs)
-
-    def _append_metadata(self, source, meta):
-        if isinstance(meta, dict): meta = [meta]
-        if isinstance(meta, list):
-            self._sources_metadata.setdefault(source, []).extend(meta)

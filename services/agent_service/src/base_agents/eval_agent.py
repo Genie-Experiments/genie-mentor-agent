@@ -80,17 +80,13 @@ class EvalAgent(RoutedAgent):
         parsed = extract_json_with_brace_counting(content)
         return parsed.get("Evaluations")
 
-    def _compute_score_and_reasoning(self, evaluations: List[dict]) -> tuple[float, str]:
+    def _compute_score_and_reasoning(self, evaluations: List[dict]) -> tuple[float, list]:
         total = len(evaluations)
         yes_count = sum(1 for e in evaluations if e.get("label", "").lower() == "yes")
         score = round(yes_count / total, 2) if total else 0.0
 
-        reasoning_lines = []
-        for e in evaluations:
-            reasoning_lines.append(f"• **Fact**: {e['fact']}\n  - **Label**: {e['label']}\n  - **Reason**: {e['reasoning']}")
-        full_reasoning = "\n".join(reasoning_lines)
-
-        return score, full_reasoning
+        # Return the list of evaluation dicts as reasoning (JSON-friendly)
+        return score, evaluations
 
     @message_handler
     async def evaluate_answer(self, message: Message, ctx: MessageContext) -> Message:
