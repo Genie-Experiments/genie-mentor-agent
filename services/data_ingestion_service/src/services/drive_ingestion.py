@@ -13,6 +13,7 @@ from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_core.documents import Document
 from dotenv import load_dotenv
+from PDFProcessor import PDFProcessor
 from llama_index.core.node_parser import SemanticSplitterNodeParser
 from llama_index.embeddings.langchain import LangchainEmbedding
 from llama_index.core import Document as LlamaDocument
@@ -199,7 +200,36 @@ def process_drive_folder(
 
                     logger.info(f"Parsing document: {file_name}")
                     if file_ext == '.pdf':
-                        docs = PyPDFLoader(temp_path).load()
+                        try:
+                            processor = PDFProcessor(
+                                pdf_path=temp_path,
+                                output_dir=os.path.dirname(temp_path),
+                                output_filename=f"{Path(temp_path).stem}_output.json"
+                            )
+                            final_data = processor.process(cleanup_temp=True)
+
+                            # Save output.md manually
+                            md_output_path = os.path.join(os.path.dirname(temp_path), f"{Path(temp_path).stem}_output.md")
+                            with open(md_output_path, "w", encoding="utf-8") as f_md:
+                                for page in final_data:
+                                    f_md.write(page["text"].strip() + "\n\n")
+
+                            # Convert to Langchain documents
+                            chunks = [
+                                Document(page_content=page["text"], metadata={
+                                    "source": file_name,
+                                    "page": page.get("metadata", {}).get("page"),
+                                    "section": page.get("metadata", {}).get("main_section_header"),
+                                })
+                                for page in final_data
+                            ]
+
+                        except Exception as e:
+                            logger.warning(f"PDFProcessor failed for {file_name}, falling back to PyPDFLoader: {str(e)}")
+                            docs = PyPDFLoader(temp_path).load()
+                            for doc in docs:
+                                doc.metadata["source"] = file_name
+                            chunks = split_documents(docs)
                     elif file_ext == '.pptx':
                         docs = load_pptx(temp_path)
 
