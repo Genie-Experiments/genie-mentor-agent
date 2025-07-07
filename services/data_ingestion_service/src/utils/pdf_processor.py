@@ -1,12 +1,10 @@
 import re
 import os
 import json
-import difflib
 import logging
 import fitz
 import pymupdf4llm
 from dotenv import load_dotenv
-from docling.document_converter import DocumentConverter
 
 
 load_dotenv(override=True)
@@ -87,75 +85,16 @@ class PDFProcessor:
             cleaned = {
                 "metadata": trimmed_metadata,
                 "toc_items": toc_items,
-                "tables": page.get("tables", []),
-                "images": page.get("images", []),
                 "text": page.get("text", "")
             }
 
             processed_pages.append(cleaned)
 
-        # Save cleaned data
         with open(self.temp_cleaned_json, 'w', encoding='utf-8') as f:
             json.dump(processed_pages, f, indent=2, ensure_ascii=False)
 
         print("✓ Post-processing complete")
         return processed_pages
-
-    def extract_tables_with_docling(self, cleaned_data):
-        """Step 3: Extract tables using Docling and merge with existing data."""
-        print("Step 3: Extracting tables with Docling...")
-
-        # Convert PDF using Docling
-        converter = DocumentConverter()
-        result = converter.convert(self.pdf_path)
-        doc = result.document
-
-        # Extract tables and organize by page
-        docling_tables_by_page = {}
-
-        for table_ix, table in enumerate(doc.tables):
-            page_num = table.prov[0].page_no
-            table_md = table.export_to_markdown(doc=doc)
-            caption = table.caption_text(doc=doc)
-
-            if page_num not in docling_tables_by_page:
-                docling_tables_by_page[page_num] = []
-
-            docling_tables_by_page[page_num].append({
-                "markdown": table_md,
-                "caption": caption
-            })
-
-        # Merge Docling tables and clean text
-        for page_entry in cleaned_data:
-            page_num = page_entry["metadata"]["page"]
-
-            tables = docling_tables_by_page.get(page_num, [])
-            page_entry["docling_tables"] = [tbl["markdown"] for tbl in tables]
-
-            # Remove table content from text to avoid duplication
-            for tbl in tables:
-                table_md = tbl["markdown"]
-                # Attempt exact match removal
-                if table_md in page_entry["text"]:
-                    page_entry["text"] = page_entry["text"].replace(
-                        table_md, "").strip()
-                else:
-                    # Fuzzy matching for partial matches
-                    matches = difflib.get_close_matches(
-                        table_md, [page_entry["text"]], n=1, cutoff=0.8
-                    )
-                    if matches:
-                        match = matches[0]
-                        page_entry["text"] = page_entry["text"].replace(
-                            match, "").strip()
-
-        # Save data with Docling tables
-        with open(self.temp_docling_json, "w", encoding="utf-8") as f:
-            json.dump(cleaned_data, f, ensure_ascii=False, indent=2)
-
-        print("✓ Docling table extraction complete")
-        return cleaned_data
 
     def add_section_titles(self, data):
         """Step 4: Extract section titles from TOC and assign to pages."""
@@ -212,22 +151,16 @@ class PDFProcessor:
 
         cleaned_data = []
         for entry in data:
-            # Remove tables and images fields as they're redundant with docling_tables
-            entry.pop("tables", None)
-            entry.pop("images", None)
-
             metadata = entry.get("metadata", {})
 
             # Merge all non-essential fields into metadata
             for key in list(entry.keys()):
-                if key not in ["metadata", "text", "docling_tables"]:
+                if key not in ["metadata", "text"]:
                     metadata[key] = entry[key]
 
-            # Create final cleaned structure
             cleaned_entry = {
                 "metadata": metadata,
-                "text": entry.get("text", ""),
-                "docling_tables": entry.get("docling_tables", [])
+                "text": entry.get("text", "")
             }
             cleaned_data.append(cleaned_entry)
 
@@ -274,11 +207,8 @@ class PDFProcessor:
             # Step 2: Post-process and clean data
             cleaned_data = self.postprocess_pages(raw_data)
 
-            # Step 3: Extract tables with Docling
-            docling_data = self.extract_tables_with_docling(cleaned_data)
-
             # Step 4: Add section titles from TOC
-            titled_data = self.add_section_titles(docling_data)
+            titled_data = self.add_section_titles(cleaned_data)
 
             # Step 5: Final cleanup and restructuring
             cleaned_data = self.final_cleanup(titled_data)
@@ -300,14 +230,11 @@ class PDFProcessor:
 
             # Print summary statistics
             total_pages = len(final_data)
-            total_tables = sum(len(page.get("docling_tables", []))
-                               for page in final_data)
             pages_with_sections = sum(1 for page in final_data if page.get(
                 "metadata", {}).get("main_section_header"))
 
             print(f"📊 Summary:")
             print(f"   • Total pages: {total_pages}")
-            print(f"   • Total tables extracted: {total_tables}")
             print(f"   • Pages with section titles: {pages_with_sections}")
 
             return final_data
