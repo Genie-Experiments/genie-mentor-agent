@@ -14,10 +14,6 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-# Get environment variables
-GROQ_KEY = os.environ.get('GROQ_API_KEY', '')
-
-
 class PDFProcessor:
     def __init__(self, pdf_path: str, output_dir: str = "./", output_filename: str = "processed_document.json"):
         """
@@ -27,8 +23,6 @@ class PDFProcessor:
             pdf_path: Path to the input PDF file
             output_dir: Directory where output file will be saved
             output_filename: Name of the final output JSON file
-            groq_key: Groq API key for image analysis
-            graph_analysis_prompt: Prompt for analyzing charts/graphs
         """
         self.pdf_path = pdf_path
         self.output_dir = output_dir

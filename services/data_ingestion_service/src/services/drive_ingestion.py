@@ -13,7 +13,7 @@ from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_core.documents import Document
 from dotenv import load_dotenv
-from PDFProcessor import PDFProcessor
+from ..utils.pdf_processor import PDFProcessor
 from llama_index.core.node_parser import SemanticSplitterNodeParser
 from llama_index.embeddings.langchain import LangchainEmbedding
 from llama_index.core import Document as LlamaDocument
