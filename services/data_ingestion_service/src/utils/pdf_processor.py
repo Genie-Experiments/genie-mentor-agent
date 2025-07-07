@@ -196,6 +196,16 @@ class PDFProcessor:
             else:
                 chunk["metadata"]["page_number"] = last_valid_page
 
+        # Final cleanup: replace all single newlines with space but preserve double newlines
+        filtered_chunks = []
+        for chunk in parsed_chunks:
+            chunk["text"] = re.sub(r'(?<!\n)\n(?!\n)', ' ', chunk["text"])
+            if len(chunk["text"]) < 500:
+                continue
+            filtered_chunks.append(chunk)
+
+        parsed_chunks = filtered_chunks
+
         # Step 5.2: Move 'header' into metadata and assign chunk index
         for idx, chunk in enumerate(parsed_chunks, start=1):
             chunk["metadata"]["header"] = chunk.pop("header")
