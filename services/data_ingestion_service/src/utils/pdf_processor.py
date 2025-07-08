@@ -21,11 +21,17 @@ class PDFProcessor:
 
         self.temp_raw_json = os.path.join(
             output_dir, "temp_raw_pymupdf4llm.json")
-        self.output_markdown_path = os.path.join(output_dir, "output.md")
+        self.output_markdown_path = os.path.join(output_dir, "temp.md")
 
     def extract_markdown(self):
         """Extract markdown using pymupdf4llm and merge all page content."""
         print("Step 1: Extracting and merging markdown...")
+
+        raw_markdown = pymupdf4llm.to_markdown(
+            self.pdf_path, page_chunks=False, show_progress=True, ignore_images=True, ignore_graphics=True)
+        markdown_output_path = f"{os.path.splitext(self.final_output_path)[0]}_markdown_raw.md"
+        with open(markdown_output_path, "w", encoding="utf-8") as f:
+            f.write(raw_markdown)
 
         pages = pymupdf4llm.to_markdown(
             self.pdf_path, page_chunks=True, show_progress=True)
@@ -211,6 +217,16 @@ class PDFProcessor:
             chunk["metadata"]["header"] = chunk.pop("header")
             chunk["metadata"]["chunk_index"] = idx
             chunk["metadata"]["file_path"] = os.path.basename(self.pdf_path)
+
+        # Step 6: Also save as Markdown preview
+        markdown_preview_path = f"{os.path.splitext(self.final_output_path)[0]}_final_preview.md"
+        with open(markdown_preview_path, "w", encoding="utf-8") as md_out:
+            for chunk in parsed_chunks:
+                md_out.write(f"## Chunk_{chunk['metadata']['chunk_index']}\n")
+                md_out.write("```\n")
+                md_out.write(chunk["metadata"]["header"].strip() + "\n\n")
+                md_out.write(chunk["text"].strip() + "\n")
+                md_out.write("```\n\n")
 
         # Step 6: Save structured JSON
         with open(self.final_output_path, "w", encoding="utf-8") as f:
