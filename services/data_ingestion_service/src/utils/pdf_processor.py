@@ -27,14 +27,17 @@ class PDFProcessor:
         """Extract markdown using pymupdf4llm and merge all page content."""
         print("Step 1: Extracting and merging markdown...")
 
+        # Extract raw markdown without page chunks for viewing
         raw_markdown = pymupdf4llm.to_markdown(
             self.pdf_path, page_chunks=False, show_progress=True, ignore_images=True, ignore_graphics=True)
         markdown_output_path = f"{os.path.splitext(self.final_output_path)[0]}_markdown_raw.md"
         with open(markdown_output_path, "w", encoding="utf-8") as f:
             f.write(raw_markdown)
 
+        # Extract page chunks with margins to remove footers
+        # Note: margins is a heuristic to remove footers/headers, adjust as needed
         pages = pymupdf4llm.to_markdown(
-            self.pdf_path, page_chunks=True, show_progress=True, margins=70)
+            self.pdf_path, page_chunks=True, show_progress=True, margins=70)  # In Pts
 
         merged_text = ""
         page_map = []  # Track which sections came from which page(s)
@@ -63,8 +66,11 @@ class PDFProcessor:
         matches = list(header_pattern.finditer(merged_text))
         sections = []
 
+        # Iterate through all the matched headers in merged_text and split the content between them into separate sections. This will allow multi-page sections to be captured correctly.
         for i, match in enumerate(matches):
+            # Iterate thorugh all matches
             raw_header = match.group("header").strip()
+            # Extracts the actual matched header string (e.g., **1. Introduction**).
             start = match.end()
 
             if i + 1 < len(matches):
@@ -81,23 +87,8 @@ class PDFProcessor:
 
         return sections
 
-    def filter_out_figures_and_tables(self, sections):
-        """Remove any chunks whose header or content mention figures or tables."""
-        print("Step 2.5: Filtering out figure/table sections...")
-
-        filtered_sections = []
-        for header, content in sections:
-            combined = f"{header}\n{content}".lower()
-            if "figure" in combined or "table" in combined:
-                continue
-            filtered_sections.append((header, content))
-
-        print(
-            f"✓ Filtered out {len(sections) - len(filtered_sections)} figure/table chunks")
-        return filtered_sections
-
     def write_markdown_sections(self, sections):
-        """Write the split sections into a single markdown file for review."""
+        """Write the split sections into a single markdown file for review. Also needed as a temp file from which we can parse back to structured chunks."""
         print("Step 3: Writing markdown output...")
 
         with open(self.output_markdown_path, "w", encoding="utf-8") as f:
@@ -116,7 +107,6 @@ class PDFProcessor:
         chunks = []
         current_header_parts = []
         current_body_lines = []
-        collecting_header = False
 
         def flush_chunk():
             if current_header_parts or current_body_lines:
@@ -154,19 +144,17 @@ class PDFProcessor:
 
     def process(self):
         """Run the complete liberal PDF markdown pipeline and output structured JSON."""
+        minimum_chunk_size = int(os.environ.get("MINIMUM_CHUNK_SIZE", 300))
         print(f"Processing PDF: {self.pdf_path}")
         print("=" * 60)
 
         # Step 1: Extract and merge markdown text
         merged_text, page_map = self.extract_markdown()
 
-        # Step 2: Liberal header-based split
+        # Step 2: Header-based split
         sections = self.split_by_section_headers(merged_text)
 
-        # # Step 2.5: Filter figure/table-related chunks
-        # sections = self.filter_out_figures_and_tables(sections)
-
-        # Step 3: Write markdown for inspection
+        # Step 3: Write markdown for inspection and further processing
         self.write_markdown_sections(sections)
 
         # Step 4: Parse markdown back to structured chunks
@@ -174,7 +162,6 @@ class PDFProcessor:
 
         # Step 5: Assign page number based on location of each chunk in original merged text
         for chunk in parsed_chunks:
-            header = chunk["header"]
             body = chunk["text"]
 
             # Find approximate starting index of the body text in the merged markdown
@@ -206,7 +193,8 @@ class PDFProcessor:
         filtered_chunks = []
         for chunk in parsed_chunks:
             chunk["text"] = re.sub(r'(?<!\n)\n(?!\n)', ' ', chunk["text"])
-            if len(chunk["text"]) < 300:
+            # Skip small chunks, default value is 300 which is an average of 50-60 words in a chunk, which is appropriate for a academic paper structure
+            if len(chunk["text"]) < minimum_chunk_size:
                 continue
             filtered_chunks.append(chunk)
 
