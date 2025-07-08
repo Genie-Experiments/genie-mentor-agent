@@ -210,6 +210,7 @@ class PDFProcessor:
         for idx, chunk in enumerate(parsed_chunks, start=1):
             chunk["metadata"]["header"] = chunk.pop("header")
             chunk["metadata"]["chunk_index"] = idx
+            chunk["metadata"]["file_path"] = os.path.basename(self.pdf_path)
 
         # Step 6: Save structured JSON
         with open(self.final_output_path, "w", encoding="utf-8") as f:
