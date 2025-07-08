@@ -58,8 +58,8 @@ WEBRAG_MAX_GENERAL_RESULTS=5
 WEBRAG_TOP_K=3
 WEBRAG_EMBED_DEFAULT_MODEL=text-embedding-ada-002
 GITHUB_MCP_TOKEN=your-github-token
-GOOGLE_SERVICE_ACCOUNT_FILE=/app/data_ingestion_service/secrets/your-service-account.json
-KB_PROCESSED_FILES=/app/data_ingestion_service/ingestion_state/KB_processed_files_history.txt
+GOOGLE_SERVICE_ACCOUNT_FILE="/app/secrets/promising-keep-file-here.json"
+KB_PROCESSED_FILES="/app/ingestion_state/KB_processed_files_history.txt"
 KB_DATA_STORAGE_DRIVE_ID=your-drive-id
 ```
 2.  **Build & Start Docker Images**: Navigate to the root of the project and build the Docker images using the following command:
