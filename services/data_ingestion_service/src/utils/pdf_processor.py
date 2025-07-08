@@ -34,7 +34,7 @@ class PDFProcessor:
             f.write(raw_markdown)
 
         pages = pymupdf4llm.to_markdown(
-            self.pdf_path, page_chunks=True, show_progress=True)
+            self.pdf_path, page_chunks=True, show_progress=True, margins=70)
 
         merged_text = ""
         page_map = []  # Track which sections came from which page(s)
@@ -217,6 +217,7 @@ class PDFProcessor:
             chunk["metadata"]["header"] = chunk.pop("header")
             chunk["metadata"]["chunk_index"] = idx
             chunk["metadata"]["file_path"] = os.path.basename(self.pdf_path)
+            chunk["metadata"]["token_count"] = len(chunk["text"])
 
         # Step 6: Also save as Markdown preview
         markdown_preview_path = f"{os.path.splitext(self.final_output_path)[0]}_final_preview.md"
@@ -232,6 +233,11 @@ class PDFProcessor:
         with open(self.final_output_path, "w", encoding="utf-8") as f:
             json.dump(parsed_chunks, f, indent=2, ensure_ascii=False)
 
+        token_counts = [chunk["metadata"]["token_count"]
+                        for chunk in parsed_chunks]
+
         print("=" * 60)
         print(f"✅ Final output saved to: {self.final_output_path}")
         print(f"📦 Total structured chunks: {len(parsed_chunks)}")
+        print(
+            f"🔢 Token count — min: {min(token_counts)}, max: {max(token_counts)}")
