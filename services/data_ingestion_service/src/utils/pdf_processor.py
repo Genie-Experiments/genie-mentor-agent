@@ -206,7 +206,7 @@ class PDFProcessor:
         filtered_chunks = []
         for chunk in parsed_chunks:
             chunk["text"] = re.sub(r'(?<!\n)\n(?!\n)', ' ', chunk["text"])
-            if len(chunk["text"]) < 500:
+            if len(chunk["text"]) < 300:
                 continue
             filtered_chunks.append(chunk)
 
