@@ -45,7 +45,7 @@ def boost_by_metadata(query, docs):
     )
 
 def get_embedding_model() -> HuggingFaceEmbeddings:
-    return HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+    return HuggingFaceEmbeddings(model_name="BAAI/bge-small-en-v1.5")
 
 
 
@@ -73,7 +73,7 @@ class KBAgent(RoutedAgent):
                 embedding_function=self.embedding_model,
             )
 
-            retriever = vector_store.as_retriever(search_kwargs={"k": 10})
+            retriever = vector_store.as_retriever(search_kwargs={"k": 20})
 
             llm = ChatGroq(
                 temperature=0.5, groq_api_key=self.groq_api_key, model_name=model_name
