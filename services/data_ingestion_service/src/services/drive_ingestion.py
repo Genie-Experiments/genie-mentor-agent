@@ -106,7 +106,7 @@ def split_documents(documents: List[Dict], chunk_size: int = 300) -> List:
 def get_embedding_model() -> HuggingFaceEmbeddings:
     """Initialize the embedding model"""
     try:
-        return HuggingFaceEmbeddings(model_name='all-MiniLM-L6-v2')
+        return HuggingFaceEmbeddings(model_name='BAAI/bge-small-en-v1.5')
     except Exception as e:
         logger.error(f"Failed to initialize embedding model: {str(e)}")
         raise DriveIngestionError("Embedding model initialization failed")
@@ -232,12 +232,9 @@ def process_drive_folder(
                             chunks = split_documents(docs)
                     elif file_ext == '.pptx':
                         docs = load_pptx(temp_path)
-
-                    for doc in docs:
-                        doc.metadata["source"] = file_name
-
-                    logger.info(f"Splitting document: {file_name}")
-                    chunks = split_documents(docs)
+                        for doc in docs:
+                            doc.metadata["source"] = file_name
+                        chunks = split_documents(docs)
 
                     logger.info(f"Storing embeddings for: {file_name}")
                     store_embeddings(chunks, embedding_model, persist_directory)
