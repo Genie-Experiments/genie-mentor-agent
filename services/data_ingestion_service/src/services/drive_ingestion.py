@@ -206,7 +206,7 @@ def process_drive_folder(
                                 output_dir=os.path.dirname(temp_path),
                                 output_filename=f"{Path(temp_path).stem}_output.json"
                             )
-                            final_data = processor.process(cleanup_temp=True)
+                            final_data = processor.process()
 
                             # Save output.md manually
                             md_output_path = os.path.join(os.path.dirname(temp_path), f"{Path(temp_path).stem}_output.md")
@@ -218,8 +218,8 @@ def process_drive_folder(
                             chunks = [
                                 Document(page_content=page["text"], metadata={
                                     "source": file_name,
-                                    "page": page.get("metadata", {}).get("page"),
-                                    "section": page.get("metadata", {}).get("main_section_header"),
+                                    "page": page.get("metadata", {}).get("page_number"),
+                                    "section": page.get("metadata", {}).get("header"),
                                 })
                                 for page in final_data
                             ]
