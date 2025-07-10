@@ -19,17 +19,43 @@ const CitationRenderer: React.FC<CitationRendererProps> = ({
   onOpenUrl = (url) => window.open(url, '_blank', 'noopener,noreferrer'),
   metadata = {},
 }) => {
-  console.log(children, 'Children received in CitationRenderer');
+  // Process children to get a proper string representation
   const childrenAsString = React.Children.toArray(children)
     .map((child) => {
-      console.log('Processing child:', child);
       if (typeof child === 'string' || typeof child === 'number') {
         return String(child);
       }
       if (React.isValidElement(child)) {
         const props = child.props as { children?: React.ReactNode };
         if (props && props.children) {
-          return String(props.children);
+          // Function to recursively extract text from React elements
+          const extractText = (node: React.ReactNode): string => {
+            if (typeof node === 'string' || typeof node === 'number') {
+              return String(node);
+            }
+
+            if (React.isValidElement(node)) {
+              const nodeProps = node.props as { children?: React.ReactNode };
+              if (nodeProps && nodeProps.children) {
+                if (
+                  typeof nodeProps.children === 'string' ||
+                  typeof nodeProps.children === 'number'
+                ) {
+                  return String(nodeProps.children);
+                } else if (Array.isArray(nodeProps.children)) {
+                  return nodeProps.children.map(extractText).join('');
+                } else if (React.isValidElement(nodeProps.children)) {
+                  return extractText(nodeProps.children);
+                }
+              }
+            } else if (Array.isArray(node)) {
+              return node.map(extractText).join('');
+            }
+
+            return '';
+          };
+
+          return extractText(props.children);
         }
       }
       return '';
