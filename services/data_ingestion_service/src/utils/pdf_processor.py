@@ -229,3 +229,5 @@ class PDFProcessor:
         print(f"📦 Total structured chunks: {len(parsed_chunks)}")
         print(
             f"🔢 Token count — min: {min(token_counts)}, max: {max(token_counts)}")
+        
+        return parsed_chunks
