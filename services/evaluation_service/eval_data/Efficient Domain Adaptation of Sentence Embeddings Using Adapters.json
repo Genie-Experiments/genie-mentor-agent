@@ -1,0 +1,122 @@
+[
+  {
+    "questions": [
+      {
+        "question": "What method is proposed for parameter-efficient domain adaptation of sentence embedding models?",
+        "answer": "The proposed method for parameter-efficient domain adaptation of sentence embedding models is the use of adapters, specifically the HoulsbyAdapter architecture, which adds a small number of new parameters that are updated during training while keeping the weights of the sentence embedding model fixed."
+      },
+      {
+        "question": "How do adapters differ from fine-tuning in terms of parameter updates?",
+        "answer": "Adapters differ from fine-tuning in that they introduce a small number of new parameters that are updated during training, while the weights of the original sentence embedding model remain fixed. In fine-tuning, the entire model's parameters are adjusted, whereas with adapters, only the additional parameters are trained, allowing for a more parameter-efficient approach to domain adaptation."
+      },
+      {
+        "question": "What architecture is mentioned as effective for domain adaptation in the context?",
+        "answer": "The HoulsbyAdapter architecture is mentioned as effective for domain adaptation in the context."
+      }
+    ],
+    "metadata": {
+      "page_number": 4,
+      "header": "6 Conclusion",
+      "chunk_index": 14,
+      "file_path": "Efficient Domain Adaptation of Sentence Embeddings Using Adapters.pdf",
+      "token_count": 747
+    },
+    "context": "In this work, we proposed the use of adapters for parameter-efficient domain adaptation of sentence embedding models. In contrast to fine-tuning the entire sentence embedding model for a particular domain, adapters add a small number of new parameters that are updated during training while the weights of the sentence embedding model are fixed. We showed that adapter-based domain adaptation of sentence embedding models yields competitive results compared to fine-tuning the entire model, although only a fraction of the parameters are trained. In particular, we show that using the HoulsbyAdapter architecture together with a contrastive objective yields promising results for parameter efficient domain adaptation of sentence embedding models."
+  },
+  {
+    "questions": [
+      {
+        "question": "What does Table 2 show regarding sentence embedding models?",
+        "answer": "Table 2 shows the results obtained when adapting sentence embedding models to different domains using adapters. It compares the performance of these adapted models to the SimCSE base model, which serves as a lower bound since it is not adapted to specific domains. Additionally, it includes results from traditional domain-specific fine-tuning of the SimCSE base model, which is used as an upper bound for performance evaluation."
+      },
+      {
+        "question": "What is the purpose of evaluating the performance of the SimCSE base model?",
+        "answer": "The purpose of evaluating the performance of the SimCSE base model is to establish a lower bound for comparison against the results obtained when adapting sentence embedding models to different domains using adapters. This evaluation helps to contextualize the effectiveness of the adapter approach by providing a baseline performance level that is not adapted to specific domains."
+      },
+      {
+        "question": "What is used as an upper bound in the evaluation of the models?",
+        "answer": "In the evaluation of the models, traditional domain-specific fine-tuning by training all parameters of the SimCSE base model with the respective loss functions is used as an upper bound."
+      }
+    ],
+    "metadata": {
+      "page_number": 4,
+      "header": "5 Evaluation",
+      "chunk_index": 12,
+      "file_path": "Efficient Domain Adaptation of Sentence Embeddings Using Adapters.pdf",
+      "token_count": 635
+    },
+    "context": "Table 2 shows the results obtained when adapting sentence embedding models to different domains with adapters. To put the adapter results into perspective, we also evaluate the performance of the SimCSE base model, which is not adapted to the specific domains, as a lower bound. Furthermore, we use traditional domain-specific fine-tuning by training all parameters of the SimCSE base model with the respective loss functions as upper bounds with a mini-batch of _N_ triplets, a temperature hyperparameter _τ_, which is empirically set to 0.05, and _sim_ ( _h_ 1 _, h_ 2 ) as the cosine similarity _||hh_ 1 _||·||_ 1 _·hh_ 2 2 _||_ [.]"
+  },
+  {
+    "questions": [
+      {
+        "question": "What type of content does the AskUbuntu dataset consist of?",
+        "answer": "The AskUbuntu dataset consists of user posts from the technical forum AskUbuntu, specifically focusing on topics related to the operating system Ubuntu. It includes sentence pairs that are deemed similar, making it suitable for tasks involving anchor- and positive samples."
+      },
+      {
+        "question": "Who are the authors of the study that introduced the AskUbuntu dataset?",
+        "answer": "The authors of the study that introduced the AskUbuntu dataset are Lei et al., 2016."
+      },
+      {
+        "question": "What is the primary topic of the sentences in the AskUbuntu dataset?",
+        "answer": "The primary topic of the sentences in the AskUbuntu dataset is the operating system Ubuntu."
+      }
+    ],
+    "metadata": {
+      "page_number": 4,
+      "header": "AskUbuntu",
+      "chunk_index": 11,
+      "file_path": "Efficient Domain Adaptation of Sentence Embeddings Using Adapters.pdf",
+      "token_count": 505
+    },
+    "context": "The AskUbuntu dataset (Lei et al., 2016) consists of user posts from the technical forum AskUbuntu. It already includes sentence pairs that are deemed similar. Therefore, anchor- and positive samples are easily found. Since the dataset inherently consists of sentences about a similar topic, the operating system Ubuntu, negative sentences can easily be retrieved by sampling different sentences. The dataset originates from a technical domain and is quite different from the scientific domain of SciDocs."
+  },
+  {
+    "questions": [
+      {
+        "question": "What does the SciDocs dataset consist of?",
+        "answer": "The SciDocs dataset consists of scientific papers and their citation information."
+      },
+      {
+        "question": "How are the titles and abstracts of papers formatted for model input?",
+        "answer": "The titles and abstracts of papers are concatenated with the [SEP] token for model input."
+      },
+      {
+        "question": "Which adapter architecture yields the best results for domain adaptation?",
+        "answer": "The Houlsby adapter yields the best results for domain adaptation of sentence embedding models."
+      }
+    ],
+    "metadata": {
+      "page_number": 4,
+      "header": "SciDocs",
+      "chunk_index": 13,
+      "file_path": "Efficient Domain Adaptation of Sentence Embeddings Using Adapters.pdf",
+      "token_count": 1989
+    },
+    "context": "The SciDocs dataset (Cohan et al., 2020) consists of scientific papers and their citation information. As model input, we concatenate the titles and abstracts of papers with the [SEP] token. Since our model has a maximum input length of 512 tokens, the input is cut off after this threshold. A The evaluation reveals that adapter-based domain adaptation yields competitive results compared to fine-tuning the entire base model. In particular, the Houlsby and Pfeiffer adapters perform very well with both loss functions, even though they use only a fraction of the parameters of the upper bounds. The slightly larger K-Adapter, however, performs considerably worse than the other adapters investigated. We conclude that the bottleneck architecture is more suitable than the ex ternal plug-in architecture for domain adaptation of sentence embedding models. In particular, the Houlsby adapter, although the smallest among the adapters investigated, yields the best results for both loss functions. Using the out-of-the-box SimCSE model without domain adaptation results in considerably worse performance, indicating the overall importance of domain-specific fine-tuning for sentence embedding models. Furthermore, the contrastive loss function _ℓ_ 2 performs consistently better than _ℓ_ 1 . Our results align with the observations of Gao et al. (2021) who conclude that the contrastive objective ensures a distribution of embeddings around the entire embedding space. In contrast, _ℓ_ 1 may yield learned representations occupying a narrow vector space cone, which severely limits their expressiveness. From the obtained results, we conclude that using the Houlsby-Adapter architecture together with the contrastive objective _ℓ_ 2 is most suitable for parameter-efficient domain adaptation of sentence embedding models. This adapter approach shows performance that is within 1% of the supervised, entirely fine-tuned SimCSE model, while only training approximately 3.6% of the parameters."
+  },
+  {
+    "questions": [
+      {
+        "question": "What is the title of the paper referenced in the context?",
+        "answer": "The title of the paper referenced in the context is \"Fusing adapters for cross-lingual.\""
+      },
+      {
+        "question": "Who are the authors of the paper titled \"Fusing adapters for cross-lingual\"?",
+        "answer": "The authors of the paper titled \"Fusing adapters for cross-lingual\" are Tao Lei, Hrishikesh Joshi, Regina Barzilay, Tommi Jaakkola, Kateryna Tymoshenko, Alessandro Moschitti, and Lluís Marquez."
+      },
+      {
+        "question": "In which conference proceedings was the paper published?",
+        "answer": "The paper was published in the proceedings of the 2nd Conference of the Asia-Pacific Chapter of the Association for Computational Linguistics and the 12th International Joint Conference on Natural Language Processing (Volume 2: Short Papers)."
+      }
+    ],
+    "metadata": {
+      "page_number": 4,
+      "header": "2022. [FAD-X: Fusing adapters for cross-lingual](https://aclanthology.org/2022.aacl-short.8)",
+      "chunk_index": 17,
+      "file_path": "Efficient Domain Adaptation of Sentence Embeddings Using Adapters.pdf",
+      "token_count": 11525
+    },
+    "context": "[transfer to low-resource languages. In](https://aclanthology.org/2022.aacl-short.8) _Proceedings of_ _the 2nd Conference of the Asia-Pacific Chapter of the_ _Association for Computational Linguistics and the_ _12th International Joint Conference on Natural Lan-_ _guage Processing (Volume 2: Short Papers)_, pages 57–64, Online only. Association for Computational Linguistics. Tao Lei, Hrishikesh Joshi, Regina Barzilay, Tommi Jaakkola, Kateryna Tymoshenko, Alessandro Moschitti, and Llu ´ ıs Marquez. 2016. ` [Semi-supervised](https://doi.org/10.18653/v1/N16-1153) [question retrieval with gated convolutions. In](https://doi.org/10.18653/v1/N16-1153) _Pro-_ _ceedings of the 2016 Conference of the North Amer-_ _ican Chapter of the Association for Computational_ _Linguistics: Human Language Technologies_, pages 1279–1289, San Diego, California. Association for Computational Linguistics. Patrick Lewis, Ethan Perez, Aleksandra Piktus, Fabio Petroni, Vladimir Karpukhin, Naman Goyal, Heinrich Kuttler, ¨ Mike Lewis, Wen-tau Yih, Tim Rocktaschel, Sebastian Riedel, and Douwe ¨ Kiela. 2020. [Retrieval-augmented generation for](https://proceedings.neurips.cc/paper_files/paper/2020/file/6b493230205f780e1bc26945df7481e5-Paper.pdf) [knowledge-intensive nlp tasks.](https://proceedings.neurips.cc/paper_files/paper/2020/file/6b493230205f780e1bc26945df7481e5-Paper.pdf) In _Advances in_ _Neural Information Processing Systems_, volume 33, pages 9459–9474. Curran Associates, Inc. Che Liu, Rui Wang, Jinghua Liu, Jian Sun, Fei Huang, [and Luo Si. 2021. DialogueCSE: Dialogue-based](https://doi.org/10.18653/v1/2021.emnlp-main.185) [contrastive learning of sentence embeddings. In](https://doi.org/10.18653/v1/2021.emnlp-main.185) _Pro-_ _ceedings of the 2021 Conference on Empirical Meth-_ _ods in Natural Language Processing_, pages 2396– 2406, Online and Punta Cana, Dominican Republic Association for Computational Linguistics. [Lajanugen Logeswaran and Honglak Lee. 2018. An](https://openreview.net/forum?id=rJvJXZb0W) [efficient framework for learning sentence represen-](https://openreview.net/forum?id=rJvJXZb0W) [tations. In](https://openreview.net/forum?id=rJvJXZb0W) _International Conference on Learning_ _Representations_ . Sosuke Nishikawa, Ryokan Ri, Ikuya Yamada, Yoshimasa Tsuruoka, and Isao Echizen. 2022. [EASE:](https://doi.org/10.18653/v1/2022.naacl-main.284) [Entity-aware contrastive learning of sentence em-](https://doi.org/10.18653/v1/2022.naacl-main.284) [bedding. In](https://doi.org/10.18653/v1/2022.naacl-main.284) _Proceedings of the 2022 Conference_ _of the North American Chapter of the Association for_ _Computational Linguistics: Human Language Tech-_ _nologies_, pages 3870–3885, Seattle, United States Association for Computational Linguistics. Marinela Parovic, Goran Glava ´ s, Ivan Vuli ˇ c, and Anna ´ [Korhonen. 2022. BAD-X: Bilingual adapters im-](https://doi.org/10.18653/v1/2022.naacl-main.130) [prove zero-shot cross-lingual transfer."
+  }
+]

@@ -1,0 +1,122 @@
+[
+  {
+    "questions": [
+      {
+        "question": "What are the two broad categories of query expansion techniques?",
+        "answer": "The two broad categories of query expansion techniques are internal expansion and external expansion. Internal expansion focuses on maximizing the value of existing information in the original query or the used LLM without relying on external knowledge sources, while external expansion introduces supplementary data from outside sources to fill gaps, provide additional context, or broaden the scope of the content."
+      },
+      {
+        "question": "What is the focus of internal expansion in query optimization?",
+        "answer": "The focus of internal expansion in query optimization is to maximize the value of existing information in the original query or the used large language model (LLM) without relying on external knowledge sources."
+      },
+      {
+        "question": "How does external expansion enhance the performance of retrieval-augmented generation?",
+        "answer": "External expansion enhances the performance of retrieval-augmented generation by introducing supplementary data from outside sources, such as the Web or knowledge bases. This additional information helps to fill gaps in the original query, provide more context, and broaden the scope of the content. By incorporating external knowledge, the system can generate more relevant and comprehensive responses, ultimately improving the overall effectiveness of the retrieval process and the quality of the generated content."
+      }
+    ],
+    "metadata": {
+      "page_number": 2,
+      "header": "2.1 Query Expansion",
+      "chunk_index": 5,
+      "file_path": "A Survey of Query Optimization in Large Language Models.pdf",
+      "token_count": 637
+    },
+    "context": "Query Expansion techniques (Azad and Deepak, 2019) are critical in enhancing the performance of retrieval-augmented generation, particularly when integrated with LLMs (Weller et al., 2024). Based on the different sources of knowledge, we broadly categorize it into internal expansion and external expansion. The former focuses on maximizing the value of existing information in the original query or the used LLM without relying on external knowledge sources., while the latter introduces supplementary data from outside sources (e.g., Web or Knowledge base) to fill gaps, provide additional context, or broaden the scope of the content."
+  },
+  {
+    "questions": [
+      {
+        "question": "What is the focus of the analysis in the document?",
+        "answer": "The focus of the analysis in the document is on query optimization techniques, specifically their application to retrieval-augmented large language models (LLMs). The study examines a wide range of optimization methods, identifies key challenges and opportunities in the field, and emphasizes the importance of developing specialized methodologies for retrieval-augmented LLMs to maximize their potential across various domains."
+      },
+      {
+        "question": "What does the study provide a comprehensive understanding of?",
+        "answer": "The study provides a comprehensive understanding of query optimization techniques, particularly in their application to retrieval-augmented large language models (LLMs)."
+      },
+      {
+        "question": "What are identified as key aspects in the area of query optimization?",
+        "answer": "The key aspects identified in the area of query optimization include the complexities of query optimization itself, the key challenges that arise, and the opportunities available in this field. Additionally, the development of specialized methodologies tailored to the needs of retrieval-augmented large language models (LLMs) is highlighted as crucial for unlocking their full potential across various domains."
+      }
+    ],
+    "metadata": {
+      "page_number": 9,
+      "header": "5 Conclusion",
+      "chunk_index": 15,
+      "file_path": "A Survey of Query Optimization in Large Language Models.pdf",
+      "token_count": 789
+    },
+    "context": "This in-depth analysis explores the domain of query optimization techniques, with a focus on their application to retrieval-augmented LLMs. Our study encompasses a broad range of optimization methods, providing a comprehensive understanding of the field. By examining the complexities of query optimization, we identify the key challenges and opportunities that arise in this area. As research in this field continues to advance, the development of specialized methodologies tailored to the needs of retrieval-augmented LLMs is crucial for unlocking their full potential across various domains. This survey aims to serve as a valuable resource for retrieval-augmented LLMs, providing a detailed overview of the current landscape and encouraging further investigation into this vital topic."
+  },
+  {
+    "questions": [
+      {
+        "question": "Who are the authors of the paper titled \"Synergistic interplay between search and large language models for information retrieval\"?",
+        "answer": "The authors of the paper titled \"Synergistic interplay between search and large language models for information retrieval\" are Jiazhan Feng, Chongyang Tao, Xiubo Geng, Tao Shen, Can Xu, Guodong Long, Dongyan Zhao, and Daxin Jiang."
+      },
+      {
+        "question": "What event will the paper \"Synergistic interplay between search and large language models for information retrieval\" be presented at?",
+        "answer": "The paper \"Synergistic interplay between search and large language models for information retrieval\" will be presented at the 62nd Annual Meeting of the Association for Computational Linguistics (ACL 2024) in Bangkok, Thailand, from August 11-16, 2024."
+      },
+      {
+        "question": "What is the focus of the paper by Luyu Gao and others published in 2023?",
+        "answer": "The paper by Luyu Gao and others published in 2023 focuses on \"Precise zero-shot dense retrieval without relevance labels.\" It discusses methods for achieving effective dense retrieval in a zero-shot setting, which means retrieving relevant information without the need for labeled relevance data."
+      }
+    ],
+    "metadata": {
+      "page_number": 9,
+      "header": "6501. ACM.",
+      "chunk_index": 19,
+      "file_path": "A Survey of Query Optimization in Large Language Models.pdf",
+      "token_count": 30293
+    },
+    "context": "Jiazhan Feng, Chongyang Tao, Xiubo Geng, Tao Shen, Can Xu, Guodong Long, Dongyan Zhao, and Daxin [Jiang. 2024. Synergistic interplay between search](https://doi.org/10.18653/V1/2024.ACL-LONG.517) [and large language models for information retrieval.](https://doi.org/10.18653/V1/2024.ACL-LONG.517) In _Proceedings of the 62nd Annual Meeting of the_ _Association for Computational Linguistics (Volume_ _1: Long Papers), ACL 2024, Bangkok, Thailand, Au-_ _gust 11-16, 2024_, pages 9571–9583. Association for Computational Linguistics. Luyu Gao, Xueguang Ma, Jimmy Lin, and Jamie Callan. [2023a. Precise zero-shot dense retrieval without rel-](https://doi.org/10.18653/V1/2023.ACL-LONG.99) [evance labels. In](https://doi.org/10.18653/V1/2023.ACL-LONG.99) _Proceedings of the 61st Annual_ _Meeting of the Association for Computational Lin-_ _guistics (Volume 1: Long Papers), ACL 2023, Toronto,_ _Canada, July 9-14, 2023_, pages 1762–1777. Association for Computational Linguistics. Silin Gao, Jane Dwivedi-Yu, Ping Yu, Xiaoqing Ellen Tan, Ramakanth Pasunuru, Olga Golovneva, Koustuv Sinha, Asli Celikyilmaz, Antoine Bosselut, and [Tianlu Wang. 2024. Efficient tool use with chain-of-](https://arxiv.org/abs/2401.17464) [abstraction reasoning.](https://arxiv.org/abs/2401.17464) _Preprint_, arXiv:2401.17464. Yunfan Gao, Yun Xiong, Xinyu Gao, Kangxiang Jia, Jinliu Pan, Yuxi Bi, Yi Dai, Jiawei Sun, Qianyu Guo, [Meng Wang, and Haofen Wang. 2023b. Retrieval-](https://doi.org/10.48550/ARXIV.2312.10997) [augmented generation for large language models: A](https://doi.org/10.48550/ARXIV.2312.10997) [survey.](https://doi.org/10.48550/ARXIV.2312.10997) _CoRR_, abs/2312.10997. Shailja Gupta, Rajesh Ranjan, and Surya Narayan Singh. 2024. A [comprehensive](https://doi.org/10.48550/ARXIV.2410.12837) survey of [retrieval-augmented generation (RAG): evolution,](https://doi.org/10.48550/ARXIV.2410.12837) [current landscape and future directions.](https://doi.org/10.48550/ARXIV.2410.12837) _CoRR_, abs/2410.12837. Rujun Han, Yuhao Zhang, Peng Qi, Yumo Xu, Jenyuan Wang, Lan Liu, William Yang Wang, Bonan Min, and [Vittorio Castelli. 2024. RAG-QA arena: Evaluating](https://aclanthology.org/2024.emnlp-main.249) [domain robustness for long-form retrieval augmented](https://aclanthology.org/2024.emnlp-main.249) [question answering. In](https://aclanthology.org/2024.emnlp-main.249) _Proceedings of the 2024 Con-_ _ference on Empirical Methods in Natural Language_ _Processing, EMNLP 2024, Miami, FL, USA, Novem-_ _ber 12-16, 2024_, pages 4354–4374. Association for ComputationalLinguistics. Bolei He, Nuo Chen, Xinran He, Lingyong Yan, Zhenkai Wei, Jinchang Luo, and Zhen-Hua Ling. [2024."
+  },
+  {
+    "questions": [
+      {
+        "question": "What is the title of the document referenced in the context?",
+        "answer": "The title of the document referenced in the context is \"A Survey of Query Optimization in Large Language Models.\""
+      },
+      {
+        "question": "Who are the authors of the paper titled \"Retrieving, rethinking and revising: The chain-of-verification can improve retrieval augmented generation\"?",
+        "answer": "The authors of the paper titled \"Retrieving, rethinking and revising: The chain-of-verification can improve retrieval augmented generation\" are Zijian Hei, Weiling Liu, Wenjie Ou, Juyi Qiao, Junming Jiao, Guowen Song, Ting Tian, and Yi Lin."
+      },
+      {
+        "question": "In which conference will the paper \"RAG-QA arena: Evaluating domain robustness for long-form retrieval augmented question answering\" be presented?",
+        "answer": "The paper \"RAG-QA arena: Evaluating domain robustness for long-form retrieval augmented question answering\" will be presented at the 2024 Conference on Empirical Methods in Natural Language Processing (EMNLP 2024)."
+      }
+    ],
+    "metadata": {
+      "page_number": 8,
+      "header": "4.3 Improving Query Optimization Efficiency and Quality",
+      "chunk_index": 13,
+      "file_path": "A Survey of Query Optimization in Large Language Models.pdf",
+      "token_count": 1216
+    },
+    "context": "2024. RAG-QA arena: Evaluating](https://aclanthology.org/2024.emnlp-main.249) [domain robustness for long-form retrieval augmented](https://aclanthology.org/2024.emnlp-main.249) [question answering. In](https://aclanthology.org/2024.emnlp-main.249) _Proceedings of the 2024 Con-_ _ference on Empirical Methods in Natural Language_ _Processing, EMNLP 2024, Miami, FL, USA, Novem-_ _ber 12-16, 2024_, pages 4354–4374. Association for ComputationalLinguistics. Bolei He, Nuo Chen, Xinran He, Lingyong Yan, Zhenkai Wei, Jinchang Luo, and Zhen-Hua Ling. [2024. Retrieving, rethinking and revising: The chain-](https://arxiv.org/abs/2410.05801) [of-verification can improve retrieval augmented gen-](https://arxiv.org/abs/2410.05801) [eration.](https://arxiv.org/abs/2410.05801) _Preprint_, arXiv:2410.05801. Zijian Hei, Weiling Liu, Wenjie Ou, Juyi Qiao, Junming Jiao, Guowen Song, Ting Tian, and Yi Lin. [2024. Dr-rag: Applying dynamic document rele-](https://arxiv.org/abs/2406.07348) [vance to retrieval-augmented generation for question-](https://arxiv.org/abs/2406.07348) [answering.](https://arxiv.org/abs/2406.07348) _Preprint_, arXiv:2406.07348. Ruixin Hong, Hongming Zhang, Xiaoman Pan, Dong [Yu, and Changshui Zhang. 2024. Abstraction-of-](https://doi.org/10.48550/ARXIV.2406.12442) [thought makes language models better reasoners.](https://doi.org/10.48550/ARXIV.2406.12442) _CoRR_, abs/2406.12442. [Yucheng Hu and Yuxing Lu. 2024. RAG and RAU:](https://doi.org/10.48550/ARXIV.2404.19543) [A survey on retrieval-augmented language model in](https://doi.org/10.48550/ARXIV.2404.19543) [natural language processing.](https://doi.org/10.48550/ARXIV.2404.19543) _CoRR_, abs/2404.19543. [Yizheng Huang and Jimmy Huang. 2024. A survey](https://doi.org/10.48550/ARXIV.2404.10981) [on retrieval-augmented text generation for large lan-](https://doi.org/10.48550/ARXIV.2404.10981) [guage models.](https://doi.org/10.48550/ARXIV.2404.10981) _CoRR_, abs/2404.10981. Rolf Jagerman, Honglei Zhuang, Zhen Qin, Xuanhui [Wang, and Michael Bendersky. 2023. Query expan-](https://doi.org/10.48550/ARXIV.2305.03653) [sion by prompting large language models.](https://doi.org/10.48550/ARXIV.2305.03653) _CoRR_, abs/2305.03653. Pengyue Jia, Yiding Liu, Xiangyu Zhao, Xiaopeng Li, Changying Hao, Shuaiqiang Wang, and Dawei Yin. [2024. MILL: mutual verification with large language](https://doi.org/10.18653/V1/2024.NAACL-LONG.138) [models for zero-shot query expansion."
+  },
+  {
+    "questions": [
+      {
+        "question": "Who are the authors of the paper titled \"Query expansion by prompting large language models\"?",
+        "answer": "The authors of the paper titled \"Query expansion by prompting large language models\" are Rolf Jagerman, Honglei Zhuang, Zhen Qin, Xuanhui Wang, and Michael Bendersky."
+      },
+      {
+        "question": "What is the focus of the paper by Jinhao Jiang et al. titled \"Rag-star\"?",
+        "answer": "The paper by Jinhao Jiang et al. titled \"Rag-star\" focuses on enhancing deliberative reasoning with retrieval augmented verification and refinement."
+      },
+      {
+        "question": "In which conference will the paper \"MILL: mutual verification with large language models for zero-shot query expansion\" be presented?",
+        "answer": "The paper \"MILL: mutual verification with large language models for zero-shot query expansion\" will be presented at the 2024 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies (NAACL 2024) in Mexico City, Mexico, from June 16-21, 2024."
+      }
+    ],
+    "metadata": {
+      "page_number": 1,
+      "header": "1 Introduction",
+      "chunk_index": 2,
+      "file_path": "A Survey of Query Optimization in Large Language Models.pdf",
+      "token_count": 1897
+    },
+    "context": "Rolf Jagerman, Honglei Zhuang, Zhen Qin, Xuanhui [Wang, and Michael Bendersky. 2023. Query expan-](https://doi.org/10.48550/ARXIV.2305.03653) [sion by prompting large language models.](https://doi.org/10.48550/ARXIV.2305.03653) _CoRR_, abs/2305.03653. Pengyue Jia, Yiding Liu, Xiangyu Zhao, Xiaopeng Li, Changying Hao, Shuaiqiang Wang, and Dawei Yin. [2024. MILL: mutual verification with large language](https://doi.org/10.18653/V1/2024.NAACL-LONG.138) [models for zero-shot query expansion. In](https://doi.org/10.18653/V1/2024.NAACL-LONG.138) _Proceed-_ _ings of the 2024 Conference of the North American_ _Chapter of the Association for Computational Lin-_ _guistics: Human Language Technologies (Volume 1:_ _Long Papers), NAACL 2024, Mexico City, Mexico,_ _June 16-21, 2024_, pages 2498–2518. Association for Computational Linguistics. Jinhao Jiang, Jiayi Chen, Junyi Li, Ruiyang Ren, Shijie Wang, Wayne Xin Zhao, Yang Song, and Tao Zhang. [2024. Rag-star: Enhancing deliberative reasoning](https://arxiv.org/abs/2412.12881) [with retrieval augmented verification and refinement.](https://arxiv.org/abs/2412.12881) _Preprint_, arXiv:2412.12881. Zhengbao Jiang, Frank F. Xu, Luyu Gao, Zhiqing Sun, Qian Liu, Jane Dwivedi-Yu, Yiming Yang, Jamie [Callan, and Graham Neubig. 2023. Active retrieval](https://doi.org/10.18653/V1/2023.EMNLP-MAIN.495) [augmented generation. In](https://doi.org/10.18653/V1/2023.EMNLP-MAIN.495) _Proceedings of the 2023_ _Conference on Empirical Methods in Natural Lan-_ _guage Processing, EMNLP 2023, Singapore, Decem-_ _ber 6-10, 2023_, pages 7969–7992. Association for Computational Linguistics. Ashutosh Joshi, Sheikh Muhammad Sarwar, Samarth Varshney, Sreyashi Nag, Shrivats Agrawal, and Juhi Naik. 2024. [REAPER: reasoning based re-](https://doi.org/10.48550/ARXIV.2407.18553) [trieval planning for complex RAG systems.](https://doi.org/10.48550/ARXIV.2407.18553) _CoRR_, abs/2407.18553. Nikhil Kandpal, Haikang Deng, Adam Roberts, Eric [Wallace, and Colin Raffel. 2023. Large language](https://proceedings.mlr.press/v202/kandpal23a.html) [models struggle to learn long-tail knowledge. In](https://proceedings.mlr.press/v202/kandpal23a.html) _In-_ _ternationalConferenceonMachineLearning,ICML_ _2023, 23-29 July 2023, Honolulu, Hawaii, USA_, volume 202 of _Proceedings of Machine Learning Re-_ _search_, pages 15696–15707. PMLR. Omar Khattab, Keshav Santhanam, Xiang Lisa Li, David Hall, Percy Liang, Christopher Potts, and [Matei Zaharia. 2022. Demonstrate-search-predict:](https://doi.org/10.48550/ARXIV.2212.14024) [Composing retrieval and language models for](https://doi.org/10.48550/ARXIV.2212.14024) [knowledge-intensive NLP.](https://doi.org/10.48550/ARXIV.2212.14024) _CoRR_, abs/2212.14024."
+  }
+]
