@@ -1,0 +1,294 @@
+## Chunk_1
+```
+Abstract
+
+We study the problem of injecting knowledge into large pre-trained models like BERT and RoBERTa. Existing methods typically update the original parameters of pre-trained models when injecting knowledge. However, when multiple kinds of knowledge are injected, the historically injected knowledge would be flushed away. To address this, we propose KA DAPTER, a framework that retains the original parameters of the pre-trained model fixed and supports the development of versatile knowledge-infused model. Taking RoBERTa as the backbone model, K-A DAPTER has a neural adapter for each kind of infused knowledge, like a plug-in connected to RoBERTa. There is no information flow between different adapters, thus multiple adapters can be efficiently trained in a distributed way. As a case study, we inject two kinds of knowledge in this work, including (1) factual knowledge obtained from automatically aligned texttriplets on Wikipedia and Wikidata and (2) linguistic knowledge obtained via dependency parsing. Results on three knowledge-driven tasks, including relation classification, entity typing, and question answering, demonstrate that each adapter improves the performance and the combination of both adapters brings further improvements. Further analysis indicates that K-A DAPTER captures versatile knowledge than RoBERTa. [1]
+```
+
+## Chunk_2
+```
+1 Introduction
+
+Language representation models, which are pretrained on large-scale text corpus through unsupervised objectives like (masked) language modeling, such as BERT (Devlin et al., 2019), GPT (Radford et al., 2018, 2019), XLNet (Yang et al., _∗_ Work is done during internship at Microsoft. 1 Codes are publicly available at [https://github.](https://github.com/microsoft/k-adapter) [com/microsoft/k-adapter](https://github.com/microsoft/k-adapter) 2019), RoBERTa (Liu et al., 2019) and T5 (Raffel et al., 2019), have established state-of-the-art performances on various NLP downstream tasks Despite the huge success of these pre-trained models in empirical studies, recent studies suggest that models learned in such an unsupervised manner struggle to capture rich knowledge. For example, Poerner et al. (2019) suggest that although language models do well in reasoning about the surface form of entity names, they fail in capturing rich factual knowledge. Kassner and Schutze ¨ (2019) observe that BERT mostly did not learn the meaning of negation (e.g. “ _not_ ”). These observations motivate us to study the injection of knowledge into pre-trained models like BERT and RoBERTa. Recently, some efforts have been made to exploit injecting knowledge into pre-trained language models (Zhang et al., 2019; Lauscher et al., 2019; Levine et al., 2019; Peters et al., 2019; He et al., 2019; Xiong et al., 2020). Most previous works (as shown in Table 1) augment the standard language modeling objective with knowledge-driven objectives and update the entire model parameters Although these methods obtain better performance on downstream tasks, they struggle at supporting the development of versatile models with multiple kinds of knowledge injected (Kirkpatrick et al., 2017). When new kinds of knowledge are injected, model parameters need to be retrained so that previously injected knowledge would fade away. Meanwhile, the resulting models produce entangled representations, so that it is hard to investigate the effect of each kind of knowledge. In this paper, we propose K-A DAPTER, a flexible and simple framework that supports the infusion of multiple kinds of knowledge into large pretrained models. K-A DAPTER leaves the original representation of a pre-trained model unchanged and exports different representations for different types of infused knowledge. This is achieved by |Model|Knowledge Source|Objective|BERT fixed in training?|Continual knowl- edge infusion?| |---|---|---|---|---| |ERNIE (Zhang et al.,<br>2019)|Wikipedia, WikiData|entity linking|N|N| |LIBERT (Lauscher et al.,<br>2019)|WordNet|synonym<br>word<br>prediction,<br>hyponym-hypernym prediction|from scratch|N| |SenseBERT<br>(Levine<br>et al., 2019)|WordNet|word-supersense prediction|from scratch|N| |KnowBERT<br>(Peters<br>et al., 2019)|Wordnet,<br>Wikipedia,<br>CrossWikis|entity linking, hypernym link-<br>ing|N|N| |WKLM (Xiong et al.,<br>2020)|WikiPedia, WikiData|replaced entity detection|N|N| |BERT-MK (He et al.,<br>2019)|Uniﬁed Medical Lan-<br>guage System|discriminate between real and<br>fake facts|N|N| |K-Adapter (this work)|Wikipedia,<br>Wikidata,<br>dependency parser|predication prediction, depen-<br>dency relation prediction|Y|Y| Table 1: Comparison between our approach (K-A DAPTER ) and previous works on injecting knowledge into BERT. the integration of compact neural models dubbed adapters. Adapters are knowledge-specific models plugged outside of a pre-trained model, whose inputs are the output hidden-states of intermediate layers of the pre-trained model. We take RoBERTa (Liu et al., 2019) as the base pre-trained model and integrate two types of knowledge, including factual knowledge obtained by aligned Wikipedia text to Wikidata triplets and linguistic knowledge obtained by applying off-the-shell dependency parser to web texts. In the pre-training phase, we train two adapters independently. Since adapters have much less trainable parameters compared with RoBERTa, the training process is memory efficient. We conduct extensive experiments on six benchmark datasets across three knowledge-driven tasks, i.e., relation classification, entity typing, and question answering. Experiments show that K-A DAPTER consistently performs better than RoBERTa, and achieves state-of-the-art performance on five datasets. Case study and probing experiments indicate that K-A DAPTER captures versatile knowledge than RoBERTa.
+```
+
+## Chunk_3
+```
+ERNIE
+
+(Zhang et al., 2019) injects a knowledge graph into BERT. They align entities from Wikipedia sentences to fact triples in WikiData, and discard sentences with less than three entities. In the training process, the input includes sentences and linked facts, and the knowledge-aware learning objective is to predict the correct token-entity alignment. Entity embeddings are trained on fact triples from WikiData via TransE (Bordes et al., 2013)
+```
+
+## Chunk_4
+```
+LIBERT
+
+(Lauscher et al., 2019) injects pairs of words with synonym and hyponym-hypernym relations in WordNet. The model takes a pair of words separated by a special token as the input, and is optimized by a binary classification problem, which predicts whether the input holds a particular relation or not. **SenseBERT** (Levine et al., 2019) considers word-supersense knowledge. It inject knowledge by predicting the supersense of the masked word in the input, where the candidates are nouns and verbs and the ground truth comes from WordNet. **KnowBERT** (Peters et al., 2019) incorporates knowledge bases into BERT using Knowledge attention and recontextualization, where the knowledge comes from synset-synset and lemmalemma relationships in WordNet, and entity linking information in Wikipedia. If entity linking supervision is available, the model is learned with an additional knowledge-aware log-likelihood or maxmargin objective. **WKLM** (Xiong et al., 2020) replaces entity mentions in the original document with names of other entities of the same type. The model is trained to distinguish the correct entity mention from randomly chosen ones. **BERT-MK** (He et al., 2019) integrates fact triples from knowledge graph. For each entity, it sample incoming and outcoming instances from the neighbors on the knowledge graph, and replaces head or tail entity to create negative instances. The model is learned to discriminate between real and fake facts. As shown in Table 1, our model (K-A DAPTER ) differs from previous studies in three aspects. First, Language Pre-train (b) K-Adapter Figure 1: (a) Pre-trained language models inject multiple kinds of knowledge with multi-task learning. Model parameters need to be retrained when injecting new kinds of knowledge, which may result in the catastrophic forgetting (b) Our K-A DAPTER injects multiple kinds of knowledge by training adapters independently on different pre-train tasks, which supports continual knowledge infusion. When we inject new kinds of knowledge, the existing knowledge-specific adapters will not be affected. KIA represents the adapter layer and TRM represents the transformer layer, both of which are shown in Figure 2. we consider both fact-related objective (i.e. predicate/relation prediction) and linguistic-related objective (i.e. dependency relation prediction). Second, the original parameter of BERT is clamped in the knowledge infusion process. Third, our approach supports continual learning, which means that the learning of different adapters are not entangled. This flexibility enables us to efficiently inject different types of knowledge independently, and inject more types of knowledge without any loss on the previously injected knowledge.
+```
+
+## Chunk_5
+```
+3 K-A** **DAPTER
+
+As illustrated in Figure 1 (a), most of the previous works enhance pre-trained language models by injecting knowledge and update model parameters through multi-task learning. Regardless of these different versions of knowledge-injected methods with multi-task learning, common issues not fully studied are catastrophic forgetting of previous knowledge. To address this, we present KA DAPTER as shown in Figure 1(b), where multiple kinds of knowledge are injected into different compact neural models (i.e., adapters in this paper) individually instead of directly injecting knowledge into pre-trained models. It keeps the original representation of a pre-trained model fixed and supports continual knowledge infusion, i.e., injecting each kind of knowledge into the corresponding knowledge-specific adapter and producing disen tangled representation. Specifically, adapters are knowledge-specific models (with few parameters) plugged outside of a pre-trained model. The inputs of adapters are the output hidden-states of intermediate layers of the pre-trained model. Each adapter is pre-trained independently on different tasks for injecting discriminative knowledge while the original parameters of the pre-trained model are frozen. In this paper, we exploit RoBERTa (Liu et al., 2019) as the pre-trained model, and mainly infuse factual knowledge and linguistic knowledge with two kinds of adapters, i.e., factual adapter and linguistic adapter which are pre-trained on the relation classification task and dependency relation prediction task respectively. In this section, we first describe the structure of our adapter, and then present the process of pre-training knowledgespecific adapters.
+```
+
+## Chunk_6
+```
+3.1 Adapter Structure
+
+In this work, we present a different adapter structure as shown in Figure 2, which is referred to as the knowledge-specific adapter. In contrast to Houlsby et al. (2019) add adapter layers into each transformer layer, our adapter works as outside plug-ins. Each adapter model consists of _K_ adapter layers that contain _N_ transformer (Vaswani et al., 2017) layers and two projection layers. A skipconnection is applied across two projection layers. Specifically, for each adapter model, we plug Figure 2: Structure of the adapter layer (left). The adapter layer consists of two projection layers and _N_ =2 transformer layers, and a skip-connection between two projection layers. adapter layers among different transformer layers of the pre-trained model. We concatenate the output hidden feature of the transformer layer in the pre-trained model and the output feature of the former adapter layer, as the input feature of the current adapter layer. For each knowledge-specific adapter, we concatenate the last hidden features of the pre-trained model and adapter as the final output feature of this adapter model. In the pre-training procedure, we train each knowledge-specific adapter on different pretraining tasks individually. For various downstream tasks, K-A DAPTER can adopt the fine-tuning procedure similar to RoBERTa and BERT. When only one knowledge-specific adapter is adopted, we can take the final output feature of this adapter model as the input for task-specific layers of the downstream task. When multiple knowledge-specific adapters are adopted, we concatenate the output features of different adapter models as the input for task-specific layers of the downstream task.
+```
+
+## Chunk_7
+```
+3.2 Pre-training settings
+
+We use RoBERTa _LARGE_ (L=24, H=1024, A=16, 355M params) implementation by Huggingface [2] as the pre-trained model in all our experiments. As for each adapter layer, we denote the number of transformer layer as _N_, the hidden dimension of transformer layer as _H_ _A_, the number of self-attention heads as _A_ _A_, the hidden dimension of down-projection and up-projection layers as _H_ _d_ and _H_ _u_ . In detail, we have the following adapter size: _N_ = 2, _H_ _A_ = 768, _A_ _A_ = 12, _H_ _u_ = 1024 and _H_ _d_ = 768 . The RoBERTa lay 2 https://github.com/huggingface/transformers ers where adapter layers plug in are _{_ 0,11,23 _}_, and different adapter layers do not share parameters. Thus the total parameters for each adapter model are about 42M, which are much smaller than RoBERTa _LARGE_ and make the training process memory efficient. It should be noticed that RoBERTa is fixed during training and the parameters of adapters are trainable and initialized randomly. Then we describe how to inject different knowledge into knowledge-specific adapters as below.
+```
+
+## Chunk_8
+```
+3.3 Factual Adapter
+
+Factual knowledge can be described as the basic information that is concerned with facts. In this work, we acquire factual knowledge from the relationships among entities in natural language. We extract a sub-dataset T-REx-rc from T-REx (ElSahar et al., 2018) which is a large scale alignment dataset between Wikipedia abstracts and Wikidata triples. We discard all relations having less than 50 entity pairs, collecting 430 relations and 5.5M sentences. In order to inject factual knowledge, we propose to pre-train a knowledge-specific adapter called facAdapter on the relation classification task This task requires a model to classify relation labels of given entity pairs based on context. Specifically, the last hidden features of RoBERTa and facAdapter are concatenated as the input representation, and the pooling layer is applied to the input representations of the given entities. Then, we concatenate two entity representations to perform relation classification.
+```
+
+## Chunk_9
+```
+3.4 Linguistic Adapter
+
+Linguistic knowledge is implicitly contained in natural language texts, e.g., syntactic and semantic information. In this work, we acquire linguistic knowledge from dependency relationships among words in natural language text. We build a dataset consisting of 1M examples. In particular, we run the off-the-shell dependency parser from Stanford Parser [3] on a part of Book Corpus (Zhu et al., 2015) To inject linguistic knowledge, we pre-train another knowledge-specific adapter called linAdapter on the task of dependency relation prediction. This task aims to predict the head index of each token in the given sentence. We concatenate the last hidden features of RoBERTa and linAdapter as the input representation, and then apply a linear layer 3 http://nlp.stanford.edu/software/lex-parser.html
+```
+
+## Chunk_10
+```
+OpenEntity FIGER P
+
+**R** **Mi-F** 1 **Acc** **Ma-F** 1 **Mi-F** 1 NFGEC (Shimaoka et al., 2016) 68.80 53.30 60.10 55.60 75.15 71.73 BERT-base (Zhang et al., 2019) 76.37 70.96 73.56 52.04 75.16 71.63 ERNIE (Zhang et al., 2019) 78.42 72.90 75.56 57.19 75.61 73.39 KnowBERT (Peters et al., 2019) 78.60 73.70 76.10 - - KEPLER (Wang et al., 2019) 77.20 74.20 75.70 - - WKLM (Xiong et al., 2020) - - - 60.21 81.99 77.00 RoBERTa 77.55 74.95 76.23 56.31 82.43 77.83 RoBERTa + multitask 77.96 76.00 76.97 59.86 84.45 78.84 K-A DAPTER (w/o knowledge) 74.47 74.91 76.17 56.93 82.56 77.90 K-A DAPTER (F) 79.30 75.84 77.53 59.50 84.52 80.42 K-A DAPTER (L) 80.01 74.00 76.89 61.10 83.61 79.18 K-A DAPTER (F+L) 78.99 76.27 **77.61** 61.81 84.87 **80.54** Table 2: Results on two entity typing datasets OpenEntity and FIGER. to input representations of each token to perform classification. More training details of facAdapter and linAdapter can be found in the Appendix.
+```
+
+## Chunk_11
+```
+4 Experiments
+
+We evaluate our K-A DAPTER on three knowledgedriven downstream tasks, i.e., entity typing, question answering and relation classification. Furthermore, we conduct detailed analyses with the case study and probing experiments to explore the effectiveness and ability of models for learning factual knowledge. The notations of K-A DAPTER (F+L), K-A DAPTER (F), and K-A DAPTER (L) denote our model which consists of both factual adapter and linguistic adapter, only factual adapter and only linguistic adapter, respectively. Implementation details, and statistics of datasets are in the Appendix.
+```
+
+## Chunk_12
+```
+4.1 Entity Typing
+
+We conduct experiments on fine-grained entity typing which aims to predict the types of a given entity and its context. We evaluate our models on OpenEntity (Choi et al., 2018) and FIGER (Ling et al., 2015) following the same split setting as Zhang et al. (2019). To fine-tune our models for entity typing, we modify the input token sequence by adding the special token “@” before and after a certain entity, then the first “@” special token representation is adopted to perform classification. As for OpenEntity, we adopt micro _F_ 1 score as the final metric to represent the model performance. As for FIGER, we adopt strict accuracy, loose macro, loose micro _F_ 1 scores (Ling and Weld, 2012) for evaluation following the same evaluation criteria used in previous works.
+```
+
+## Chunk_13
+```
+Results and Discussion
+
+The results on OpenEntity and FIGER are shown in Table 2. K-A DAPTER (F+L) achieves consistent improvements across these datasets. As for OpenEntity, our RoBERTa achieve better results than other baseline models K-A DAPTER (F+L) further achieves improvement of 1.38% _F_ 1 over RoBERTa, which means factual knowledge and linguistic knowledge help to predict the types more accurately. As for FIGER, it covers more entity types, and is more fine-grained than OpenEntity. Compared with WKLM, KA DAPTER (F+L) improves the macro _F_ 1 by 2.88%, micro _F_ 1 by 2.54% and accuracy by 1.60%. This demonstrates that K-A DAPTER (F+L) benefits finegrained entity typing. In addition, we further conduct several experiments on our ablated model K-A DAPTER (w/o knowledge), to explore whether the performance gains came from introducing knowledge or additional parameters. Results show that K-A DAPTER (F) significantly outperforms K-A DAPTER (w/o knowledge). Moreover, it is worth noting that on OpenEntity dataset, K-A DAPTER (w/o knowledge) even performs slightly worse than RoBERTa
+```
+
+## Chunk_14
+```
+SearchQA Quasar-T** **CosmosQA EM F** 1 **EM** **F** 1 **Accuracy
+
+BiDAF (Seo et al., 2016) 28.60 34.60 25.90 28.50    AQA (Buck et al., 2018) 40.50 47.40    -    -    Rˆ3 (Wang et al., 2017a) 49.00 55.30 35.30 41.70    DSQA (Lin et al., 2018) 49.00 55.30 42.30 49.30    Evidence Agg. (Wang et al., 2018) 57.00 63.20 42.30 49.60    BERT (Xiong et al., 2020) 57.10 61.90 40.40 46.10    WKLM (Xiong et al., 2020) 58.70 63.30 43.70 49.90   WKLM + Ranking (Xiong et al., 2020) 61.70 66.70 45.80 52.20 BERT-FT _RACE_ + _SW AG_ (Huang et al., 2019)   -   -   -   - 68.70 RoBERTa 59.01 65.62 40.83 48.84 80.59 RoBERTa + multitask 59.92 66.67 44.62 51.17 81.19 K-A DAPTER (F) 61.85 67.17 46.20 52.86 80.93 K-A DAPTER (L) 61.15 66.82 45.66 52.39 80.76 K-A DAPTER (F+L) **61.96** **67.31** **46.32** **53.00** **81.83** Table 3: Results on question answering datasets including: CosmosQA, SearchQA and Quasar-T. These results demonstrate that our model gains improvement from knowledge instead of more parameters. Thus, for simplicity, we don’t discuss K-A DAPTER (w/o knowledge) in the following experiments.
+```
+
+## Chunk_15
+```
+4.2 Question Answering
+
+We conduct experiments on two question answering (QA) tasks, i.e., commonsense QA and open-domain QA. Commonsense QA aims to answer questions with commonsense. We adopt CosmosQA (Huang et al., 2019) to evaluate our models. CosmosQA requires commonsense-based reading comprehension, formulated as multiple-choice questions. To finetune our models for CosmosQA, the input token sequence is modified as _“_ _<_ _SEP_ _>_ _context_ _<_ _/SEP_ _>_ _question_ _<_ _/SEP_ _>_ _answer_ _<_ _/SEP_ _>_ _”_, then the representation of the first token is adopted to perform classification, and will get a score for this answer. After getting four scores, the answer with the highest score will be selected. We report accuracy scores obtained from the leaderboard. Open-domain QA aims to answer questions using external resources such as collections of documents and webpages. We evaluate our modes on two public datasets, i.e., Quasar-T (Dhingra et al., 2017) and SearchQA (Dunn et al., 2017). Specifically, we first retrieve paragraphs corresponding to the question using the information retrieval system and then extract the answer from these re trieved paragraphs through the reading comprehension technique. Following previous work(Lin et al., 2018), we use the retrieved paragraphs provided by Wang et al. (2017b) for these two datasets. To fine-tune our models for this task, the input token sequence is modified as _“_ _<_ _SEP_ _>_ _question_ _<_ _/SEP_ _>_ _paragraph_ _<_ _/SEP_ _>_ _”_ . We apply linear layers over the last hidden features of our model to predict the start and end position of the answer span. We adopt two metrics including ExactMatch (EM) and loose _F_ 1 (Ling and Weld, 2012) scores to evaluate our models.
+```
+
+## Chunk_16
+```
+Results and Discussion
+
+The results on Cos mosQA are shown in Table 3. Compared with BERT-FT _RACE_ + _SWAG_, our RoBERTa significantly achieves 11.89% improvement of accuracy Compared to RoBERTa, K-A DAPTER (F+L) further improves the accuracy by 1.24%, which indicates that K-A DAPTER can obtain better com monsense inference ability. Moreover, the perfor
+```
+
+## Chunk_17
+```
+Model
+
+**P** **R** **F** 1 C-GCN (Zhang et al., 2018) 69.90 63.30 66.40 BERT-base (Zhang et al., 2019) 67.23 64.81 66.00 ERNIE (Zhang et al., 2019) 69.97 66.08 67.97 BERT-large (Baldini Soares et al., 2019) - - 70.10 BERT+MTB (Baldini Soares et al., 2019) - - 71.50 KnowBERT (Peters et al., 2019) 71.60 71.40 71.50 KEPLER (Wang et al., 2019) 70.43 73.02 71.70 RoBERTa 70.17 72.36 71.25 RoBERTa + multitask 70.18 73.11 71.62 K-A DAPTER (F) 69.39 74.59 71.89 K-A DAPTER (L) 68.85 75.37 71.96 K-A DAPTER (F+L) 70.14 74.04 **72.04** Table 4: Results on the relation classification dataset TACRED. mance of ablated K-A DAPTER models, i.e., KA DAPTER (F) and K-A DAPTER (L) are clearly better than RoBERTa, but slightly lose compared with RoBERTa+multitask. It is notable that K A DAPTER (F+L) makes obvious improvement comparing with RoBERTa+multitask. This demonstrates that the combination of multiple knowledgespecific adapters could achieve better performance. The results for open-domain QA are shown in Table 3. K-A DAPTER models achieve better re sults compared to other baselines. This indicates that K-A DAPTER models can make full use of the infused knowledge and accordingly benefit understanding the retrieved paragraphs to answer the question. Specifically, on SearchQA, K-A DAPTER (F+L) makes significant improvement of 4.01% _F_ 1 scores, comparing with WKLM where the ranking scores are not used, and even has a slight improvement as compared to WKLM+Ranking. It is worth noting that K-A DAPTER models do not consider the confidence of each retrieved paragraph, while WKLM+Ranking utilizes ranking scores from a BERT based ranker. On the QuasarT dataset, K-A DAPTER (F+L) also outperforms WKLM by 3.1% _F_ 1 score and slightly outperforms WKLM+Ranking.
+```
+
+## Chunk_18
+```
+4.3 Relation Classification
+
+Relation classification aims to determine the correct relation between two entities in a given sentence. We adopt a large-scale relation classification dataset TACRED (Zhang et al., 2017). To fine-tune our models for this task, we modify the input token sequence by adding special token “@” before and after the first entity, adding “#” before and after the second entity. Then the token representations of the first special token @ and # are concatenated to perform relation classification. We adopt micro _F_ 1 score as the metric to represent the model performance as previous works.
+```
+
+## Chunk_19
+```
+Results and Discussion
+
+Table 4 shows the performances of different models on TACRED. The results indicate that K-A DAPTER models significantly outperform all baselines, which directly demonstrate our models can benefit relation classification. In particular, (1) K-A DAPTER models outperform RoBERTa, which proves the effectiveness of infusing knowledge into pre-trained model with adapters. (2) K-A DAPTER models gain more improvement compared with _RoBERTa+multitask_ This directly demonstrates injecting knowledge individually in K-A DAPTER way would help models make full use of knowledge.
+```
+
+## Chunk_20
+```
+4.4 Case Study
+
+Table 5 gives a qualitative comparison example between K-A DAPTER and RoBERTa on relation classification dataset TACRED. The results show that, in most cases, the wrongly predicted logit value of RoBERTa and the logit value of the true label are actually quite close. For example, given “ _New Fabris_ _closed down_ _::::_ _June_ _::_ _16_ ”, RoBERTa predicts “ no ~~r~~ elation ”, but the true label “ _city_ ~~_o_~~ _f_ ~~_b_~~ _irth_ ” ranks in second place. If a model could correctly predict the relationship between “ _New Fabris_ ” and “ _June 16_ ”, then it needs to know that “ _New Fabris_ ” is a company. Thanks to the factual knowledge in K-A DAPTER, it can help the model from predicting “ no ~~r~~ elation ” to predicting the correct category label. In addition, we utilize a LAMA (LAnguage Model Analysis) probe (Petroni et al., 2019) to examine models’ ability to memorize factual knowledge. Specifically, the LAMA probing task is under a zero-shot setting, which requires the language model to answer cloze-style questions about relational facts without fine-tuning, For example, given “Simon Bowman was born in [MASK]” as the input, models are asked to predict the correct token
+```
+
+## Chunk_21
+```
+Input True label** **Model** **Predicted label** **Predicted logits
+
+His former student Mark Devlin of the _:::::::::::::::::_ University _:::::_ of _:::::::::::::::::::::::_ Pennsylvania was co-leader of the other, known as the Microwave Anisotropy Telescope . K-Adapter [’schools ~~a~~ ttended’, ’no ~~r~~ elation’,’founded’] [12.6, 9.5, 5.2] schools ~~a~~ ttended RoBERTa [’no ~~r~~ elation’, ’founded’, ”member ~~o~~ f”] [9.1, 6.5, 5.0] Graham had been in custody in K-Adapter [’cities ~~o~~ f ~~r~~ esidence’, ’countries of ~~r~~ esidence’, ’no ~~r~~ elation’] [13.5,6.8,6.6] _::::::::::::::::::_ Vancouver, British Columbia, since cities ~~o~~ f ~~r~~ esidence June . RoBERTa [’countries ~~o~~ f residence’, ’country ~~o~~ f death’, ’alternate ~~n~~ ames’] [7.1, 7.0, 6.8] Vladimir Ladyzhenskiy of Russia died after she suffered afinal of the spa world championshipshock in the _:::::::::_ in Heinola, a southern city of Finland, on Saturday . You can’t have a good season unless it starts well, ” said Bill _:::::::::::::::::::_ Martin, co-founder of ShopperTrak, on Saturday . K-Adapter [’cause ~~o~~ f ~~d~~ eath’,’origin’,’no ~~r~~ elation’] [11.0, 7.6, 7.1] cause ~~o~~ f death RoBERTa [’no ~~r~~ elation’, ’cause of ~~d~~ eath’, ’origin’] [6.3, 5.9, 5.5] K-Adapter [’founded ~~b~~ y’, ’member ~~o~~ f’, ’employee ~~o~~ f’] [10.2, 9.3, 7.3] founded ~~b~~ y RoBERTa [’no ~~r~~ elation’, ’founded ~~b~~ y’, ’employee ~~o~~ f’] [10.0, 8.5, 5.4] Table 5: A case study for K-A DAPTER and RoBERTa on relation classification dataset TACRED. Underlines and wavy _:::::::::_ lines highlight the subject entities and object entities respectively. We report the top 3 ranked predictions.
+```
+
+## Chunk_22
+```
+Query Answer** **Model** **Generation
+
+The native language of Mammootty RoBERTa English, Tamil, Hindi, Sanskrit, Arabic, Chinese is [MASK]. Malayalam K-A DAPTER **Malayalam**, Tamil, Hindi, Mandarin, English Ravens can [MASK]. fly RoBERTa win, play, score, lose, run, drink, **fly**, roll, wait K-A DAPTER **fly**, swim, sing, shoot, kill, go, fish, drink, die Sometimes virus causes [MASK]. infection RoBERTa cancer, death, illness, blindness, paralysis K-A DAPTER cancer, illness, death, **infection**, disease Sunshine Coast, British Columbia is RoBERTa Florida, California, Texas, Hawaii, Mexico Canada located in [MASK]. K-A DAPTER **Canada**, Vancouver, Victoria, BC, Australia iPod Touch is produced by RoBERTa **Apple**, Samsung, Qualcomm, LG, Microsoft [MASK]. Apple K-A DAPTER **Apple**, HTC, Samsung, Motorola, Intel Table 6: Examples of LAMA generation for RoBERTa _LARGE_ and K-A DAPTER . The last column reports the top ranked predicted tokens. Correct predictions are in **bold** . which is masked. Table 6 shows several exam ples for the generation of RoBERTa _LARGE_ and K-A DAPTER for LAMA queries. From these examples, we can find that the objects predicted by KA DAPTER are more accurate, which demonstrate that K-A DAPTER captures richer factual knowledge than RoBERTa. More details about this probing experiments can be found in the Appendix A and E.4.
+```
+
+## Chunk_23
+```
+5 Conclusion
+
+In this paper, we propose a flexible and simple approach, called K-A DAPTER, to infuse knowledge into large pre-trained models. K-A DAPTER remains the original parameters of pre-trained models unchanged and supports continual knowledge infusion, i.e., new kinds of injected-knowledge will not affect the parameters learned for old knowledge. Specifically, factual knowledge and linguistic knowledge are infused into RoBERTa with two kinds of adapters, which are pre-trained on the relation classification task and dependency relation prediction task, respectively. Extensive experiments on three knowledge-driven downstream tasks demonstrate that the performance of each adapter achieves a significant improvement individually, and even more together. Detailed analyses further suggest that K-A DAPTER captures richer factual and commonsense knowledge than RoBERTa, and provide insights on the effectiveness of knowledge infusion. In future work, we will infuse more types of knowledge, and apply our framework to more pre-trained models.
+```
+
+## Chunk_24
+```
+2013. Translating embeddings for modeling multirelational data. In _NIPS_, pages 2787–2795.
+
+Christian Buck, Jannis Bulian, Massimiliano Ciaramita, Andrea Gesmundo, Neil Houlsby, Wojciech Gajewski, and Wei Wang. 2018. Ask the Right Questions: Active Question Reformulation with Reinforcement Learning. In _ICLR_ . Eunsol Choi, Omer Levy, Yejin Choi, and Luke Zettlemoyer. 2018. Ultra-fine entity typing. In _ACL_, pages 87–96. Zihang Dai, Zhilin Yang, Yiming Yang, Jaime Carbonell, Quoc V Le, and Ruslan Salakhutdinov. 2019. Transformer-xl: Attentive language models beyond a fixed-length context. In _ACL_, pages 2978–2988. Jacob Devlin, Ming-Wei Chang, Kenton Lee, and Kristina Toutanova. 2019. Bert: Pre-training of deep bidirectional transformers for language understanding. In _NAACL_, pages 4171–4186. Bhuwan Dhingra, Kathryn Mazaitis, and William W Cohen. 2017. Quasar: Datasets for question answering by search and reading. In _arXiv preprint_ _arXiv:1707.03904_ . Matthew Dunn, Levent Sagun, Mike Higgins, V. Ugur G¨uney, Volkan Cirik, and Kyunghyun Cho. 2017. SearchQA: A New Q&A Dataset Augmented with Context from a Search Engine. In _ArXiv preprint_ _arXiv:1704.05179_ . Hady ElSahar, Pavlos Vougiouklis, Arslen Remaci, Christophe Gravier, Jonathon S. Hare, Fr´ed´erique Laforest, and Elena Simperl. 2018. T-REx: A Large Scale Alignment of Natural Language with Knowledge Base Triples. In _LREC_ . Philip Gage. 1994. A new algorithm for data compression. _The C Users Journal_, 12(2):23–38. Bin He, Di Zhou, Jinghui Xiao, Qun Liu, Nicholas Jing Yuan, Tong Xu, et al. 2019. Integrating Graph Contextualized Knowledge into Pre-trained Language Models. In _arXiv preprint arXiv:1912.00147_ . Neil Houlsby, Andrei Giurgiu, Stanislaw Jastrzebski, Bruna Morrone, Quentin De Laroussilhe, Andrea Gesmundo, Mona Attariyan, and Sylvain Gelly.
+```
+
+## Chunk_25
+```
+2019. Parameter-Efficient Transfer Learning for
+
+NLP. In _ICML_, pages 2790–2799. Lifu Huang, Ronan Le Bras, Chandra Bhagavatula, and Yejin Choi. 2019. Cosmos QA: Machine reading comprehension with contextual commonsense reasoning. In _EMNLP_, pages 2391–2401. Nora Kassner and Hinrich Schutze. 2019. Negated LAMA: Birds cannot fly. _arXiv_ _preprint_ _arXiv:1911.03343_ . James Kirkpatrick, Razvan Pascanu, Neil Rabinowitz, Joel Veness, Guillaume Desjardins, Andrei A. Rusu, Kieran Milan, John Quan, Tiago Ramalho, Ag[nieszka Grabska-Barwinska, and et al. 2017. Over-](https://doi.org/10.1073/pnas.1611835114) [coming catastrophic forgetting in neural networks](https://doi.org/10.1073/pnas.1611835114) _Proceedings of the National Academy of Sciences_, 114(13):3521–3526. Anne Lauscher, Ivan Vuli´c, Edoardo Maria Ponti, Anna Korhonen, and Goran Glavaˇs. 2019. Informing unsupervised pretraining with external linguistic knowledge. _arXiv preprint arXiv:1909.02339_ . Yoav Levine, Barak Lenz, Or Dagan, Dan Padnos, Or Sharir, Shai Shalev-Shwartz, Amnon Shashua, and Yoav Shoham. 2019. Sensebert: Driving some sense into bert. _arXiv preprint arXiv:1908.05646_ . Yankai Lin, Haozhe Ji, Zhiyuan Liu, and Maosong Sun
+```
+
+## Chunk_26
+```
+2018. Denoising distantly supervised open-domain
+
+question answering. In _ACL_, pages 1736–1745. Xiao Ling, Sameer Singh, and Daniel S. Weld. 2015 Design challenges for entity linking. _TACL_, 3:315– **328. Xiao Ling and Daniel S. Weld. 2012. Fine-grained entity recognition. In _Proceedings of the Twenty-Sixth_** _AAAI Conference on Artificial Intelligence, July 22-_ _26, 2012, Toronto, Ontario, Canada_ . AAAI Press. Yinhan Liu, Myle Ott, Naman Goyal, Jingfei Du, Mandar Joshi, Danqi Chen, Omer Levy, Mike Lewis, Luke Zettlemoyer, and Veselin Stoyanov. 2019 Roberta: A robustly optimized bert pretraining approach. _arXiv preprint arXiv:1907.11692_ . Matthew E Peters, Mark Neumann, Mohit Iyyer, Matt Gardner, Christopher Clark, Kenton Lee, and Luke Zettlemoyer. 2018. Deep contextualized word representations. In _NAACL_, pages 2227–2237. Matthew E Peters, Mark Neumann, IV Logan, L Robert, Roy Schwartz, Vidur Joshi, Sameer Singh, and Noah A Smith. 2019. Knowledge enhanced contextual word representations. In _EMNLP_, pages 43– **54. Fabio Petroni, Tim Rockt¨aschel, Patrick Lewis, Anton** Bakhtin, Yuxiang Wu, Alexander H Miller, and Sebastian Riedel. 2019. Language Models as Knowledge Bases? In _EMNLP_, pages 2463–2473. Nina Poerner, Ulli Waltinger, and Hinrich Sch¨utze
+```
+
+## Chunk_27
+```
+2019. BERT is Not a Knowledge Base (Yet): Factual Knowledge vs. Name-Based Reasoning in Unsupervised QA. _arXiv preprint arXiv:1911.03681_ .
+
+Alec Radford, Karthik Narasimhan, Tim Salimans, and Ilya Sutskever. 2018. Improving language understanding by generative pre-training. _OpenAI Blog_ . Alec Radford, Jeffrey Wu, Rewon Child, David Luan, Dario Amodei, and Ilya Sutskever. 2019. Language models are unsupervised multitask learners. _OpenAI_ _Blog_, 1(8). Colin Raffel, Noam Shazeer, Adam Roberts, Katherine Lee, Sharan Narang, Michael Matena, Yanqi Zhou, Wei Li, and Peter J Liu. 2019. Exploring the limits of transfer learning with a unified text-to-text transformer. _arXiv preprint arXiv:1910.10683_ . Minjoon Seo, Aniruddha Kembhavi, Ali Farhadi, and Hannaneh Hajishirzi. 2016. Bidirectional Attention Flow for Machine Comprehension. _ArXiv_, abs/1611.01603. Sonse Shimaoka, Pontus Stenetorp, Kentaro Inui, and Sebastian Riedel. 2016. An attentive neural architecture for fine-grained entity type classification. In _Proceedings of the 5th Workshop on Automated_ _Knowledge Base Construction(AKBC)_, pages 69– **74. Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob** Uszkoreit, Llion Jones, Aidan N Gomez, Łukasz Kaiser, and Illia Polosukhin. 2017. Attention is all you need. In _NeurIPS_, pages 5998–6008. Shuohang Wang, Mo Yu, Xiaoxiao Guo, Zhiguo Wang, Tim Klinger, Wei Zhang, Shiyu Chang, Gerald Tesauro, Bowen Zhou, and Jing Jiang. 2017a. Reinforced reader-ranker for open-domain question answering. _arXiv preprint arXiv:1709.00023_ . Shuohang Wang, Mo Yu, Jing Jiang, Wei Zhang, Xiaoxiao Guo, Shiyu Chang, Zhiguo Wang, Tim Klinger, Gerald Tesauro, and Murray Campbell. 2018. Evidence aggregation for answer re-ranking in opendomain question answering. In _ICLR_ . Wenhui Wang, Nan Yang, Furu Wei, Baobao Chang, and Ming Zhou. 2017b. Gated self-matching networks for reading comprehension and question answering. In _ACL_, pages 189–198. Xiaozhi Wang, Tianyu Gao, Zhaocheng Zhu, Zhiyuan Liu, Juanzi Li, and Jian Tang. 2019. KEPLER: A Unified Model for Knowledge Embedding and Pretrained Language Representation. _arXiv preprint_ _arXiv:1911.06136_ . Wenhan Xiong, Jingfei Du, William Yang Wang, and Veselin Stoyanov. 2020. Pretrained Encyclopedia: Weakly Supervised Knowledge-Pretrained Language Model. In _ICLR_ . Zhilin Yang, Zihang Dai, Yiming Yang, Jaime Carbonell, Ruslan Salakhutdinov, and Quoc V Le.
+```
+
+## Chunk_28
+```
+2018. Graph Convolution over Pruned Dependency
+
+Trees Improves Relation Extraction. In _EMNLP_, pages 2205–2215. Yuhao Zhang, Victor Zhong, Danqi Chen, Gabor Angeli, and Christopher D. Manning. 2017. Positionaware Attention and Supervised Data Improve Slot Filling. In _EMNLP_, pages 35–45. Zhengyan Zhang, Xu Han, Zhiyuan Liu, Xin Jiang, Maosong Sun, and Qun Liu. 2019. ERNIE: Enhanced Language Representation with Informative Entities. In _ACL_, pages 1441–1451. Yukun Zhu, Ryan Kiros, Rich Zemel, Ruslan Salakhutdinov, Raquel Urtasun, Antonio Torralba, and Sanja Fidler. 2015. Aligning Books and Movies: Towards Story-Like Visual Explanations by Watching Movies and Reading Books. In _ICCV_, pages 19–27.
+```
+
+## Chunk_29
+```
+A Probing Experiments
+
+Although K-A DAPTER models have shown superior performance on knowledge-driven downstream tasks, it does not directly provide insights into whether our models infuse richer factual knowl edge. Thus we utilize a LAMA (LAnguage Model Analysis) probe (Petroni et al., 2019) to examine the ability to memorize factual knowledge. Specifically, the LAMA probing task is under a zeroshot setting, which requires the language model to answer cloze-style questions about relational facts without fine-tuning, e.g., “Simon Bowman was born in [MASK]”. The model needs to predict a distribution over a limited vocabulary to replace [MASK]. We report mean precision at one (P@1) macro-averaged over relations.
+```
+
+## Chunk_30
+```
+Settings
+
+We consider several language models including: ELMo (Peters et al., 2018), ELMo5.5B (Peters et al., 2018), Transformer-XL (Dai et al., 2019), BERT _LARGE_ and RoBERTa _LARGE_ . We focus on LAMA-GoogleRE and LAMA-T-REx, which are aimed at factual knowledge. We also conduct probe experiments on LAMA-UHN (Poerner et al., 2019), a more “factual” subset of LAMA, by filtering out queries that are easy to answer from entity names alone. Different models have different vocabulary sizes. To conduct a more fair comparison experiment, we adopt the intersection of vocabularies and let every language model rank only tokens in this vocabulary following Petroni et al. (2019). For simplicity, we only compare KA PDATER (F) which is infused with factual knowledge, with other baseline models.
+```
+
+## Chunk_31
+```
+Results and Discussion
+
+Results are shown in Ta ble 7. It is surprising that BERT _LARGE_ performs better than RoBERTa _LARGE_ . There is one possible reason: BERT uses a character-level BPE (Gage, 1994) vocabulary, while RoBERTa considers bytelevel BPE vocabulary. This finding indicates that, although using bytes makes it possible to learn a subword vocabulary that can encode any text without introducing “unknown” tokens, it might indirectly harm the model’s ability to learn factual knowledge, e.g., some proper nouns may be divided into bytes. Thus in the following experiments, we do not take BERT into account. K-A DAPTER outperforms other models (except for BERT) by a huge margin. As for LAMA, com pared to RoBERTa _LARGE_, K-A DAPTER obtains 2.2% and 1.2% P@1 improvement across GoogleRE and T-REx, respectively. Moreover, compared to RoBERTa _LARGE_, K-A DAPTER still achieves better results on LAMA-UHN. The results demon strate that K-A DAPTER captures richer factual and commonsense knowledge than RoBERTa.
+```
+
+## Chunk_32
+```
+B Pre-Training Details B.1 Factual Adapter
+
+The pre-trained model is fixed during training and the parameters of the factual adapter are trainable and initialized randomly. The model is trained with cross-entropy loss. To accelerate the training process, we set the max sequence length as 64 as the average sequence length of T-REx-rc is only 22.8. We train the model for 5 epochs using a batch size of 128. We use AdamW to optimize our models with the initial learning rate of 2e-5. We train the model with 4 16G NVIDIA V100 GPUs.
+```
+
+## Chunk_33
+```
+B.2 Linguistic Adapter
+
+Same as the training process of the factual adapter, the pre-trained model is fixed during training and the parameters of the linguistic adapter are trainable and initialized randomly. The model is trained with BCEWithLogits loss. We set the max sequence length as 128. We train the model for 10 epochs using a batch size of 256. We use AdamW with the initial learning rate of 1e-5. We train the model with 4 16G NVIDIA V100 GPUs.
+```
+
+## Chunk_34
+```
+C Applying K-adapter on Downstream Tasks
+
+For the downstream tasks, the key point here is the combination of the pre-trained model’s representations and adapter’s representations, that is to say: leveraging the general information of the pre-trained model on one hand, and the specific knowledge in the adapter on the other. To use K-A DAPTER for downstream tasks is very simple as shown in Figure 5. Usually, when we use pre-trained language models such as BERT and RoBERTa for downstream tasks, we feed the output features from the pre-trained model into the task-specific layer, and then do the corresponding downstream task. As for the K-A DAPTER, we finetune it just like what the orginal BERT or RoBERTa does. We concatenate the output features of the pretrained model with the features of the adapter, and then feed them to the task-specific layer. Models Corpus ELMo ELMo5.5B TransformerXL BERT-large RoBERTa _LARGE_ K-A PDATER LAMA-Google-RE 2.2 3.1 1.8 12.1 4.8 7.0 LAMA-UHN-Google-RE 2.3 2.7 1.3 6.5 2.5 3.7 LAMA-T-REx 0.2 0.3 19.5 33.9 27.1 29.1 LAMA-UHN-T-REx 0.2 0.2 12.6 26.2 20.1 23.0 Table 7: P@1 on LAMA and LAMA-UHN across Google-RE and T-REx corpora. Output Representations Adapter Representations
+```
+
+## Chunk_35
+```
+PTM
+
+Representations |Pre-training Task|Col2|Col3|Col4|Col5|Col6|Col7|Col8|Col9| |---|---|---|---|---|---|---|---|---| |Task-speciﬁc Layer|Task-speciﬁc Layer|Task-speciﬁc Layer|Task-speciﬁc Layer|Task-speciﬁc Layer|Task-speciﬁc Layer|Task-speciﬁc Layer|Task-speciﬁc Layer|Task-speciﬁc Layer| |||||||||| |||||||||| Input: Knowledge |ut tations K-Adapter|Col2| |---|---| |Pre-trained Language Model (PTM)<br>Adapter<br>Intermediate<br>Representaions<br>Fusion<br>tions<br>r<br>ations<br>concat<br><br>Obama was<br>born<br>in<br>Honolulu<br>.<br>[SEP]<br>[CLS] Barack|Pre-trained Language Model (PTM)<br>Adapter<br>Intermediate<br>Representaions<br>Fusion<br>tions<br>r<br>ations<br>concat<br><br>Obama was<br>born<br>in<br>Honolulu<br>.<br>[SEP]<br>[CLS] Barack| |[CLS]|Barack| Figure 3: An overview of our K-A DAPTER to inject specific knowledge by training a knowledge-specific adapter on the pre-training task.
+```
+
+## Chunk_36
+```
+D Dataset statistics
+
+In Table 8, we present the statistics of one relation classification dataset TACRED, and two entity typing datasets OpenEntity and FIGER. In Table 9, we present the statistics of one commonsense QA dataset CosmosQA and two open-domain QA datasets SearchQA and Quasar-T. |Dataset|Train Dev Test Relation/Type| |---|---| |TACRED|68,124<br>22,631<br>15,509<br>42| |Open Entity<br>FIGER|2,000<br>2,000<br>2,000<br>6<br>2,000,000<br>10,000<br>563<br>113| Table 8: The statistics of the relation classification dataset TACRED and entity typing datasets, i.e., Open Entity and FIGER.
+```
+
+## Chunk_37
+```
+E Fine-tuning Details
+
+We implement our experiments using Huggingface [4] . For all fine-tuning experiments, we use AdamW as the optimizer. The parameters of adapters are fixed during the fine-tuning process 4 https://github.com/huggingface/transformers Dataset Train Dev Test CosmosQA 25,588 3,000 7,000 SearchQA 99,811 13,893 27,247 Quasar-T 28,496 3,000 3,000 Table 9: The statistics of the question answering datasets, i.e., CosmosQA, SearchQA and Quasar-T. and the parameters of RoBERTa are trainable and initialized from Huggingface checkpoint. We select the best hyperparameters on the validation set For all experiments, we set the random seed to be 42 for reproductibility.
+```
+
+## Chunk_38
+```
+E.1 Entity typing
+
+For Open Entity dataset, we set the max sequence length to be 256 and select the hyperparameters from batch size: _{_ 4, 8 _}_, learning rate: _{_ 2e-5, 1e5, 5e-6 _}_ and warmup step: _{_ 0, 200, 500, 1000, 1200 _}_ . For K-A DAPTER (F), the best performance is achieved at batch size=4, lr=5e-6, warmup=500 (it takes about 2 hours to get the best result running on singe 16G P100). For K-A DAPTER (L), the best performance is achieved at batch size=4, Birth-of-place Predict Relation Label |ooling|Col2|Col3|Col4| |---|---|---|---| ||||| |K-Adapter|K-Adapter|K-Adapter|K-Adapter| Input: [CLS] Barack Obama was born in Honolulu . [SEP] Figure 4: An example of using relation classification as a pre-training task to inject knowledge into K-A DAPTER : given _“Barack Obama was born in Honolulu”_, and then predicts the relationship between “Barack Obama” and “Honolulu” is “Birth-of-place”. Question Answering Question Answering Output Representations Adapter Representations
+```
+
+## Chunk_39
+```
+PTM
+
+Representations Input: [CLS] Barack Obama was born in Honolulu . [SEP] (a) Fine-tuing Phase: RoBERTa |Downstream task1 Downstream task2 Downstream task3 Classification Entity Typing|Col2|Col3|Col4|Col5|Col6|Col7|Col8| |---|---|---|---|---|---|---|---| |Pre-trained Language Model (PTM)<br>Adapter<br>Fusion<br>Task-speciﬁc Layers<br>tions<br>r<br>ations<br>t<br>ations<br>concat<br>K-Adapter<br>Intermediate<br>Representaions<br>Obama was<br>born<br>in<br>Honolulu<br>.<br>[SEP]<br>[CLS] Barack|Pre-trained Language Model (PTM)<br>Adapter<br>Fusion<br>Task-speciﬁc Layers<br>tions<br>r<br>ations<br>t<br>ations<br>concat<br>K-Adapter<br>Intermediate<br>Representaions<br>Obama was<br>born<br>in<br>Honolulu<br>.<br>[SEP]<br>[CLS] Barack|Pre-trained Language Model (PTM)<br>Adapter<br>Fusion<br>Task-speciﬁc Layers<br>tions<br>r<br>ations<br>t<br>ations<br>concat<br>K-Adapter<br>Intermediate<br>Representaions<br>Obama was<br>born<br>in<br>Honolulu<br>.<br>[SEP]<br>[CLS] Barack|Pre-trained Language Model (PTM)<br>Adapter<br>Fusion<br>Task-speciﬁc Layers<br>tions<br>r<br>ations<br>t<br>ations<br>concat<br>K-Adapter<br>Intermediate<br>Representaions<br>Obama was<br>born<br>in<br>Honolulu<br>.<br>[SEP]<br>[CLS] Barack|Pre-trained Language Model (PTM)<br>Adapter<br>Fusion<br>Task-speciﬁc Layers<br>tions<br>r<br>ations<br>t<br>ations<br>concat<br>K-Adapter<br>Intermediate<br>Representaions<br>Obama was<br>born<br>in<br>Honolulu<br>.<br>[SEP]<br>[CLS] Barack|Pre-trained Language Model (PTM)<br>Adapter<br>Fusion<br>Task-speciﬁc Layers<br>tions<br>r<br>ations<br>t<br>ations<br>concat<br>K-Adapter<br>Intermediate<br>Representaions<br>Obama was<br>born<br>in<br>Honolulu<br>.<br>[SEP]<br>[CLS] Barack|Pre-trained Language Model (PTM)<br>Adapter<br>Fusion<br>Task-speciﬁc Layers<br>tions<br>r<br>ations<br>t<br>ations<br>concat<br>K-Adapter<br>Intermediate<br>Representaions<br>Obama was<br>born<br>in<br>Honolulu<br>.<br>[SEP]<br>[CLS] Barack|Pre-trained Language Model (PTM)<br>Adapter<br>Fusion<br>Task-speciﬁc Layers<br>tions<br>r<br>ations<br>t<br>ations<br>concat<br>K-Adapter<br>Intermediate<br>Representaions<br>Obama was<br>born<br>in<br>Honolulu<br>.<br>[SEP]<br>[CLS] Barack| |[CLS]|Barack|Obam|a was|born|in<br>|Honolulu|.| (b) Fine-tuing Phase: Single K-Aadapter Input: Figure 5: Fine-tuning K-A DAPTER just like what the original RoBERTa or BERT does. lr=5e-6, warmup=1000 (it takes about 2 hours to get the best result running on singe 16G P100). For K-A DAPTER (F+L), the best performance is achieved at batch size=4, lr=5e-6, warmup=1000 (it takes about 3 hours to get the best result running on singe 16G P100). For FIGER dataset, we run experiments on 4 16G P100 for 3 epochs, set the max sequence length to be 256, and select the hyperparameters from batch size: _{_ 64, 512, 2048 _}_, learning rate: _{_ 2e-5, 1e-5, 5e-6 _}_ and warmup step: _{_ 0, 200, 500, 1000, 1200 _}_ . For K-A DAPTER (F), the best performance is achieved at batch size=2048, lr=5e-6, warmup=500. For K-A DAPTER (L), the best performance is achieved at batch size=2048, lr=5e-6, warmup=200. For K-A DAPTER (F+L), the best performance is achieved at batch size=2048, lr=5e-6, warmup=1000.
+```
+
+## Chunk_40
+```
+E.2 Question Answering
+
+For CosmosQA dataset, we run experiments on one single 16G P100 for 3 epochs, set the max sequence length to be 256, and select the hyperparameters from batch size: _{_ 16, 32, 64, 128 _}_, learning rate: _{_ 2e-5, 1e-5, 5e-6 _}_ and warmup step: _{_ 0, 200, 500, 800, 1000 _}_ . For K-A DAPTER (F+L) and its ablated models, the best performance is achieved at batch size=64, lr=1e-5, warmup=0 (it takes about 8 hours to get the best result). For SearchQA dataset, we run experiments on one single 16G P100 for 2 epochs, set the max sequence length to be 128, and select the hyperparameters from batch size: _{_ 2, 4, 8, 16 _}_, learning rate: _{_ 5e-5, 2e-5, 1e-5, 5e-6 _}_ and warmup step: _{_ 0, 500, 1000 _}_ . For K-A DAPTER (F+L) and its ablated models, the best performance is achieved at batch size=8, lr=5e-6, warmup=0. For Quasar-T dataset, we run experiments on one single 16G P100 for 5 epochs, set the max sequence length to be 256, and select the hyperparameters from batch size: _{_ 2, 4, 8, 16 _}_, learning rate: _{_ 5e-5, 2e-5, 1e-5, 5e-6 _}_ and warmup step: _{_ 0, 500, 1000 _}_ . For K-A DAPTER (F+L) and its ablated models, the best performance is achieved at batch size=16, lr=1e-5, warmup=0.
+```
+
+## Chunk_41
+```
+E.3 Relation Classification
+
+For TACRED dataset, we run experiments on 4 16G P100 for 5 epochs, set the max sequence length to be 184, and select the hyperparameters from batch size: _{_ 4, 8, 16, 32 _}_, learning rate: _{_ 2e-5, 1e-5, 5e-6, 1e-6 _}_ and warmup step: _{_ 0, 200, 500, 800, 1000, 1200 _}_ . For K-A DAPTER (F), the best performance is achieved at batch size=32, lr=1e5, warmup=500. For K-A DAPTER (L), the best performance is achieved at batch size=32, lr=1e-5, warmup=200. For K-A DAPTER (F+L), the best performance is achieved at batch size=32, lr=5e-6, warmup=1000.
+```
+
+## Chunk_42
+```
+E.4 Probing Experiments
+
+We implement our probing experiments using LAMA [5] . When we infuse knowledge into knowledge-specific adapters, we do not change the original parameters of the pre-trained model and thus do not adopt the masked language model (MLM) as a pre-training task. Therefore, before we conduct probing experiments, we need to add and train a linear layer as the mlm layer for predicting the [MASK] entities. Specifically, we fix all the parameters of K-A DAPTER and only update the parameters of the mlm layer using a masked language modeling (MLM) loss. We adopt the raw WikiText-2 dataset (181M). We train the mlm layer with one single 16G P100 for 2 epochs. We set the max sequence length to be 512, batch size to be 1024 and warmup step to be 0. 5 https://github.com/facebookresearch/LAMA
+```
+

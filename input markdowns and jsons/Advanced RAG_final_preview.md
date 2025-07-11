@@ -1,0 +1,168 @@
+## Chunk_1
+```
+Abstract
+
+This study aims to improve knowledge-based question-answering (QA) systems by overcoming the limitations of existing Retrieval-Augmented Generation (RAG) models and implementing an advanced RAG system based on Graph technology to develop high-quality generative AI services. While existing RAG models demonstrate high ac curacy and fluency by utilizing retrieved information, they may suffer from accuracy degradation as they generate responses using pre-loaded knowledge without reprocessing. Additionally, they cannot incorporate real-time data after the RAG configuration stage, leading to issues with contextual understanding and biased information. To address these limitations, this study implemented an enhanced RAG system utilizing Graph technology. This system is designed to efficiently search and utilize information. Specifically, it employs LangGraph to evaluate the reliability of retrieved information and synthesizes diverse data to generate more accurate and enhanced responses. Furthermore, the study provides a detailed explanation of the system's operation, key implementation steps, and examples through implementation code and validation results, thereby enhancing the understanding of advanced RAG technology. This approach offers practical guidelines for implementing advanced RAG systems in corporate services, making it a valu able resource for practical application.
+```
+
+## Chunk_2
+```
+## **I. Introduction
+
+Recent advancements in AI technology have brought significant attention to Generative AI. Generative AI, a form of artificial intelligence that can create new content such as text, images, audio, and video based on vast amounts of trained data models (Jeong, 2023d), is being applied in various fields, including daily conversations, finance, healthcare, education, and entertainment (Ahn & Park, 2023). As generative AI services become more accessible to the general public, the role of generative AI-based chatbots is becoming increasingly important (Adam et al., 2021; Przegalinska et al., 2019; Park, 2024). A chatbot is an intelligent agent that allows users to have conversations typically through text or voice (Sánchez-Díaz et al., 2018; Jeong & Jeong, 2020). Recently, generative AI chatbots have advanced to the level of analyzing human emotions and intentions to provide responses (Jeong, 2023a). With the advent of large language models (LLMs), these chatbots can now be utilized for automatic dialogue generation and translation (Jeong, 2023b). However, they may generate responses that conflict with the latest information and have a low understanding of new problems or domains as they rely on previously trained data (Jeong, 2023c). While 2023 was marked by the release of foundational large language models (LLMs) like ChatGPT and Llama-2, experts predict that 2024 will be the year of Retrieval Augmented Generation (RAG) and AI Agents (Skelter Labs, 2024). However, there are several considerations for companies looking to adopt generative AI services. Companies must address concerns such as whether the AI can provide accurate responses based on internal data, the potential risk of internal data leakage, and how to integrate generative AI with corporate systems. Solutions include using domain-specific fine-tuned LLMs and enhancing reliability with RAG that utilizes internal information (Jung, 2024). When domain-specific information is fine-tuned on GPT4 LLM, accuracy improves from 75% to 81%, and adding RAG can further increase accuracy to 86% (Angels et al., 2024). RAG models are known for effectively combining internal knowledge retrieval and generation to produce more accurate responses. They offer the advantages of source-based fact provision and addressing data freshness issues through the integration of internal and external knowledge bases. However, the effectiveness of RAG models heavily depends on the quality of the database, directly impacting model performance (Kim, 2024). Traditional RAG models load knowledge once and generate responses without reprocessing, leading to accuracy degradation and an inability to reflect real-time data after the RAG configuration. This process can result in inaccurate responses, particularly when generating answers to complex questions, as the initial vectorized knowledge is used without updating with new information. Furthermore, traditional RAG models struggle to handle various types of questions and may suffer from unrelated documents being used in response due to poor retrieval strategies, along with the hallucination issues observed in LLMs. The purpose of this study is to improve the traditional RAG model-based knowledge-based QA system (Jeon et al., 2024) and overcome its limitations by accessing realtime data and verifying whether the retrieved documents are genuinely relevant to the questions. By implementing an enhanced RAG system capable of addressing questions about recent events and real-time data, and being less susceptible to hallucinations, this study aims to improve the quality and performance of generative AI services. The introduction of this paper explains the research background and objectives, the limitations of existing RAG models, the importance and contributions of the study, and the structure of the paper. The theoretical background reviews the overview of RAG models, advanced RAG approaches, and case studies of existing research improvements. The design of the advanced RAG model covers the composition flow of advanced RAG, the configuration of Agent RAG, and other enhanced features. The implementation of the advanced RAG system details the overview and application of LangGraph, the system implementation process, and the results. The testing section presents the improved results of the implemented code. Finally, the conclusion summarizes the research findings, discusses the limitations, and outlines directions for future research.
+```
+
+## Chunk_3
+```
+2.1. Overview of the RAG Model
+
+The RAG (Retrieval-Augmented Generation) model combines retrieval and generation to produce answers by integrating document retrieval and generation models (Lewis et al., 2020). To generate an answer to a question, the model first retrieves relevant documents and then uses them to produce the response. This process helps in generating accurate answers to questions. The RAG model can handle various types of questions effectively, even when there is a lack of specific domain knowledge. Consequently, it enhances the accuracy and consistency of information compared to traditional generative models. The RAG model consists of two main stages: - **Retrieval Stage:** Information relevant to the given question is retrieved through a search engine. - **Generation Stage:** Answers are generated based on the retrieved information. 2.1.1. RAG Model Implementation Flow The RAG model performs text generation tasks by retrieving information from a given source data and using that information to generate the desired text. The data processing for using RAG involves dividing the original data into smaller chunks, embedding the text data by converting it into numerical vectors, and storing these vectors in a vector store (Microsoft, 2023). The implementation flow of a generative AI service based on the RAG model is depicted in Figure 1 (Jeong, 2023e).
+```
+
+## Chunk_4
+```
+Figure 1:
+
+Implementation Flow of a RAG-based Gener ative AI Service 2.1.2. RAG-Based Vector Store Types To establish a RAG (Retrieval-Augmented Generation) system, a vector database is utilized to store knowledge. A typical vector pipeline for vector databases involves three stages: Indexing, Querying, and Post Processing (Devtorium, 2023). Specifically, RAG-based vector store configurations can be categorized into two types as illustrated in Figure 2: one where all source data is pre-stored in the vector store and another where data is dynamically inserted at query time.
+```
+
+## Chunk_5
+```
+Figure 2:
+
+Configuration Types and Processing Proce dures of RAG-Based Vector Stores When a company offers internal knowledge through an Open LLM (Large Language Model), ensuring security is a critical issue, making the use of Local LLMs essential. In this scenario, it is effective to employ multiple Local LLMs, each optimized for different tasks. For instance, one LLM might be specialized in generating database queries to retrieve relevant data from multiple source databases, while another LLM could be developed to provide answers based on specific domain knowledge (Jeong, 2023e).
+```
+
+## Chunk_6
+```
+2.2. Prior Research on Advanced RAG
+
+2.2.1. Methods to Enhance RAG Performance The performance of RAG (Retrieval-Augmented Generation) is influenced by the quality of the data that can be composed into prompts based on the results of question processing from external repositories. Recently, various Advanced RAG (Advanced Retrieval-Augmented Generation) methods have been proposed to address the limitations of conventional RAG. Advanced RAG represents an evolved form of the traditional RAG technique, incorporating various optimization methods to overcome its limitations. Recent research by Yunfan G. et al. introduces an optimization strategy that divides the retrieval process into Pre-Retrieval, Retrieval, and Post-Retrieval stages, significantly enhancing information accuracy and processing efficiency through optimization at each stage (Yunfan G. et al., 2024). Additionally, various improvement methods, such as re-ranking based on relevance to enhance accuracy, have been proposed as strategies for improving the quality of RAG systems (Jang Dong-jin, 2024), as outlined in Table 1 (Matt A., 2023). Frameworks like LangChain or LlamaIndex provide libraries for implementing these strategies, making the implementation process more straightforward.
+```
+
+## Chunk_7
+```
+Table 1:
+
+Methods to Enhance RAG Performance |Method|Descriptions| |---|---| |Clean your<br>data|When dealing with conflicting or redundant in-<br>formation, it becomes challenging to find the<br>correct context during retrieval. To ensure accu-<br>rate responses to queries, it is essential to<br>properly structure the documents themselves.<br>One approach is to create summaries for all doc-<br>uments and use these summaries as context.| |Explore dif-<br>ferent index<br>types|While embedding-based similarity search meth-<br>ods generally perform well, they are not always<br>the best solution. For example, in e-commerce,<br>keyword-based search methods may be more<br>suitable for finding specific items such as prod-<br>ucts. Many systems employ hybrid approaches,<br>where keyword-based searches are used for spe-<br>cific products, and embedding-based searches<br>are applied for general customer information<br>and support.| |Experiment<br>with your<br>chunking<br>approach|Chunk size is critically important, with smaller<br>chunks typically yielding better performance;<br>however, they may also lead to issues related to<br>insufficient surrounding context. Generally,<br>smaller chunk sizes aid search systems in iden-<br>tifying relevant contextual information more ef-<br>fectively.| |Play around<br>with your<br>base prompt|To reduce hallucinations, prompting should be<br>designed to ensure that responses are based<br>solely on the given contextual information. For<br>example: "You are a customer support repre-<br>sentative, designed to provide assistance based<br>on factual information only. Please answer que-<br>ries based on the given context information, not<br>on pre-trained knowledge."| |Try meta-|After adding relevant metadata tags to the| |data filter-<br>ing|chunks (such as document title, page number,<br>email, date, etc.), these tags are used to process<br>the results.| |---|---| |Use query<br>routing|Having multiple indexes is often beneficial.<br>When a query is received, it can then be routed<br>to the appropriate index. For example, there<br>may be one index for handling summary ques-<br>tions, another for addressing factual questions,<br>and a third index suited for date-sensitive in-<br>quiries.| |Look into<br>reranking|Using re-ranking allows the search system to re-<br>trieve the top similar nodes based on context,<br>and then re-rank them according to relevance,<br>thereby enhancing accuracy.| |Consider<br>query trans-<br>formations|If the relevant context for the initial question<br>cannot be found, modifying the question and re-<br>trying can improve answer accuracy. This can<br>be implemented in the RAG system by allowing<br>the query to be decomposed into multiple ques-<br>tions.| |Fine-tune<br>your em-<br>bedding<br>model|When the context or domain does not align,<br>fine-tuning the embedding model can enhance<br>performance, particularly for domain-specific<br>terminology. For example, this can involve<br>adapting the model to better handle specialized<br>vocabulary pertinent to a specific domain.| |Start using<br>LLM dev.<br>tools|When building a RAG system using LlamaIn-<br>dex or LangChain, debugging tools can be uti-<br>lized to identify the sources of documents and<br>context.| 2.2.2. Research on Advanced RAG Types Notable advanced RAG approaches currently being researched include the following: - **Self-RAG:** This method involves re-searching generated responses to find relevant information and using it to refine the answers. This approach can enhance the accuracy and fluency of the responses (Asai A. et al., 2023). - **Corrective RAG:** This approach employs a Corrective Agent to rectify errors in generated responses. The Corrective Agent identifies errors in the responses and retrieves information to correct them, thereby improving the reliability of the answers (Yan, S.Q. et al., 2024). - **Adaptive RAG:** This method involves selecting the appropriate RAG approach based on the type of question. For instance, Self-RAG may be used for factual questions, while Corrective RAG could be employed for opinion-based questions. By choosing the appropriate method according to the question type, the accuracy of the responses can be improved (Jeong, S. et al., 2024).
+```
+
+## Chunk_8
+```
+## **III. Design of Advanced RAG** **Models
+
+In this chapter, various Advanced RAG approaches proposed in previous research are reviewed, and an enhanced RAG system is designed based on these findings. Specifically, we closely analyze methods such as Self-RAG, Corrective RAG, and Adaptive RAG, and present an implementation model as shown in Figure 3 based on the improvements derived from these analyses. The implementation of the Agent RAG system primarily builds on Corrective RAG, while referencing Self-RAG and Adaptive RAG. The workflow to enhance a typical RAG system involves retrieving document chunks from a vector database and then using an LLM to verify the relevance of each retrieved document chunk to the input query. If all retrieved document chunks are relevant, the system proceeds with the standard RAG pipeline to generate a response using the LLM. However, if some retrieved documents are deemed irrelevant to the input query, the input
+```
+
+## Chunk_9
+```
+3.1. Design of Advanced RAG Execution Procedures
+
+The Advanced RAG model maintains the basic flow of a traditional RAG model while incorporating additional processes after the search stage to enhance the accuracy and consistency of responses. The composition and flow of the Advanced RAG model are designed as follows: ① **Query Processing:** Input the user's query, and analyze and understand the precise meaning of the query through intent recognition and analysis. ② **Search:** Utilize search engines to explore and retrieve information from various sources related to the query. ③ **Candidate Selection:** Select information from the search results that is highly relevant and reliable to the query as candidates. ④ **Candidate Ranking:** Rank the selected candidates based on their relevance to the query, the reliability of the information, and diversity. ⑤ **Answer Generation:** Use a text generation model to create an answer based on the ranked candidate information. ⑥ **Answer Updating:** Continuously collect new information and update the answer to provide the most current information. The operation of the Advanced RAG model is as follows: ① Input the question. ② Search for information related to the ques tion using a search engine. ③ Extract relevant information related to the question from the search results using an information extractor. ④ Generate an answer based on the extracted information. ⑤ The Agent refines the answer to enhance its accuracy and fluency. ⑥ Output the final answer.
+```
+
+## Chunk_10
+```
+3.2. Application of Agent RAG
+
+To apply the enhanced execution procedures, the Agent RAG framework incorporates the concept of an "Agent" into the answer generation process, thereby further improving the accuracy and consistency of responses. The Agent serves as a core element in the answer generation process, fulfilling the following roles: - **Answer Evaluation** : Assessing the accuracy, fluency, and reliability of the generated responses. - **Answer Improvement** : Enhancing the responses based on the evaluation results. - **Information Retrieval** : Searching for necessary information to improve the re sponses.
+```
+
+## Chunk_11
+```
+3.3. Application of the LangGraph Module
+
+LangGraph is a module released by LangChain designed to build stateful multi-actor applications using LLMs. It is utilized to create Agent and multiAgent workflows, allowing for the definition of flows that include essential cycles for most Agent architectures, and providing detailed control over the application's flow and state, which is critical for creating reliable Agents (LangGraph, 2024). Built on top of LangChain, LangGraph facilitates the development of AI agents driven by LLMs by creating essential cyclic graphs. LangGraph treats Agent workflows as cyclic graph structures. Specifically, the LangGraph Conversational Retrieval Agent offers various functionalities essential for the development of language-based AI applications, including language processing, AI model integration, database management, and graph-based data processing. It is composed of states, nodes, and edges and performs the following roles: - **Complex Workflow Management** : Useful for structuring and managing state based workflows, with clear transitions and branching for each stage. - **Clear Flow Control** : Allows for precise definition of relationships between nodes and edges, facilitating the implementation of complex conditional logic and state transitions. - **Scalability** : Enables easy addition of new nodes and edges to expand the workflow, accommodating complex systems with various conditional logic. This study proposes using LangGraph, which offers a range of functionalities, as a suitable tool for implementing Agent-based Advanced RAG systems.
+```
+
+## Chunk_12
+```
+## **IV. Implementation Results of the** **Advanced RAG System
+
+This chapter presents the implementation of the RAG model and LangChain framework based on the Advanced RAG concepts introduced in Chapter 3, utilizing data suitable for internal corporate use. The implementation approach and considerations for using LangGraph, which is well-suited for Agent implementation, are demonstrated through practical examples.
+```
+
+## Chunk_13
+```
+4.1. Development Environment
+
+The solutions and development platforms applied in this case are based on the framework outlined in Figure 1, and the implementation method utilizing LangGraph and OpenAI LLM is described. The process involves chunking and embedding documents, storing them in ChromaDB, and then transforming them into retrievers for document content search. The results are evaluated, and an Agent RAG Graph is defined and implemented accordingly. The development was carried out using Python, which provides a range of libraries necessary for AI development. The development environment for each implementation component is as follows: - Orchestration Framework: LangChain - Agent Graph Workflow: LangGraph - Workflow Trace: LangSmith - Data Extraction and Chunking: LangChain Modules - Embedding: OpenAI - Vector Database: Chroma - LLM: OpenAI GPT-4-turbo Model - Python Development Environment: Google Colab
+```
+
+## Chunk_14
+```
+4.2. Results of the step-by-step implementation
+
+4.2.1. Installation of Basic Libraries and API Key Setup Basic libraries, including LangChain for overall orchestration of tasks such as data splitting, OpenAI for API access, ChromaDB for storing RAG knowledge, and a web search library, were installed. To facilitate easy management of knowledge files, Google Drive was integrated with Colab. To ensure security, the keys for various modules were registered in a .env file at a specific location. Figure4 shows that the .env file containing the keys was successfully read.
+```
+
+## Chunk_15
+```
+Figure 4:
+
+Installation of Basic Libraries and OpenAI API Key Configuration 4.2.2. Retriever Implementation For managing internal documents, such as 'Dress Code Standards.pdf’', the PyPDFLoader is used to load the document from the specified location. Given the document's characteristics, which include tables, the TextSplitter is adjusted. Instead of using the CharacterTextSplitter with a single delimiter (e.g., newline), the RecursiveCharacterTextSplitter is employed by adjusting the ‘chunk_size’ and ‘chunk_overlap’ parameters to efficiently maintain context. The split documents are stored in the Chroma vector store, embedded using OpenAIEmbeddings, and then converted into retrievers for search purposes.
+```
+
+## Chunk_16
+```
+Figure 6:
+
+Implementation of Search Results Evaluation The retrieved documents are linked to user questions. If the document contains keywords related to the user’s query, it is assessed for relevance with the aim of filtering out irrelevant searches. As depicted in Figure 7, relevance is indicated by assigning a binary score of 'yes' or 'no' (e.g., “GRADE: binary_score='yes'”).
+```
+
+## Chunk_17
+```
+Figure 10:
+
+Answer Processing for Unrelated Questions To improve this, the question can be rephrased into a more optimized version for web search, as shown in Figure 11. Rewriting the question (question rewriting) helps obtain better contextual information from the web. For example, an incomplete question like "Tell me what is the capital of the country where BTS is located" can be improved to "What is the capital of South Korea, the country where BTS is from?"
+```
+
+## Chunk_18
+```
+Figure 13:
+
+Evaluation of Answer Relevance 4.2.4. Definition of the Agent RAG Graph To enhance answer retrieval, the Tavily API is used for web searches, and the connection to this API is established. The Graph State of the Agent is defined, where the state object is passed to each node in the graph. Nodes such as Retrieve, generate_answer, grade_documents, and web_search_add are defined as shown in Figure 14.
+```
+
+## Chunk_19
+```
+Figure 15:
+
+Example of Retrieve Node Graph Implemen tation The Agent RAG Graph can be composed of nodes such as Retrieve, grade_documents, rewrite_query, web_search_add, and generate_answer, as illustrated in Figure 14. The State, consisting of a set of messages, is used to store and represent the state of the agent graph as it passes through various nodes. Figure 15 shows the implementation example of the Retrieve Node Graph, which is used to fetch relevant contextual documents from the vector database. It also defines the node classes for document evaluation (grade_documents), question rewriting (rewrite_query), web searching (web_search_add), and answer generation (generate_answer). 4.2.5. Implementation of the Agent RAG Graph In the implementation phase of the Agent RAG Graph, LangGraph is used to build the Agent into a graph by utilizing the functions developed in the previous section. This involves placing the Agent into relevant nodes and connecting them with defined edges according to the specified workflow. The Agent performs an action that calls the Retrieve function and then adds output information to the state before invoking the Agent. As shown in Figure 16, the StateGraph class is used to define and manage the state-based graph. The provided code sets up the workflow to define the process for retrieving documents or performing other tasks based on the Agent's decisions.
+```
+
+## Chunk_20
+```
+Figure 16:
+
+Node Definition and Graph Creation for An swer Generation After the retrieve node, document evaluation (grade_documents) is performed to determine whether to proceed with generate or web_search tasks. This includes completing the tasks along each path or returning to the Agent. This process is used to manage complex decisions and task flows, ultimately compiling the workflow to create an executable application. The generated workflow can be visualized using IPython.display, as shown in Figure 17.
+```
+
+## Chunk_21
+```
+4.3. Test Results
+
+The implemented Agent RAG workflow was tested with various questions to improve the accuracy of the answers, and the process of streaming responses to questions can be confirmed through the stream method. 4.3.1. Verification of Questions in RAG Knowledge In formation When the question "Tell me the things to consider when choosing a work uniform" was input for the document ‘Dress Code Standards’ Figure 18, which is RAG information, the question was rewritten to "What are the main factors to consider when choosing a work uniform?" to improve the accuracy of the answer. This resulted in a more accurate response. This process can be confirmed through the streaming of responses to questions using the stream method as shown in Figure 19.
+```
+
+## Chunk_22
+```
+Figure 19:
+
+Answer Generation Process for Information in RAG Knowledge 4.3.2. Verification of Questions Not in RAG Knowledge Information When the question "Tell me what is the capital of the country where BTS is located" was input, which is not in the RAG knowledge information, it was determined to "perform a web search because all Vector RAG documents are irrelevant to the question." The incomplete initial question "Tell me what is the capital of the country where BTS is located" was rewritten to a complete and rewritten question " What is the capital of South Korea, the country where BTS is from?" and the query was made, resulting in the correct answer "The capital of South Korea is Seoul." This process can be confirmed through the streaming process as shown in Figure 20.
+```
+
+## Chunk_23
+```
+Figure 20
+
+Answer Generation Process through Web Search for Information Not in RAG Knowledge As shown in Figure 21 by tracing the execution using LangSmith, it can be confirmed that the process of generating answers through web search for information not in the RAG knowledge base proceeded according to the designed Agent workflow (retrieve, grade_documents, rewrite_query, web_search, generate_answer).
+```
+
+## Chunk_24
+```
+## **V. Conclusion and Discussion
+
+This study has reviewed various methods to enhance the accuracy of RAG and explored the theoretical background of Advanced RAG models aimed at improving knowledge-based QA systems. Through the implementation of a graph-based Agent RAG system, along with specific implementation code and validation results, this research has demonstrated the feasibility of an enhanced RAG system. The proposed graph-based Advanced RAG system offers a novel approach that significantly improves RAG performance, addressing the limitations of existing RAG models. The experimental results show that this system markedly enhances the accuracy and relevance of responses to user queries. The utilization of LangGraph's graph technology has effectively assessed the reliability of information, contributing to the improvement of information quality through question rewriting and web search optimization. By enhancing real-time data accessibility and strengthening the system's ability to handle various types of questions, the LangGraph-based method has expanded the potential applications of AI-driven customer support and information retrieval. These findings provide a crucial foundation for the advancement of RAG-based generative AI services. However, several limitations remain. The LangGraphbased system is optimized for specific domains, which may result in performance degradation when applied to other fields. Additionally, the system's complexity may require additional resources for implementation and maintenance. Further validation processes are necessary to ensure the accuracy and reliability of real-time data, which could impact overall system performance. Future research should focus on improving the generalizability of graph-based RAG systems. Expanding the system's applicability through testing and optimization across various domains, as well as developing and validating algorithms to enhance real-time data reliability, will be essential for further performance improvements. Lastly, given the rapid advancements in RAG technology, it is crucial to not only keep pace with technological progress but also to deeply understand and continually improve how information is retrieved and how accurate and reliable answers are generated.
+```
+
