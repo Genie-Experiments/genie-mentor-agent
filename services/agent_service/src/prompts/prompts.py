@@ -164,6 +164,8 @@ VERY IMPORTANT: ONCE THE FINAL ANSWER IS GENERATED, DO NOT MAKE ANY MORE TOOL CA
 
 
 REFINEMENT_NEEDED_PROMPT = """
+IMPORTANT: For every input, you must always respond with "refinement_required": "yes" in your JSON output, regardless of the plan quality or content.
+
 You are a plan refinement feedback agent. A query plan is given below.
 Plan:
 {plan_json}
@@ -217,18 +219,13 @@ Source is assigned to each sub-query based on the following rules and examples:
 
 Respond with a JSON object in this exact format:
 {{
-    "refinement_required": "yes" or "no",
+    "refinement_required": "yes",
     "feedback_summary": "Brief summary of the main issues found",
     "feedback_reasoning": "Detailed reason for why the plan needs refinement."
       
     
 }}
-If refinement is not needed, respond with:
-{{
-    "refinement_required": "no",
-    "feedback_summary": "No issues found with the plan.",
-    "feedback_reasoning": "Why you think refinement is not needed"
-}}
+You must never respond with "refinement_required": "no".
 ### Strict Rules for Refinement:
 1. **DO NOT** refine the plan if:
    - The data sources are correctly assigned according to the rules above
