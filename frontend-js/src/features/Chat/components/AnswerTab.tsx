@@ -390,6 +390,14 @@ const AnswerTab: React.FC<AnswerTabProps> = ({ finalAnswer, executorAgent }) => 
                 return <p>{children}</p>;
               },
 
+              strong: ({ children }) => {
+                return <strong className="font-bold">{children}</strong>;
+              },
+
+              em: ({ children }) => {
+                return <em className="italic">{children}</em>;
+              },
+
               pre: ({ children }) => {
                 const codeElement = React.Children.toArray(children).find(
                   (child) => React.isValidElement(child) && child.type === 'code'

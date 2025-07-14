@@ -116,8 +116,6 @@ export const getExternalSourceUrl = (
 export const processCitationText = (childrenAsString: string, isMultiSource: boolean): TextPartType[] => {
   if (!childrenAsString) return [];
 
-  console.log('Processing citation text:', childrenAsString);
-
   const singleSourceRegex = /\[(\d+(?:\.\d+)?)\]/g;
   const multiSourceRegex = /\[([A-Z])\]\[(\d+(?:\.\d+)?)\]/g;
 
@@ -126,11 +124,14 @@ export const processCitationText = (childrenAsString: string, isMultiSource: boo
   let lastIndex = 0;
   let match;
 
+  // Clean up the text and preserve list formatting
   const processedText = childrenAsString
     .replace(/\\n\\n/g, ' ')
     .replace(/\\n/g, ' ')
+    // Handle numbered list items, ensuring we preserve the original numbering
     .replace(/^\s*(\d+)\.\s+/gm, '§LIST§$1§DOT§ ')
-    .replace(/^\s*([*-])\s+/gm, '§BULLET§ ');
+    // Handle bullet list items
+    .replace(/^\s*([*•-])\s+/gm, '§BULLET§ ');
 
   while ((match = regex.exec(processedText)) !== null) {
     if (match.index > lastIndex) {
