@@ -17,3 +17,12 @@ export const EXTERNAL_SOURCES = [
   SOURCE_TYPES.GITHUB,
   SOURCE_TYPES.NOTION,
 ];
+
+export const PREDEFINED_QUESTIONS = [
+  'What is Genie Mentor Agent?',
+  'How can I use this application?',
+  'What are the main features of Genie Mentor Agent?',
+  'How do I get started with Genie Mentor Agent?',
+];
+
+export const LARGE_SCREEN_BREAKPOINT = 1525;
