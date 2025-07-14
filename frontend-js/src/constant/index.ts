@@ -26,3 +26,17 @@ export const PREDEFINED_QUESTIONS = [
 ];
 
 export const LARGE_SCREEN_BREAKPOINT = 1525;
+
+export const LAYOUT_CONSTANTS = {
+  INPUT_CONTAINER_WIDTH: '752px',
+  INPUT_FIELD_WIDTH: '735px',
+  GRADIENT_HEIGHT: '200px',
+  Z_INDEX: {
+    OVERLAY: 10,
+    INPUT: 20,
+  },
+}
+
+export const GRADIENT_STYLE = {
+  background: 'linear-gradient(180deg, rgba(240, 255, 254, 0.00) 0%, #F0FFFE 41.99%)',
+};
