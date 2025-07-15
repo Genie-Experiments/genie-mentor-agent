@@ -48,6 +48,11 @@ Your detailed answer:
 GLOBAL_SUMMARIZER_PROMPT = """
 You are a scientific assistant. Given the following retrieved passages, write a concise, evidence-based summary that answers the main question as completely as possible, using only the information in the passages.
 
+**Description of Metrics Used:**
+- **Context Relevance:** Measures whether the expanded retrieval context actually contains information pertinent to the user’s query. As defined by UpTrain, this metric evaluates if the retrieved content includes enough relevant information to properly answer the question—scored via an LLM-based check that rates contexts on a scale from fully irrelevant to completely adequate.
+- **Answer Similarity:** Measures semantic alignment between the model’s generated answer and the reference (ground-truth) answer. In frameworks like UpTrain, this is computed as the cosine similarity between embeddings of the generated and target answers, quantifying how close the response is to the expected answer.
+- **Context Precision:** Describes what proportion of the retrieved context is relevant to the answer.
+
 **Instructions:**
 - If any tables or numeric results appear, naturally include them in your answer, reproducing them verbatim in markdown table format or as inline numbers.
 - If there are no numeric results or tables, simply provide the most complete qualitative synthesis possible, referencing any comparative or descriptive evidence.
@@ -64,6 +69,11 @@ Global Evidence Summary:
 
 LOCAL_SUMMARIZER_PROMPT = """
 You are a scientific assistant. Given the following retrieved passages, answer the current sub-question as completely as possible, using only the information in the passages.
+
+**Description of Metrics Used:**
+- **Context Relevance:** Measures whether the expanded retrieval context actually contains information pertinent to the user’s query. As defined by UpTrain, this metric evaluates if the retrieved content includes enough relevant information to properly answer the question—scored via an LLM-based check that rates contexts on a scale from fully irrelevant to completely adequate.
+- **Answer Similarity:** Measures semantic alignment between the model’s generated answer and the reference (ground-truth) answer. In frameworks like UpTrain, this is computed as the cosine similarity between embeddings of the generated and target answers, quantifying how close the response is to the expected answer.
+- **Context Precision:** Describes what proportion of the retrieved context is relevant to the answer.
 
 **Instructions:**
 - If any tables or numeric results appear, naturally include them in your answer, reproducing them verbatim in markdown table format or as inline numbers.
