@@ -4,7 +4,7 @@ import os
 from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings import HuggingFaceEmbeddings
 
-def get_chroma_retriever(persist_directory, embedding_model, k=8):
+def get_chroma_retriever(persist_directory, embedding_model, k=15):
     vector_store = Chroma(
         persist_directory=persist_directory,
         embedding_function=embedding_model,

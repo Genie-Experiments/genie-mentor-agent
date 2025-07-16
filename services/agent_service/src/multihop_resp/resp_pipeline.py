@@ -4,7 +4,7 @@
 import os
 from dotenv import load_dotenv
 load_dotenv()
-from .prompts import JUDGE_PROMPT, PLAN_PROMPT, SUMMARIZER_PROMPT_GLOBAL, SUMMARIZER_PROMPT_LOCAL, GENERATOR_PROMPT, GLOBAL_SUMMARIZER_PROMPT, LOCAL_SUMMARIZER_PROMPT, PLANNER_REASONER_PROMPT
+from .prompts import JUDGE_PROMPT, PLAN_PROMPT, SUMMARIZER_PROMPT_GLOBAL, SUMMARIZER_PROMPT_LOCAL, GENERATOR_PROMPT, GLOBAL_SUMMARIZER_PROMPT, LOCAL_SUMMARIZER_PROMPT, PLANNER_REASONER_PROMPT, GENIE_DOCS_TOC
 from .utils import get_chroma_retriever, retrieve_docs
 from langchain_groq import ChatGroq
 from langchain_community.embeddings import HuggingFaceEmbeddings
@@ -33,7 +33,7 @@ def parse_reasoner_json(text: str) -> dict:
 
 
 # For local testing, set CHROMA_DB_PATH directly
-CHROMA_DB_PATH = r"C:\Users\Emumba\Downloads\Projects\genie-mentor-agent\services\genie-kbdocs-v1\chroma_db"
+CHROMA_DB_PATH = r"C:\Users\Emumba\Downloads\Projects\genie-mentor-agent\services\genie-kbdocs-v1-wed3\chroma_db"
 
 db = Chroma(persist_directory=CHROMA_DB_PATH, embedding_function=None)
 print("Number of documents/chunks in the database:", db._collection.count())  # Should print the number of documents/chunks
@@ -45,7 +45,7 @@ class ReSPPipeline:
         groq_api_key,
         model_name="meta-llama/llama-4-maverick-17b-128e-instruct",
         embedding_model_name="BAAI/bge-small-en-v1.5",
-        retrieval_k=20
+        retrieval_k=15
     ):
         self.embedding_model = HuggingFaceEmbeddings(model_name=embedding_model_name)
         self.retriever = get_chroma_retriever(persist_directory, self.embedding_model, k=retrieval_k)
@@ -55,7 +55,7 @@ class ReSPPipeline:
     def run(self, main_question, max_hops=5):
         global_memory = []
         local_memory = []
-        sub_questions = set()
+        sub_questions = []  # Maintain as a list for order
         current_question = main_question
         hops_trace = []
         for hop in range(max_hops):
@@ -110,8 +110,11 @@ class ReSPPipeline:
             planner_reasoner_prompt = PLANNER_REASONER_PROMPT.format(
                 main_question=main_question,
                 global_memory="\n".join(global_memory),
-                local_memory="\n".join([f"Sub-question: {m['sub_question']}\nResponse: {m['response']}" for m in local_memory])
+                local_memory="\n".join([f"Sub-question: {m['sub_question']}\nResponse: {m['response']}" for m in local_memory]),
+                genie_docs_toc=GENIE_DOCS_TOC,
+                previous_sub_questions="\n".join(sub_questions)
             )
+            logger.debug(f"[Planner Prompt Debug] {planner_reasoner_prompt}")
             reasoner_raw = self.llm.invoke(planner_reasoner_prompt).content
             logger.info(f"[Hop {hop+1}] Reasoner raw: {reasoner_raw}")
             reasoner = parse_reasoner_json(reasoner_raw)
@@ -136,7 +139,7 @@ class ReSPPipeline:
                     logger.warning(f"[Hop {hop+1}] No new sub-question found or repeated. Stopping.")
                     hops_trace.append(hop_info)
                     break
-                sub_questions.add(new_subq)
+                sub_questions.append(new_subq)
                 current_question = new_subq
                 logger.info(f"[Hop {hop+1}] Next sub-question: {new_subq}")
                 hop_info["next_sub_question"] = new_subq
@@ -146,7 +149,7 @@ class ReSPPipeline:
         logger.info("[ReSPPipeline] Max hops reached. Generating final answer from all accumulated evidence.")
         combined_memory = "\n".join(global_memory + [f"{m['sub_question']}\n{m['response']}" for m in local_memory])
         generator_prompt = GENERATOR_PROMPT.format(
-            combined_memory=combined_memory, main_question=main_question
+                combined_memory=combined_memory, main_question=main_question
         )
         answer = self.llm.invoke(generator_prompt).content
         hops_trace.append({
