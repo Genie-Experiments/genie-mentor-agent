@@ -31,13 +31,13 @@ If yes, please reply with \"Yes\", followed by an accurate response to the quest
 """
 
 GENERATOR_PROMPT = """
-You are an expert assistant. Using ALL the information in the combined memory below, write a query focused answer to the main question.
+You are an expert assistant. Using ALL the information in the combined memory below, write a comprehensive answer to the main question.
 
 **Instructions:**
 - Carefully review all the evidence and details in the combined memory.
 - Use only the most relevant information to answer the main question, prioritizing evidence and details that are directly related to the user's query.
 - Omit or minimize any content that is unrelated or only marginally relevant to the main question.
-- Your answer should be tightly focused on the user's query, clear, and a comprehensive but not verbose or off-topic.
+- Your answer should be tightly focused on the user's query, clear, and as comprehensive as possible, but not verbose or off-topic.
 - Do not output any other words except the answer.
 
 Combined memory queues:
@@ -206,7 +206,7 @@ Document 4:Experimentation Report: Fine-Tuning Embeddings for Improved Retrieval
   4.1 Results for each experiment
 - Conclusion
 
-Document 4: Advance RAG Experiments Report: Context Rerankers
+Document 5: Advance RAG Experiments Report: Context Rerankers
 - Introduction 
 - Overview of Techniques Used
 - Evaluation Methodology
