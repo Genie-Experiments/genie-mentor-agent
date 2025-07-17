@@ -5,3 +5,8 @@ export { default as ResearchTab } from './ResearchTab';
 export { default as SourcesTab } from './SourcesTab';
 export { default as ResponseList } from './ResponseList';
 export { default as ChatMessage } from './ChatMessage';
+export { default as ErrorDisplay } from './ErrorDisplay';
+export { default as LoadingIndicator } from './LoadingIndicator';
+export { default as MessageItem } from './MessageItem';
+export { default as ConversationHistory } from './ConversationHistory';
+export { default as ChatContainer } from './ChatContainer';
