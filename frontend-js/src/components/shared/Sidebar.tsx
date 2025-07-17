@@ -63,13 +63,13 @@ const Sidebar: React.FC<SidebarProps> = ({ onNewChat }) => {
     <div
       ref={sidebarRef}
       className={cn(
-        'sticky top-0 left-0 flex h-screen flex-col overflow-hidden transition-all duration-200 ease-in-out',
-        isCollapsed && !isHovering ? 'w-[90px]' : 'w-auto min-w-[230px]',
+        'sticky top-0 left-0 flex h-screen flex-col overflow-hidden transition-all duration-300 ease-in-out',
         'border-r border-[#B9D9D7] bg-[#F0FFFE]'
       )}
       onMouseEnter={() => isCollapsed && setIsHovering(true)}
       onMouseLeave={() => isCollapsed && setIsHovering(false)}
       style={{
+        width: isCollapsed && !isHovering ? '90px' : '280px',
         paddingLeft: '25px',
         paddingRight: isCollapsed && !isHovering ? '0' : '25px',
         zIndex: 100, // Ensure sidebar stays on top
@@ -78,7 +78,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onNewChat }) => {
       {/* Toggle Button - Only visible in expanded mode */}
       {!isCollapsed && (
         <div
-          className="absolute top-[24px] right-[12px] z-20 cursor-pointer rounded-full p-1 hover:bg-gray-100"
+          className="absolute top-[24px] right-[12px] z-20 cursor-pointer rounded-full p-1 transition-all duration-200 ease-in-out hover:bg-gray-100"
           onClick={toggleSidebar}
         >
           <svg
@@ -91,6 +91,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onNewChat }) => {
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
+            className="transition-transform duration-200 ease-in-out"
           >
             <path d="M15 18l-6-6 6-6" />
           </svg>
@@ -154,61 +155,75 @@ const Sidebar: React.FC<SidebarProps> = ({ onNewChat }) => {
       {/* New Chat Button */}
       <div
         ref={buttonRef}
-        className="absolute top-[132px] z-10"
+        className="absolute top-[132px] z-10 transition-all duration-300 ease-in-out"
         style={{ left: '25px' }}
         onMouseEnter={() => isCollapsed && setIsHovering(true)}
         onMouseLeave={() => isCollapsed && setIsHovering(false)}
       >
-        {isCollapsed && !isHovering ? (
-          <div
-            className="flex h-[44px] w-[44px] cursor-pointer items-center justify-center rounded-[7px] bg-[rgba(0,165,153,0.10)]"
-            onClick={toggleSidebar}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="28"
-              height="28"
-              viewBox="0 0 28 28"
-              fill="none"
+        <div className="relative overflow-hidden">
+          {isCollapsed && !isHovering ? (
+            <div
+              className="flex h-[44px] w-[44px] cursor-pointer items-center justify-center rounded-[7px] bg-[rgba(0,165,153,0.10)] transition-all duration-300 ease-in-out"
+              onClick={toggleSidebar}
             >
-              <path
-                d="M14 5.83333V22.1667M5.83333 14H22.1667"
-                stroke="#00A599"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </div>
-        ) : (
-          <div
-            className="flex max-w-[250px] cursor-pointer items-center gap-2 rounded-[7px] bg-[rgba(0,165,153,0.10)]"
-            style={{ padding: '8px 14px 8px 9px' }}
-            onClick={() => {
-              // If new chat handler is provided, call it
-              if (onNewChat) {
-                onNewChat();
-              }
-            }}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="28"
-              height="28"
-              viewBox="0 0 28 28"
-              fill="none"
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="28"
+                height="28"
+                viewBox="0 0 28 28"
+                fill="none"
+              >
+                <path
+                  d="M14 5.83333V22.1667M5.83333 14H22.1667"
+                  stroke="#00A599"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </div>
+          ) : (
+            <div
+              className="flex cursor-pointer items-center gap-2 rounded-[7px] bg-[rgba(0,165,153,0.10)] transition-all duration-300 ease-in-out"
+              style={{
+                padding: '8px 14px 8px 9px',
+                width: isCollapsed && !isHovering ? '44px' : '230px',
+                overflow: 'hidden',
+              }}
+              onClick={() => {
+                // If new chat handler is provided, call it
+                if (onNewChat) {
+                  onNewChat();
+                }
+              }}
             >
-              <path
-                d="M14 5.83333V22.1667M5.83333 14H22.1667"
-                stroke="#00A599"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            <span className="font-medium whitespace-nowrap text-[#00A599]">Start New Chat</span>
-          </div>
-        )}
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="28"
+                height="28"
+                viewBox="0 0 28 28"
+                fill="none"
+                className="flex-shrink-0"
+              >
+                <path
+                  d="M14 5.83333V22.1667M5.83333 14H22.1667"
+                  stroke="#00A599"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              <span
+                className={cn(
+                  'font-medium whitespace-nowrap text-[#00A599] transition-opacity duration-300 ease-in-out',
+                  isCollapsed && !isHovering ? 'opacity-0' : 'opacity-100'
+                )}
+              >
+                Start New Chat
+              </span>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
