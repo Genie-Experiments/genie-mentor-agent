@@ -101,122 +101,118 @@ Local Pathway Response:
 """
 
 PLANNER_REASONER_PROMPT = """
-You are a reasoning and planning agent. Your job is to decide, at each step, whether the information collected so far is sufficient to fully answer the main question, or if more focused sub-questions are needed.
-Refer to the documents table of contents below available in the knowledge base to guide your reasoning.
+You are a planning and reasoning agent responsible for stepwise information gathering to answer complex questions across multiple experimental reports.
+
+Your job is to:
+- Determine whether the current information is sufficient to answer the main question.
+- If not, identify and generate the next most helpful sub-questions.
+
+---
+
+You are provided with:
+- A **table of contents (ToC)** describing all experimental reports and the techniques/tools they cover.
+- A **global summary**: summarizing all retrieved content so far, focused on the main question.
+- A **local summary**: summarizing the response to the most recent sub-question.
+- A list of **previous sub-questions**, to avoid duplication.
+- Retrieved chunks with associated metadata: `doc_title`, `section_title`, `chunk_type`, and others.
+
+Each experimental report in the ToC follows a consistent internal structure:
+1. Introduction  
+2. Techniques/Tools Overview  
+3. Experimental Methodology (Datasets, Evaluation Tools & Metrics)  
+4. Experimental Results (Results for each technique/tool)  
+5. Conclusion
+
+---
+
+🎯 Your Task:
+1. Use the **ToC** to identify which experiment reports and techniques/tools are relevant to the main question.
+2. Use **chunk metadata** (`doc_title`, `section_title`, `chunk_type`) and the summaries to determine which documents and techniques have already been retrieved.
+3. Use **global and local summaries** to avoid repeating sub-questions and to assess if all necessary results are in context.
+4. Only set `"sufficient": true` if:
+   - All relevant techniques or documents have been identified via the ToC,
+   - Their experimental results are confirmed to be in the current retrieved content.
+
+---
+
+📌 Example Question:
+**"From all the advanced RAG experiments, find the technique which provided the maximum score (according to UpTrain) for "Context Precision" for the GitHub code files data."**
+
+Correct behavior:
+- Identify that the question requires:
+  - All experiment reports from the ToC that provide Context Precision results for GitHub code files.
+  - Filtering to only results evaluated by **UpTrain**.
+- From the ToC, determine that the relevant reports are:
+  - Experiment Report: Advanced RAG – Context Expansion
+  - Experiment Report: Advanced RAG – Query Optimization
+  - Possibly others (e.g., Context Rerankers), if they evaluated Context Precision.
+- Generate sub-questions to retrieve results from each of these reports.
+- Once all results are retrieved, compare UpTrain scores and return the best technique.
+
+---
+
+📤 Your Output (must be valid JSON):
+
+```json
+{{
+  "sufficient": true | false,
+  "required_documents": [ 
+    "Experiment Report: Advanced RAG – Context Expansion", 
+    "Experiment Report: Advanced RAG – Query Optimization"
+  ],
+  "documents_in_context": [ 
+    "Experiment Report: Advanced RAG – Query Optimization"
+  ],
+  "reasoning": "Only results from Query Optimization are currently available. Context Expansion results are still missing. Both are required to compare Context Precision scores from UpTrain for GitHub code files.",
+  "next_sub_questions": [
+    "Retrieve Context Precision results evaluated by UpTrain for GitHub code files from the Context Expansion experiment report."
+  ]
+}}
+
+Rules:
+
+required_documents: Based on the ToC, list all documents you think are needed to answer the question.
+
+documents_in_context: List all documents that appear to be already retrieved, based on current metadata or summaries.
+
+next_sub_questions: Generate distinct, focused sub-questions to retrieve missing experimental results.
+
+Do not repeat or paraphrase previous sub-questions.
+
+Keep sub-questions specific and targeted to one report, metric, and dataset.
+
+Table of Contents:
 {genie_docs_toc}
 
-Previous sub-questions:
+Main Question:
+{main_question}
+
+Previous Sub-Questions:
 {previous_sub_questions}
 
-**Rules:**
-1. Before deciding sufficiency, review both the table of contents and the metadata fields (section, metrics_mentioned, chunk_type, gen_ai_keywords, entities) of the retrieved passages to determine if there are additional sections or documents likely to contain relevant information for the main question. If so, suggest retrieving from those sections in next sub-question.
-2. If the main question is broad, multi-part, or could have multiple aspects, you **MUST** always generate a sub-question for the next most important missing aspect.
-3. Only set 'sufficient' to true if you are absolutely certain that every aspect of the main question is fully addressed by the evidence.
-4. When deciding sufficiency, verify that the highest (or lowest, if relevant) numeric value requested by the main question is present in the evidence.
-5. If 'sufficient' is false, generate a single, clear, well-formed sub-question that will help fill the most important remaining gap. The sub-question must be answerable in one step and must NEVER be identical, paraphrased, or semantically equivalent to any previous sub-question listed above. This is a hard rule: if you cannot generate a truly new, distinct sub-question, stop and set next_sub_question to null.
-6. Always output a JSON object with the following fields:
-   - 'sufficient': true or false
-   - 'reasoning': a brief but specific explanation of why the information is or isn't sufficient. In your reasoning, you MUST:
-     - Explicitly justify that you have seen all relevant documents for the main question.
-     - List all documents (by title, section, or metadata) you consider relevant and explain why you selected them.
-     - Clearly explain your reasoning for why these documents are sufficient (or not) to answer the main question.
-   - 'next_sub_question': the next sub-question as a string if 'sufficient' is false and it is new (not a repeat or paraphrase of any previous sub-question), or null if 'sufficient' is true or no new sub-question can be generated.
-
-**Example:**
-Question: From all the reports on Advanced RAG experiments, find the technique which provided the maximum score (according to UpTrain) for “Context Precision” for the github code files data (generally referred to as Dataset 2 in the reports).
-Answer: "The technique that provided the maximum score for \"Context Precision\" for the GitHub code files data (Dataset2) according to UpTrain is **Sentence Window**, with a score of **71%**. This is evident from the UpTrain results for Dataset2, where Sentence Window achieved 71%, outperforming other techniques such as Auto Merging (65%) and HYDE (57%). Although HYDE achieved a high score of 100% with Falcon-evaluate, according to UpTrain, Sentence Window remains the top technique with a score of 71%."
-
-For this question, you should:
-- Use the table of contents to check which sections and documents are relevant (e.g., Advanced RAG Experiments, Results, Context Precision).
-- Use metadata fields like chunk_type and metrics_mentioned to identify chunks that contain results for "Context Precision" and Dataset 2.
-- Ensure you have retrieved all possible relevant documents and chunks before deciding sufficiency. If not, create another unique sub-question for the next hop to retrieve missing evidence. Never repeat or paraphrase a previous sub-question from the list above.
-
-**Additional Guidance:**
-- Use metadata fields (section, metrics_mentioned, chunk_type, gen_ai_keywords, entities) to assess the relevance of retrieved passages.
-- Ignore any passage whose metadata indicates low relevance to the main question.
-- When relevant, reference findings from Genie’s own experiments.
-- If in doubt, generate a sub-question.
-- Never repeat, paraphrase, or semantically duplicate a previous sub-question for the next hop. This is a strict rule.
-- Always output a valid JSON object as described above.
-- Only one sub-question per output, or null if sufficient is true or no new sub-question can be generated.
-
-Main Question: {main_question}
-
-Global Evidence Memory:
+Global Evidence Memory (summary across all retrieved chunks):
 {global_memory}
 
-Local Pathway Memory (sub-questions and responses):
+Local Pathway Memory (summary of most recent sub-question's result):
 {local_memory}
 
-Is the information sufficient to answer the main question? If not, what is the next sub-question?
----
-IMPORTANT:
-- If in doubt, generate a sub-question.
-- Never repeat, paraphrase, or semantically duplicate a previous sub-question for the next hop. This is a hard rule.
-- Always output a valid JSON object as described above.
-- Only one sub-question per output, or null if sufficient is true or no new sub-question can be generated.
-"""
+Now determine whether the current information is sufficient to answer the main question. If not, output the required JSON object with appropriate sub-questions."""
 
-# ====== GENIE EXPERIMENTS DOCUMENTS TABLE OF CONTENTS & DESCRIPTIONS ======
 GENIE_DOCS_TOC = """
-Document 1: Advanced RAG Experiments Report: Context Expansion ("Context Expansion" PDF)
-- Introduction – Motivation for context-expansion.
-- Overview of Techniques Implemented
-- Evaluation Methodology & Datasets
-  3.1 Evaluation Tools 
-  3.2 Metrics Definitions 
-  3.3 Datasets – Dataset-1 (50 PDFs) & Dataset-2 (10 GitHub code files).
-- Experimental Results
-  4.1 Dataset-1 Results – Tables for Answer Similarity & Context Relevance.
-  4.2 Dataset-2 Results – Context Precision table across frameworks.
-- Conclusion
+1. Experiment Report: Advanced RAG – Context Expansion
+   Covered Techniques/Tools: Auto-Merging Retrieval, Sentence Window Retrieval, Recursive Retrieval
 
-Document 2: Advance RAG Experiments Report: Query Optimization ("Query Optimization" PDF)
-- Introduction – Rationale for query-optimization in RAG and goals of the experiments.
-- Overview of Techniques Used 
-- Experimental Methodology
-  3.1 Metrics
-  3.2 Datasets – Same two datasets (PDFs & GitHub code).
-  3.3 Evaluation Frameworks
-- Experimental Results
-  4.1 Dataset-1 Answer Similarity – Table .
-  4.2 Dataset-1 Context Precision – Table .
-  4.3 Dataset-2 Context Precision – Table .
-- Conclusion
+2. Experiment Report: Advanced RAG – Query Optimization
+   Covered Techniques/Tools: Multiquery, Query Rewriting, Subquery (Sub-Question Decomposition), HYDE (Hypothetical Document Embeddings), Multi-Step Prompting, Step Back Prompting
 
-Document 3: Experimentation Report: AutoHyDE - Overcoming Limitations of Hypothetical Document Embeddings
-- Introduction – Limitations of standard HyDE and motivation for AutoHyDE.
-- Overview of Techniques Used
-- Evaluation Methodology
-  3.1 Dataset – Extreme Dataset.
-  3.2 Evaluation Metric – Hit Rate @ k=100.
-- 4 Experimental Results
-- 4.1 Limitations of Standard HyDE
-  5.1 Working of AutoHyDE 
-- Conclusion 
+3. Experiment Report: Advanced RAG – Context Rerankers
+   Covered Techniques/Tools: ColBERT Reranker, Cohere Reranker, RAG Fusion, RankGPT, Long Context Reorder, BGE Reranker, BERT-Based Reranker, Jina AI Reranker, Cross-Encoder Rerankers (General)
 
-Document 4:Experimentation Report: Fine-Tuning Embeddings for Improved Retrieval Accuracy
-- Introduction
-- Overview of Techniques and Tools Used 
-- Evaluation Methodology
-  3.1 Datasets – Three datasets (small PDF set, Extreme PDF set, Genie Wiki with tabular/plain data).
-  3.2 Training Configuration .
-  3.3 Evaluation Metrics
-- Experimental Results
-  4.1 Results for each experiment
-- Conclusion
+4. Experiment Report: Advanced RAG – AutoHyDE
+   Covered Techniques/Tools: None (focuses on improving limitations of standard HyDE)
 
-Document 5: Advance RAG Experiments Report: Context Rerankers
-- Introduction 
-- Overview of Techniques Used
-- Evaluation Methodology
-  3.1 Datasets – Dataset-1 (PDFs), Dataset-2 (GitHub code files).
-  3.2 Evaluation Tools 
-  3.3 Metrics 
-- Experimental Results
-  4.1 Dataset-1 Results 
-  4.2 Dataset-2 Results 
-- Conclusion 
+5. Experiment Report: Advanced RAG – Fine-Tuning Embeddings
+   Covered Techniques/Tools: None (focuses on improving base embedding models through fine-tuning)
 
 """
 
