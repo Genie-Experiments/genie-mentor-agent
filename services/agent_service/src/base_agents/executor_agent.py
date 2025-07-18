@@ -134,7 +134,8 @@ class ExecutorAgent(RoutedAgent):
             for qid in execution_order["nodes"]:
                 logger.info(f"Executing query ID: {qid}")
                 try:
-                    result = await self.execute_query(qid, query_components)
+                    # Pass plan to execute_query so it can access user_query
+                    result = await self.execute_query(qid, query_components, plan)
                     results[qid] = result
                 except Exception as e:
                     logger.error(f"Error executing query {qid}: {e}")
@@ -154,8 +155,12 @@ class ExecutorAgent(RoutedAgent):
                     if source_type not in self._sources_documents:
                         self._sources_documents[source_type] = res.get("sources", []) or []
                 else:
-                    # For other sources require at least one source document.
-                    if res.get("sources"):
+                    # PATCH: For knowledgebase, allow empty sources
+                    if source_type == SourceType.KNOWLEDGEBASE.value:
+                        valid_results[qid] = res
+                        if source_type not in self._sources_documents:
+                            self._sources_documents[source_type] = res.get("sources", []) or []
+                    elif res.get("sources"):
                         valid_results[qid] = res
 
             if len(valid_results) == 1:
@@ -236,7 +241,7 @@ class ExecutorAgent(RoutedAgent):
             return Message(content=json.dumps(error_response))
 
     async def execute_query(
-        self, qid: str, query_components: Dict[str, Any]
+        self, qid: str, query_components: Dict[str, Any], plan: dict = None
     ) -> Dict[str, Any]:
         q = query_components[qid]
         sub_query = q["sub_query"]
@@ -247,13 +252,22 @@ class ExecutorAgent(RoutedAgent):
         try:
             # Use enum for all source checks
             if source == SourceType.KNOWLEDGEBASE.value:
-                logger.info(f"[{qid}] Querying Knowledgebase: {sub_query}")
+                # Use main user query from plan if available
+                main_query = plan["user_query"] if plan and "user_query" in plan else sub_query
+                logger.info(f"[{qid}] Querying Knowledgebase with main user query: {main_query}")
                 try:
                     response_message = await self.send_message(
-                        Message(content=sub_query), self.kb_agent_id
+                        Message(content=main_query), self.kb_agent_id
                     )
-                    response = KBResponse.model_validate_json(response_message.content).dict()
-                    logger.info(f"[KB] Agent Response : {response}")
+                    kb_full_response = KBResponse.model_validate_json(response_message.content).dict()
+                    logger.info(f"[KB] Agent Response : {kb_full_response}")
+                    # Extract only the answer for downstream use, but keep sources/metadata for trace
+                    response = {
+                        "answer": kb_full_response.get("answer", ""),
+                        "sources": kb_full_response.get("sources", []),
+                        "metadata": kb_full_response.get("metadata", []),
+                        "error": kb_full_response.get("error", None)
+                    }
                 except Exception as e:
                     logger.error(f"[KB] Error: {e}")
                     raise ExternalServiceError(

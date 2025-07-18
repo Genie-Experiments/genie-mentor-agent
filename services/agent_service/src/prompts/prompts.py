@@ -2,7 +2,6 @@ IS_GREETING_PROMPT_CONTEXT = """
 GMA (Genie Mentor Agent) is a GenAI-powered assistant that streamlines onboarding and supports ongoing **technical**upskilling for the Genie team. By generating role-specific learning paths and surfacing relevant knowledge on demand, GMA improves knowledge accessibility, accelerates learning, and reduces dependency on peers.
 
 If the following user message is a greeting (like 'hello', 'hi', 'how are you', 'good morning', 'what's up', 'what are you', 'who are you', 'tell me about yourself' etc.), or generic chit-chat reply with a friendly, helpful response suitable for a chatbot assistant. If it is NOT a greeting or generic chit-chat, reply with ONLY the word 'NO'.
-If the user asks for a non-technical question such as joke, poem, story, riddle, weather, history, religion, arts, hardware, social sciences, human sciences, or any creative or entertainment content like films and characters or irrelevant question or enter typos, DO NOT answer the request. Instead, politely explain that you are focused on onboarding, upskilling, and knowledge for the Genie team, and invite the user to ask a relevant question.
 Message: {{query}}
 """
 
@@ -29,7 +28,7 @@ FEEDBACK:
      - The sub-queries would use the same data source
      - The query is simple and self-contained
    - Example of when to decompose:
-     - "Compare Langchain's RAG implementation with recent web benchmarks" (needs both github and websearch)
+     - "Compare Langchain's RAG implementation with recent web benchmarks" 
    - Example of when NOT to decompose:
      - "How do alignment scores improve RAG?" (can use knowledgebase alone)
      - "What are the best practices for RAG?" (can use knowledgebase alone)
@@ -47,37 +46,8 @@ FEEDBACK:
        - "What are Houlsby vs Pfeiffer adapters?"
        - "How does LangGraph improve RAG systems?"
 
-   - `"github"`:
-     - Use for queries related to:
-       - Code-level details, logic, architecture, or structure.
-       - Repository-specific mentions like:
-         "genie-mentor-agent", "langgraph_game", "DSPy-Prompt-Tuning", "rag_vs_llamaparse", 
-         "azure-ai-content-safety", "rag-over-images", "Genie-DB-QnA", "codehawk-code-reviews".
-     - Example queries:
-       - "Show RAG pipeline code in Langchain"
-       - "How to integrate MCP with autogen?"
-       - "Best practices for agent registration"
-       - "Core coding patterns for agents"
-
-   - `"notion"`:
-     - Use for high-level documentation, planning docs, experimental summaries, and internal notes.
-     - Example queries:
-       - "GENIE's RAG performance findings"
-       - "LlamaIndex vs Langchain comparison"
-       - "MCP server usage in GENIE"
-       - "LLM testing methodologies"
-
-   - `"websearch"`:
-     - Use **only** when the user explicitly asks for an external web search or uses phrases like:
-       "search the web", "look online", "get latest papers", etc.
-     - Example queries:
-       - "Search Latest GenAI models for code"
-       - "Search the web for Recent Mistral-7B benchmarks"
-       - "Google Best practices for RLHF tuning"
-       - "What are the latest updates on Gemini vs GPT-4 comparison"
 
        
-4. If **any part of the query is related to implementation, repo logic, or code**, always route it to `"github"`.
 
 5. **Do not assign more than two sub-queries**, and therefore, limit to **two data sources max**.
 
@@ -117,12 +87,12 @@ Respond ONLY with a well-formatted JSON object using the schema below:
 {{
   "user_query": "...",
   "query_intent": "...",
-  "data_sources": ["knowledgebase", "github"],  // max 2
+  "data_sources": ["knowledgebase"],  // max 2
   "query_components": [
     {{
       "id": "q1",
       "sub_query": "...",
-      "source": "knowledgebase" | "notion" | "github" | "websearch"
+      "source": "knowledgebase" 
     }},
     {{
       "id": "q2",
@@ -152,7 +122,6 @@ Respond ONLY with a well-formatted JSON object using the schema below:
 - Only decompose if the query has two distinct aspects that MUST use different data sources
 - Do not generate more than two sub-queries
 - Do not include more than two data sources
-- Route any code-related or repo-specific question to `"github"`
 - Always ensure valid JSON formatting
 - Do not invent new sources or fields
 - Always include detailed reasoning in the "think" field
@@ -169,7 +138,7 @@ Plan:
 {plan_json}
 
 Analyze the plan and determine if it needs refinement in terms of:
-- data sources (Available data sources: ["knowledgebase", "notion", "github", "websearch"])
+- data sources (Available data sources: ["knowledgebase"])
 - unnecessary subqueries
 
 Source is assigned to each sub-query based on the following rules and examples:
@@ -185,34 +154,6 @@ Source is assigned to each sub-query based on the following rules and examples:
        - "What are Houlsby vs Pfeiffer adapters?"
        - "How does LangGraph improve RAG systems?"
 
-   - `"github"`:
-     - Use for queries related to:
-       - Code-level details, logic, architecture, or structure.
-       - Repository-specific mentions like:
-         "genie-mentor-agent", "langgraph_game", "DSPy-Prompt-Tuning", "rag_vs_llamaparse", 
-         "azure-ai-content-safety", "rag-over-images", "Genie-DB-QnA", "codehawk-code-reviews".
-     - Example queries:
-       - "Show RAG pipeline code in Langchain"
-       - "How to integrate MCP with autogen?"
-       - "Best practices for agent registration"
-       - "Core coding patterns for agents"
-
-   - `"notion"`:
-     - Use for high-level documentation, planning docs, experimental summaries, and internal notes.
-     - Example queries:
-       - "GENIE's RAG performance findings"
-       - "LlamaIndex vs Langchain comparison"
-       - "MCP server usage in GENIE"
-       - "LLM testing methodologies"
-
-   - `"websearch"`:
-     - Use **only** when the user explicitly asks for an external web search or uses phrases like:
-       "search the web", "look online", "get latest papers", etc.
-     - Example queries:
-       - "Search Latest GenAI models for code"
-       - "Search the web for Recent Mistral-7B benchmarks"
-       - "Google Best practices for RLHF tuning"
-       - "What are the latest updates on Gemini vs GPT-4 comparison"
 
 
 Respond with a JSON object in this exact format:
@@ -260,22 +201,13 @@ You are a Refiner Agent responsible for reviewing and optimizing a query plan ge
 Here is the input plan (as JSON):
 {plan_json}
 
-Available data sources: ["knowledgebase", "notion", "github", "websearch"]
+Available data sources: ["knowledgebase"]
 
 Sources are defined on following basis
 - Use `"knowledgebase"` for anything related to:
      - Advanced RAG techniques (e.g., document indexing, embedding models, reranking, LLM behavior, context expansion).
      - Evaluation methods (e.g., hallucination metrics, benchmark results).
-   - Use `"github"` for:
-     - Specific POC code logic, implementation details, or repo-specific questions.
-     - Any sub-query mentioning repository names such as:
-       - "genie-mentor-agent", "langgraph_game", "DSPy-Prompt-Tuning", "rag_vs_llamaparse", "azure-ai-content-safety", "rag-over-images","Genie-DB-QnA","codehawk-code-reviews"
-   - Use `"notion"` for:
-     - High-level documentation or POC descriptions not directly tied to code.
-     - Experimental setups, internal notes, or strategy overviews.
-   - Use `"websearch"` for:
-     - User explicitly asking for a web search or external exploration.
-     - Phrases like "search online", "check on web", "get latest info".
+
 
 Check for:
 - redundant sources (only use the available sources listed above)

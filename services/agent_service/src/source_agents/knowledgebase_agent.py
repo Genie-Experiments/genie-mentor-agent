@@ -87,6 +87,7 @@ class KBAgent(RoutedAgent):
         super().__init__("knowledgebase_agent")
         self.persist_directory = persist_directory or os.getenv(
             "CHROMA_DB_PATH")
+        logger.info(f"[KBAgent] Using persist_directory for Chroma: {self.persist_directory}")
         if not self.persist_directory:
             raise ValueError(
                 "persist_directory not set and CHROMA_DB_PATH missing in .env"
@@ -98,15 +99,26 @@ class KBAgent(RoutedAgent):
 
         # Initialize components
         self.embedding_model = get_embedding_model()
+        logger.info(f"[KBAgent] Using embedding model: {self.embedding_model.model_name}")
         self.retriever = get_chroma_retriever(
             self.persist_directory,
             self.embedding_model,
             k=15
         )
+        # Try to log the number of documents in the Chroma vector store
+        try:
+            vector_store = Chroma(
+                persist_directory=self.persist_directory,
+                embedding_function=self.embedding_model,
+            )
+            doc_count = vector_store._collection.count() if hasattr(vector_store, '_collection') else 'unknown'
+            logger.info(f"[KBAgent] Chroma vector store document count: {doc_count}")
+        except Exception as e:
+            logger.warning(f"[KBAgent] Could not get Chroma vector store document count: {e}")
         self.llm = ChatGroq(
             temperature=0.1,
             groq_api_key=self.groq_api_key,
-            model_name="meta-llama/llama-4-maverick-17b-128e-instruct"
+            model_name="meta-llama/llama-4-scout-17b-16e-instruct"
         )
 
     def run_resp_pipeline(self, main_question: str, max_hops: int = 5) -> Dict[str, Any]:
@@ -314,8 +326,12 @@ class KBAgent(RoutedAgent):
     def query_knowledgebase(self, query: str, max_hops: int = 5) -> Dict[str, Any]:
         """Query the knowledge base using ReSP pipeline"""
         try:
+            logger.info(f"[KBAgent] Received query: {query}")
             # Use ReSP pipeline for multi-hop reasoning
             result = self.run_resp_pipeline(query, max_hops=max_hops)
+
+            # Log the full trace for debugging
+            logger.debug(f"[KBAgent] Full trace: {json.dumps(result.get('trace', []), indent=2)}")
 
             # Extract sources and metadata from the trace
             sources = []
@@ -377,13 +393,25 @@ class KBAgent(RoutedAgent):
                     unique_metadata.append(entry)
                     seen_entries.add(entry_key)
 
+            # Extract global_summary and local_summary from the first hop if available
+            global_summary = ""
+            local_summary = ""
+            trace = result.get("trace", [])
+            if trace:
+                first_hop = trace[0]
+                if "sub_questions" in first_hop and first_hop["sub_questions"]:
+                    global_summary = first_hop["sub_questions"][0].get("global_summary", "")
+                    local_summary = first_hop["sub_questions"][0].get("local_summary", "")
+
             return {
                 "answer": result.get("answer", "No answer generated"),
                 "sources": unique_sources,
                 "metadata": unique_metadata,
                 "error": None,
                 "num_hops": result.get("num_hops", 0),
-                "trace": result.get("trace", [])
+                "trace": trace,
+                "global_summary": global_summary,
+                "local_summary": local_summary
             }
 
         except Exception as e:
