@@ -7,7 +7,7 @@ Message: {{query}}
 """
 
 PLANNER_PROMPT = """
-You are a Planner Agent responsible for generating a structured query plan from the user's input. Your job is to analyze the query and determine if it needs to be decomposed into sub-queries.
+You are a Planner Agent responsible for generating a structured query plan from the user's input. Your job is to analyze the query and determine the appropriate data source and query strategy.
 
 ---
 USER QUERY:
@@ -36,16 +36,21 @@ FEEDBACK:
 
 3. **Assign a source** to each sub-query based on the following rules and examples:
 
-   - `"knowledgebase"`:
-     - Use for technical concepts, research papers present in the knowledgebase, or implementation approaches involving:
+   - `"knowledgebase"`(STANDALONE - NO DECOMPOSITION):
+     - **Priority 1**: Check if the query can be answered by the Knowledge Base alone
+     -  The Knowledge Base now uses multi-hop RAG and should receive the ORIGINAL user query without decomposition and sub_query generation
+     - Use knowledgebase for technical concepts, experimentation reports,Proof of Concepts (PoC) reports, theoretical knowledge or implementation approaches involving:
        - Advanced RAG techniques (e.g., document indexing, reranking, context expansion).
        - Embedding models, LLM behavior, and hallucination metrics.
        - General architecture or design methodologies.
      - Example queries:
        - "How do alignment scores improve RAG queries?"
        - "Compare dense vs hybrid retrieval effectiveness"
-       - "What are Houlsby vs Pfeiffer adapters?"
+       - "From all the reports on Advanced RAG experiments, find the technique which provided the maximum score (according to UpTrain) for “Context Precision” for the github code files data"
        - "How does LangGraph improve RAG systems?"
+       - "Can you give me a summary of all of the advanced RAG techniques that we have experimented with and classify which part of the RAG pipeline each technique belongs to?"
+
+
 
    - `"github"`:
      - Use for queries related to:
@@ -166,16 +171,19 @@ Analyze the plan and determine if it needs refinement in terms of:
 
 Source is assigned to each sub-query based on the following rules and examples:
 
-   - `"knowledgebase"`:
-     - Use for technical concepts or implementation approaches involving:
+   - "knowledgebase"` (STANDALONE - NO DECOMPOSITION):
+     - **Priority 1**: Check if the query can be answered by the Knowledge Base alone
+     -  The Knowledge Base now uses multi-hop RAG and should receive the ORIGINAL user query without decomposition and sub_query generation
+     - Use for knowledgebase technical concepts, experimentation,Proof of Concepts (PoC) reports, theoretical knowledge or implementation approaches involving:
        - Advanced RAG techniques (e.g., document indexing, reranking, context expansion).
        - Embedding models, LLM behavior, and hallucination metrics.
        - General architecture or design methodologies.
      - Example queries:
        - "How do alignment scores improve RAG queries?"
        - "Compare dense vs hybrid retrieval effectiveness"
-       - "What are Houlsby vs Pfeiffer adapters?"
+       - "From all the reports on Advanced RAG experiments, find the technique which provided the maximum score (according to UpTrain) for “Context Precision” for the github code files data"
        - "How does LangGraph improve RAG systems?"
+       - "Can you give me a summary of all of the advanced RAG techniques that we have experimented with and classify which part of the RAG pipeline each technique belongs to?"
 
    - `"github"`:
      - Use for queries related to:

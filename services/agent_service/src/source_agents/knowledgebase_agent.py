@@ -411,7 +411,7 @@ class KBAgent(RoutedAgent):
                     local_summary = first_hop["sub_questions"][0].get(
                         "local_summary", "")
 
-            return {
+            response_dict = {
                 "answer": result.get("answer", "No answer generated"),
                 "sources": unique_sources,
                 "metadata": unique_metadata,
@@ -421,6 +421,8 @@ class KBAgent(RoutedAgent):
                 "global_summary": global_summary,
                 "local_summary": local_summary
             }
+            logger.debug(f"[KBAgent] Final response: {json.dumps(response_dict, indent=2)}")
+            return response_dict
 
         except Exception as e:
             logger.error(f"Error querying knowledge base with ReSP: {e}")

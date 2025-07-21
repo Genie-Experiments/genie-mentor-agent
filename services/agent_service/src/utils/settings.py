@@ -10,7 +10,12 @@ class Settings(BaseSettings):
     # API Keys
     GROQ_API_KEY: str = Field(..., description="API key for Groq LLM service")
     OPENAI_API_KEY: str = Field(..., description="API key for OpenAI services")
-
+    GROQ_API_KEY_PLANNER: str = Field(..., description="API key for Planner Agent")
+    GROQ_API_KEY_PLANNER_REFINER: str = Field(..., description="API key for Planner Refiner Agent")
+    GROQ_API_KEY_KB: str = Field(..., description="API key for Knowledgebase Agent")
+    GROQ_API_KEY_EXECUTOR: str = Field(..., description="API key for Executor Agent")
+    GROQ_API_KEY_EVAL: str = Field(..., description="API key for Eval Agent")
+    GROQ_API_KEY_EDITOR: str = Field(..., description="API key for Editor Agent")
     # MCP Gateway Settings
     GITHUB_MCP_TOKEN: str = Field(..., description="Token for GitHub MCP Gateway")
 
@@ -121,6 +126,12 @@ settings = get_settings()
 GROQ_API_KEY = settings.GROQ_API_KEY
 OPENAI_API_KEY = settings.OPENAI_API_KEY
 GITHUB_MCP_TOKEN = settings.GITHUB_MCP_TOKEN
+GROQ_API_KEY_PLANNER = settings.GROQ_API_KEY_PLANNER
+GROQ_API_KEY_PLANNER_REFINER = settings.GROQ_API_KEY_PLANNER_REFINER
+GROQ_API_KEY_KB = settings.GROQ_API_KEY_KB
+GROQ_API_KEY_EXECUTOR = settings.GROQ_API_KEY_EXECUTOR
+GROQ_API_KEY_EVAL = settings.GROQ_API_KEY_EVAL
+GROQ_API_KEY_EDITOR = settings.GROQ_API_KEY_EDITOR
 
 # Server Settings
 HOST = settings.HOST
