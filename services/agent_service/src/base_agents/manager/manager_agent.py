@@ -295,12 +295,12 @@ class ManagerAgent(RoutedAgent):
             documents = q_output.get("all_documents", [])
             documents_by_source = q_output.get("documents_by_source", {})
             
-            # Check if Notion or GitHub sources are used
+            # Check if GitHub sources are used
             skip_evaluation = any(
-                src.lower().find("notion") != -1 or src.lower().find("github") != -1
+                src.lower().find("github") != -1
                 for src in documents_by_source
             )
-            skip_reason = "Evaluation skipped because Notion/GitHub source was used" if skip_evaluation else None
+            skip_reason = "Evaluation skipped because GitHub source was used" if skip_evaluation else None
 
             if skip_evaluation:
                 final_answer, eval_history, editor_history = answer, [], []

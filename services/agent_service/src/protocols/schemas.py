@@ -50,8 +50,10 @@ class KBMetadata(BaseModel):
 class KBResponse(BaseModel):
     answer: str
     sources: List[str]
-    metadata: List[KBMetadata]
-    error: Optional[str]
+    metadata: List[Dict[str, Any]]
+    error: Optional[str] = None
+    num_hops: int = 0
+    trace: List[Dict[str, Any]] = []
 
 
 

@@ -12,11 +12,7 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str = Field(..., description="API key for OpenAI services")
 
     # MCP Gateway Settings
-    NOTION_MCP_TOKEN: Optional[str] = Field(
-        None, description="Token for Notion MCP Gateway"
-    )
     GITHUB_MCP_TOKEN: str = Field(..., description="Token for GitHub MCP Gateway")
-    NOTION_API_KEY: str = Field(..., description="API key for Notion service")
 
     # Server Settings
     HOST: str = Field(default="0.0.0.0", description="Host address for the server")
@@ -124,9 +120,7 @@ settings = get_settings()
 # API Keys
 GROQ_API_KEY = settings.GROQ_API_KEY
 OPENAI_API_KEY = settings.OPENAI_API_KEY
-NOTION_MCP_TOKEN = settings.NOTION_MCP_TOKEN
 GITHUB_MCP_TOKEN = settings.GITHUB_MCP_TOKEN
-NOTION_API_KEY = settings.NOTION_API_KEY
 
 # Server Settings
 HOST = settings.HOST

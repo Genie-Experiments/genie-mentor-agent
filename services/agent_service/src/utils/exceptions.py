@@ -149,7 +149,7 @@ class EvaluationError(AgentServiceException):
 
 
 class ExternalServiceError(AgentServiceException):
-    """Raised when external services (Notion, GitHub, etc.) fail."""
+    """Raised when external service (GitHub) fails."""
     
     def __init__(
         self,

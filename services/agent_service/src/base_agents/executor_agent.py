@@ -7,13 +7,13 @@ from autogen_core import AgentId, MessageContext, RoutedAgent, message_handler
 from groq import Groq
 
 from ..prompts.aggregation_prompt import generate_aggregated_answer
-from ..prompts.prompts import GITHUB_PROMPT, NOTION_QUERY_PROMPT
+from ..prompts.prompts import GITHUB_PROMPT
 from ..protocols.message import Message
 from ..protocols.schemas import KBResponse, LLMUsage
 from ..utils.exceptions import (AgentServiceException, ExecutionError,
                                 ExternalServiceError, NetworkError,
                                 TimeoutError, ValidationError,
-                                create_error_response, handle_agent_error)
+                                handle_agent_error)
 from ..utils.logging import get_logger, setup_logger
 from ..utils.parsing import extract_json_with_regex, strip_markdown_code_fence, escape_unescaped_newlines_in_json_strings
 from ..utils.settings import settings
@@ -24,21 +24,18 @@ logger = get_logger("ExecutorAgent")
 
 class SourceType(Enum):
     KNOWLEDGEBASE = "knowledgebase"
-    NOTION = "notion"
     GITHUB = "github"
     WEBSEARCH = "websearch"
 
 class ExecutorAgent(RoutedAgent):
     def __init__(
         self,
-        notion_workbench_agent_id: AgentId,
         github_workbench_agent_id: AgentId,
         webrag_agent_id: AgentId,
         kb_agent_id: AgentId,
         answer_cleaner_agent_id: AgentId,
     ) -> None:
         super().__init__("executor_agent")
-        self.notion_workbench_agent_id = notion_workbench_agent_id
         self.github_workbench_agent_id = github_workbench_agent_id
         self.webrag_agent_id = webrag_agent_id
         self.kb_agent_id = kb_agent_id
@@ -147,8 +144,8 @@ class ExecutorAgent(RoutedAgent):
                 # Must have a non-empty answer and no error regardless of source
                 if not res.get("answer") or res.get("error"):
                     continue
-                if source_type in {SourceType.GITHUB.value, SourceType.NOTION.value}:
-                    # For GitHub/Notion we don't require sources to be present.
+                if source_type in {SourceType.GITHUB.value}:
+                    # For GitHub we don't require sources to be present.
                     valid_results[qid] = res
                     # Ensure we have an entry so downstream aggregation doesn't fail.
                     if source_type not in self._sources_documents:
@@ -259,32 +256,6 @@ class ExecutorAgent(RoutedAgent):
                     raise ExternalServiceError(
                         message=f"Knowledge base query failed: {str(e)}",
                         service=SourceType.KNOWLEDGEBASE.value,
-                        details={"sub_query": sub_query, "original_error": str(e)}
-                    )
-
-            elif source == SourceType.NOTION.value:
-                logger.info(f"[{qid}] Querying Notion")
-                try:
-                    prompt = NOTION_QUERY_PROMPT.format(sub_query=sub_query)
-                    response_message = await self.send_message(
-                        Message(content=prompt), self.notion_workbench_agent_id
-                    )
-                    response = json.loads(response_message.content)
-                    logger.info(f"[Notion] Agent Response : {response}")
-                    try:
-                        cleaner_response = await self.send_message(
-                            Message(content=json.dumps(response.get("answer", ""))), self.answer_cleaner_agent_id
-                        )
-                        cleaned_payload = json.loads(cleaner_response.content)
-                        cleaned_answer = cleaned_payload.get("cleaned_answer", response.get("answer", ""))
-                        response["answer"] = cleaned_answer
-                    except Exception as cleaning_error:
-                        logger.warning(f"[Notion] Failed to clean answer, using raw: {cleaning_error}")
-                except Exception as e:
-                    logger.error(f"[Notion] Error: {e}")
-                    raise ExternalServiceError(
-                        message=f"Notion query failed: {str(e)}",
-                        service=SourceType.NOTION.value,
                         details={"sub_query": sub_query, "original_error": str(e)}
                     )
 

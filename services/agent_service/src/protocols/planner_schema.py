@@ -6,7 +6,7 @@ from pydantic import BaseModel
 class QueryComponent(BaseModel):
     id: str
     sub_query: str
-    source: Literal["knowledgebase", "notion", "github", "websearch"]
+    source: Literal["knowledgebase", "github", "websearch"]
 
 
 class ExecutionOrder(BaseModel):
@@ -27,7 +27,7 @@ class Think(BaseModel):
 class QueryPlan(BaseModel):
     user_query: str
     query_intent: str
-    data_sources: List[Literal["knowledgebase", "notion", "github", "websearch"]]
+    data_sources: List[Literal["knowledgebase", "github", "websearch"]]
     query_components: List[QueryComponent]
     execution_order: ExecutionOrder
     think: Think
