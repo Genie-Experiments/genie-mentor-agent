@@ -42,6 +42,12 @@ To run the Genie Mentor Agent system, follow these steps:
 ```ini
 OPENAI_API_KEY=your-openai-api-key
 GROQ_API_KEY=your-groq-api-key
+GROQ_API_KEY_PLANNER=your-groq-api-key
+GROQ_API_KEY_PLANNER_REFINER=your-groq-api-key
+GROQ_API_KEY_KB=your-groq-api-key
+GROQ_API_KEY_EXECUTOR=your-groq-api-key
+GROQ_API_KEY_EVAL=your-groq-api-key
+GROQ_API_KEY_EDITOR=your-groq-api-key
 USE_OPENAI="false"
 DATABASE_URL="sqlite:///./memory.db"
 CHROMA_DB_PATH="/app/genie-kbdocs-v1/chroma_db"
