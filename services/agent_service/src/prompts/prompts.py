@@ -22,13 +22,11 @@ FEEDBACK:
 
 2. **Decide if Decomposition is Needed**:
    - First, try to answer the query using a single data source
-   - Only decompose if the query has two distinct aspects that MUST use different data sources
    - DO NOT decompose if:
      - The query can be answered by a single data source
      - The sub-queries would use the same data source
      - The query is simple and self-contained
-   - Example of when to decompose:
-     - "Compare Langchain's RAG implementation with recent web benchmarks" 
+
    - Example of when NOT to decompose:
      - "How do alignment scores improve RAG?" (can use knowledgebase alone)
      - "What are the best practices for RAG?" (can use knowledgebase alone)
@@ -49,7 +47,7 @@ FEEDBACK:
 
        
 
-5. **Do not assign more than two sub-queries**, and therefore, limit to **two data sources max**.
+5. **Do not assign more than one sub-queries**, and therefore, limit to **one data sources max**.
 
 6. ### Aggregation Strategies:
 
@@ -120,8 +118,8 @@ Respond ONLY with a well-formatted JSON object using the schema below:
 
 - First try to answer the query using a single data source
 - Only decompose if the query has two distinct aspects that MUST use different data sources
-- Do not generate more than two sub-queries
-- Do not include more than two data sources
+- Do not generate more than one sub-queries
+- Do not include more than one data sources
 - Always ensure valid JSON formatting
 - Do not invent new sources or fields
 - Always include detailed reasoning in the "think" field
