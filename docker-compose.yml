@@ -1,19 +1,4 @@
-version: '3.3'
-
 services:
-  notion-mcp-gateway:
-    image: node:18-alpine
-    container_name: notion-mcp-gateway
-    ports:
-      - "8009:8009"
-    environment:
-      NOTION_API_TOKEN: "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"
-      NOTION_MARKDOWN_CONVERSION: "true"
-    stdin_open: true
-    tty: true
-    command: sh -c "npx -y supergateway --stdio 'npx -y @suekou/mcp-notion-server' --port 8009 --baseUrl http://0.0.0.0:8009 --ssePath /sse --messagePath /message --cors --logLevel info"
-    restart: unless-stopped
-
   github-mcp-gateway:
     image: node:18-alpine
     container_name: github-mcp-gateway
@@ -44,7 +29,6 @@ services:
       - PYTHONUNBUFFERED=1
     depends_on:
       - github-mcp-gateway
-      - notion-mcp-gateway
 
   data-ingestion-service:
     build:

@@ -7,7 +7,7 @@ Message: {{query}}
 """
 
 PLANNER_PROMPT = """
-You are a Planner Agent responsible for generating a structured query plan from the user's input. Your job is to analyze the query and determine if it needs to be decomposed into sub-queries.
+You are a Planner Agent responsible for generating a structured query plan from the user's input. Your job is to analyze the query and determine the appropriate data source and query strategy.
 
 ---
 USER QUERY:
@@ -36,16 +36,21 @@ FEEDBACK:
 
 3. **Assign a source** to each sub-query based on the following rules and examples:
 
-   - `"knowledgebase"`:
-     - Use for technical concepts, research papers present in the knowledgebase, or implementation approaches involving:
+   - `"knowledgebase"`(STANDALONE - NO DECOMPOSITION):
+     - **Priority 1**: Check if the query can be answered by the Knowledge Base alone
+     -  The Knowledge Base now uses multi-hop RAG and should receive the ORIGINAL user query without decomposition and sub_query generation
+     - Use knowledgebase for technical concepts, experimentation reports,Proof of Concepts (PoC) reports, theoretical knowledge or implementation approaches involving:
        - Advanced RAG techniques (e.g., document indexing, reranking, context expansion).
        - Embedding models, LLM behavior, and hallucination metrics.
        - General architecture or design methodologies.
      - Example queries:
        - "How do alignment scores improve RAG queries?"
        - "Compare dense vs hybrid retrieval effectiveness"
-       - "What are Houlsby vs Pfeiffer adapters?"
+       - "From all the reports on Advanced RAG experiments, find the technique which provided the maximum score (according to UpTrain) for “Context Precision” for the github code files data"
        - "How does LangGraph improve RAG systems?"
+       - "Can you give me a summary of all of the advanced RAG techniques that we have experimented with and classify which part of the RAG pipeline each technique belongs to?"
+
+
 
    - `"github"`:
      - Use for queries related to:
@@ -58,14 +63,6 @@ FEEDBACK:
        - "How to integrate MCP with autogen?"
        - "Best practices for agent registration"
        - "Core coding patterns for agents"
-
-   - `"notion"`:
-     - Use for high-level documentation, planning docs, experimental summaries, and internal notes.
-     - Example queries:
-       - "GENIE's RAG performance findings"
-       - "LlamaIndex vs Langchain comparison"
-       - "MCP server usage in GENIE"
-       - "LLM testing methodologies"
 
    - `"websearch"`:
      - Use **only** when the user explicitly asks for an external web search or uses phrases like:
@@ -122,7 +119,7 @@ Respond ONLY with a well-formatted JSON object using the schema below:
     {{
       "id": "q1",
       "sub_query": "...",
-      "source": "knowledgebase" | "notion" | "github" | "websearch"
+      "source": "knowledgebase" | "github" | "websearch"
     }},
     {{
       "id": "q2",
@@ -169,21 +166,24 @@ Plan:
 {plan_json}
 
 Analyze the plan and determine if it needs refinement in terms of:
-- data sources (Available data sources: ["knowledgebase", "notion", "github", "websearch"])
+- data sources (Available data sources: ["knowledgebase", "github", "websearch"])
 - unnecessary subqueries
 
 Source is assigned to each sub-query based on the following rules and examples:
 
-   - `"knowledgebase"`:
-     - Use for technical concepts or implementation approaches involving:
+   - "knowledgebase"` (STANDALONE - NO DECOMPOSITION):
+     - **Priority 1**: Check if the query can be answered by the Knowledge Base alone
+     -  The Knowledge Base now uses multi-hop RAG and should receive the ORIGINAL user query without decomposition and sub_query generation
+     - Use for knowledgebase technical concepts, experimentation,Proof of Concepts (PoC) reports, theoretical knowledge or implementation approaches involving:
        - Advanced RAG techniques (e.g., document indexing, reranking, context expansion).
        - Embedding models, LLM behavior, and hallucination metrics.
        - General architecture or design methodologies.
      - Example queries:
        - "How do alignment scores improve RAG queries?"
        - "Compare dense vs hybrid retrieval effectiveness"
-       - "What are Houlsby vs Pfeiffer adapters?"
+       - "From all the reports on Advanced RAG experiments, find the technique which provided the maximum score (according to UpTrain) for “Context Precision” for the github code files data"
        - "How does LangGraph improve RAG systems?"
+       - "Can you give me a summary of all of the advanced RAG techniques that we have experimented with and classify which part of the RAG pipeline each technique belongs to?"
 
    - `"github"`:
      - Use for queries related to:
@@ -196,14 +196,6 @@ Source is assigned to each sub-query based on the following rules and examples:
        - "How to integrate MCP with autogen?"
        - "Best practices for agent registration"
        - "Core coding patterns for agents"
-
-   - `"notion"`:
-     - Use for high-level documentation, planning docs, experimental summaries, and internal notes.
-     - Example queries:
-       - "GENIE's RAG performance findings"
-       - "LlamaIndex vs Langchain comparison"
-       - "MCP server usage in GENIE"
-       - "LLM testing methodologies"
 
    - `"websearch"`:
      - Use **only** when the user explicitly asks for an external web search or uses phrases like:
@@ -260,7 +252,7 @@ You are a Refiner Agent responsible for reviewing and optimizing a query plan ge
 Here is the input plan (as JSON):
 {plan_json}
 
-Available data sources: ["knowledgebase", "notion", "github", "websearch"]
+Available data sources: ["knowledgebase", "github", "websearch"]
 
 Sources are defined on following basis
 - Use `"knowledgebase"` for anything related to:
@@ -270,9 +262,6 @@ Sources are defined on following basis
      - Specific POC code logic, implementation details, or repo-specific questions.
      - Any sub-query mentioning repository names such as:
        - "genie-mentor-agent", "langgraph_game", "DSPy-Prompt-Tuning", "rag_vs_llamaparse", "azure-ai-content-safety", "rag-over-images","Genie-DB-QnA","codehawk-code-reviews"
-   - Use `"notion"` for:
-     - High-level documentation or POC descriptions not directly tied to code.
-     - Experimental setups, internal notes, or strategy overviews.
    - Use `"websearch"` for:
      - User explicitly asking for a web search or external exploration.
      - Phrases like "search online", "check on web", "get latest info".
@@ -343,53 +332,6 @@ Dont stop until you have a definite answer, with code extracted and code snippet
 
 IMPORTANT: ANY violation of these formatting rules may cause the entire workflow to fail.
 VERY IMPORTANT: ONCE THE FINAL ANSWER IS GENERATED, DO NOT MAKE ANY MORE TOOL CALLS OR ADDITIONAL TEXT. THE FINAL ANSWER MUST BE COMPLETE AND SELF-CONTAINED.
-"""
-
-NOTION_QUERY_PROMPT = """
-You are a methodical Notion Query Agent. Your task is to search the GENIE organization's Notion documentation to provide a detailed answer to the user's sub-query. You must operate in a strict, sequential manner.
-
-**User Sub-query:** "{sub_query}"
-
-GENIE is the organization whos documents are on notion, so do not search for GENIE keyword
-
-**Your process must follow these distinct phases:**
-
-**Phase 1: Search and Discovery**
-1.  **Think:** First, analyze the sub-query to determine the best search keywords. The keywords must be broad e.g if the query asks for GENIE's findings on RAGs, then the keywords must be RAG related
-2.  **Act:** Execute ONLY search-related tools (like `notion_search` or `brute_force_search`) to find a list of potentially relevant pages.
-3.  Do not do anything else. Wait for the search results.
-
-**Phase 2: Content Retrieval**
-1.  **Think:** After receiving the search results, review the list of pages and identify the top 3 most relevant ones.
-2.  **Act:** Execute ONLY content-retrieval tools (`notion_retrieve_block_children`) for those top 3 pages.
-3.  Do not do anything else. Wait for the content to be retrieved.
-
-**Phase 3: Final Answer Generation**
-1.  **Think:** Review all the information you have gathered from the previous phases.
-2.  **Act:** Construct the final answer. Your response in this phase must be ONLY a single JSON object with the exact structure below. Do not include any tool calls in this final step.
-
-The final answer must be informative and as descriptive as you can make it. It should be a detailed answer to the sub-query, synthesized from the information retrieved from Notion. It should not only direct user to files, instead include content from any files mentioned. It should only be educational, not say relevant information wasnt found, always an answer based on the information retrieved.
-
-**Final Answer JSON Structure:**
-```json
-{{
-  "answer": "<A comprehensive, detailed answer to the sub-query, synthesized from the information retrieved from Notion. It should not only direct user to files, instead include content from any files mentioned. It should only be educational, not say relevant information wasnt found, always an answer based on the information retrieved>",
-  "metadata": [{{
-      "doc_links": ["<A list of links to the Notion documents that were used.>"],
-      "doc_names": ["<A list of the names of the Notion documents that were used.>"] 
-    }}],
-}}
-
-**CRITICAL JSON FORMATTING INSTRUCTIONS:**
-1. Your final response MUST be ONLY the JSON object above - no other text, comments, or explanation
-2. Ensure ALL brackets, braces and quotes are properly closed and balanced
-3. Make sure all strings in the JSON are properly escaped, especially quotes and control characters
-4. Double-check that your JSON is properly formatted and will parse correctly
-5. DO NOT include markdown formatting elements like ```json or ``` in your final response
-6. Return ONLY THE RAW JSON OBJECT with no other text
-7. The arrays in metadata must contain only properly formatted strings
-
-IMPORTANT: ANY violation of these formatting rules may cause the entire workflow to fail.
 """
 
 ANSWER_CLEANING_PROMPT = """

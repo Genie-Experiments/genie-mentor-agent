@@ -13,7 +13,7 @@ from ..protocols.planner_schema import QueryPlan
 from ..protocols.schemas import LLMUsage
 from ..utils.logging import get_logger, setup_logger
 from ..utils.parsing import extract_json_with_regex
-from ..utils.settings import settings
+from ..utils.settings import settings, GROQ_API_KEY_PLANNER
 from ..utils.token_tracker import token_tracker
 
 setup_logger()
@@ -23,7 +23,7 @@ logger = get_logger("PlannerAgent")
 class PlannerAgent(RoutedAgent):
     def __init__(self) -> None:
         super().__init__("planner_agent")
-        self.client = Groq(api_key=settings.GROQ_API_KEY)
+        self.client = Groq(api_key=GROQ_API_KEY_PLANNER)
         self.model = settings.DEFAULT_MODEL
         self.max_retries = 3
 

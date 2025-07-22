@@ -15,7 +15,6 @@ There are four possible data sources. At least two of the following will be pres
 1. **Knowledge Base (KB)** – Contains both structured and unstructured internal knowledge.
 2. **Web Search (WebSearch)** – Top documents retrieved from the internet via search engines.
 3. **GitHub** – Extracted content from repositories, issues, pull requests, or discussions.
-4. **Notion** – Content from pages, databases, or documents on Notion.
 
 ---
 

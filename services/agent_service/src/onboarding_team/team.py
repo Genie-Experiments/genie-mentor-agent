@@ -30,7 +30,6 @@ RUNTIME = SingleThreadedAgentRuntime()
 PLANNER_AGENT_ID = AgentId("planner_agent", "default")
 PLANNER_REFINER_AGENT_ID = AgentId("planner_refiner_agent", "default")
 EXECUTOR_AGENT_ID = AgentId("executor_agent", "default")
-NOTION_WORKBENCH_AGENT_ID = AgentId("notion_workbench_agent", "default")
 GITHUB_WORKBENCH_AGENT_ID = AgentId("github_workbench_agent", "default")
 EVAL_AGENT_ID = AgentId("eval_agent", "default")
 EDITOR_AGENT_ID = AgentId("editor_agent", "default")
@@ -41,12 +40,6 @@ ANSWER_CLEANER_AGENT_ID = AgentId("answer_cleaner_agent", "default")
 
 agent_initialized = False
 
-notion_mcp_server_params = SseServerParams(
-    url="http://notion-mcp-gateway:8009/sse",
-    timeout=60*60,
-    sse_read_timeout=60*60,
-)
-
 github_mcp_server_params = SseServerParams(
     url="http://github-mcp-gateway:8010/sse",
     timeout=60*60,
@@ -54,33 +47,28 @@ github_mcp_server_params = SseServerParams(
 )
 # For local testing
 '''
-notion_mcp_server_params = SseServerParams(
-    url="http://localhost:8009/sse",
-)
-
 github_mcp_server_params = SseServerParams(
     url="http://localhost:8010/sse",
 )'''
 
 
 async def initialize_agent() -> None:
-    global agent_initialized, notion_workbench, github_workbench
+    global agent_initialized, github_workbench
 
     if agent_initialized:
         return
 
-    notion_workbench = McpWorkbench(notion_mcp_server_params)
     github_workbench = McpWorkbench(github_mcp_server_params)
 
-    await notion_workbench.__aenter__()
     await github_workbench.__aenter__()
 
     if not agent_initialized:
         use_openai = os.environ.get("USE_OPENAI", "").lower() == "true"
-        llm_api_key = (os.environ.get("GROQ_API_KEY") if not use_openai else os.environ.get("OPENAI_API_KEY"))
+        llm_api_key = (os.environ.get("GROQ_API_KEY")
+                       if not use_openai else os.environ.get("OPENAI_API_KEY"))
         if llm_api_key:
             llm_client = OpenAIChatCompletionClient(
-                model="llama-3.3-70b-versatile" if not use_openai else "gpt-4o",
+                model="moonshotai/kimi-k2-instruct" if not use_openai else "gpt-4o",
                 api_key=llm_api_key,
                 base_url="https://api.groq.com/openai/v1" if not use_openai else "https://api.openai.com/v1",
                 model_info={
@@ -117,23 +105,11 @@ async def initialize_agent() -> None:
             RUNTIME,
             "executor_agent",
             lambda: ExecutorAgent(
-                notion_workbench_agent_id=NOTION_WORKBENCH_AGENT_ID,
                 github_workbench_agent_id=GITHUB_WORKBENCH_AGENT_ID,
                 webrag_agent_id=WEBSEARCH_AGENT_ID,
                 kb_agent_id=KB_AGENT_ID,
                 answer_cleaner_agent_id=ANSWER_CLEANER_AGENT_ID
             )
-        )
-
-        # 2. Update the WorkbenchAgent for Notion to use the Groq client.
-        await WorkbenchAgent.register(
-            RUNTIME,
-            "notion_workbench_agent",
-            factory=lambda: WorkbenchAgent(
-                model_client=llm_client,  # Use the configured Groq client
-                model_context=BufferedChatCompletionContext(buffer_size=10),
-                workbench=notion_workbench,
-            ),
         )
 
         # 3. Update the WorkbenchAgent for GitHub to use the Groq client.
@@ -179,13 +155,7 @@ async def initialize_agent() -> None:
 
     except Exception as e:
         logging.error(f"Failed to initialize agent service: {e}")
-        if "notion" in str(e).lower():
-            raise ExternalServiceError(
-                message=f"Failed to connect to Notion service: {str(e)}",
-                service="notion",
-                details={"original_error": str(e)},
-            ) from e
-        elif "github" in str(e).lower():
+        if "github" in str(e).lower():
             raise ExternalServiceError(
                 message=f"Failed to connect to GitHub service: {str(e)}",
                 service="github",
@@ -251,8 +221,6 @@ async def shutdown_agent() -> None:
         if agent_initialized:
             await RUNTIME.stop()
             logging.info("Agent service shutdown successfully")
-            if notion_workbench:
-                await notion_workbench.__aexit__(None, None, None)
             if github_workbench:
                 await github_workbench.__aexit__(None, None, None)
     except Exception as e:

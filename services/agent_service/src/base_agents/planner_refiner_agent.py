@@ -13,7 +13,7 @@ from ..protocols.planner_schema import QueryPlan, RefinerOutput
 from ..protocols.schemas import LLMUsage
 from ..utils.logging import get_logger, setup_logger
 from ..utils.parsing import extract_json_with_regex
-from ..utils.settings import settings
+from ..utils.settings import settings, GROQ_API_KEY_PLANNER_REFINER
 from ..utils.token_tracker import token_tracker
 
 setup_logger()
@@ -23,7 +23,7 @@ logger = get_logger("planner_refiner")
 class PlannerRefinerAgent(RoutedAgent):
     def __init__(self) -> None:
         super().__init__("planner_refiner_agent")
-        self.client = Groq(api_key=settings.GROQ_API_KEY)
+        self.client = Groq(api_key=GROQ_API_KEY_PLANNER_REFINER)
         self.model = settings.DEFAULT_MODEL
 
     @message_handler

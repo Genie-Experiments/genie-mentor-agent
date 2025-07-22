@@ -135,37 +135,10 @@ def extract_github_metadata(text: str) -> Dict[str, Any]:
     }
 
 
-def extract_notion_metadata(text: str) -> Dict[str, Any]:
-    """
-    Extract Notion page information from text content.
-    Returns metadata including page links and titles.
-    """
-    page_links = []
-    page_titles = []
-    
-    # Extract Notion URLs
-    notion_urls = re.findall(r'https?://(?:www\.)?notion\.so/[^\s"\'\)]+', text)
-    
-    for url in notion_urls:
-        # Clean the URL in case it has trailing punctuation
-        url = re.sub(r'[.,;:"\']$', '', url)
-        page_links.append(url)
-        
-        # Try to extract page title if available in text around URL
-        title_match = re.search(r'\[(.*?)\]\(' + re.escape(url) + r'\)', text)
-        if title_match:
-            page_titles.append(title_match.group(1))
-    
-    return {
-        "page_links": page_links,
-        "page_titles": page_titles
-    }
-
-
 def parse_source_response(text: str) -> Dict[str, Any]:
     """
     Process response text to extract meaningful content and metadata.
-    Handles detection of GitHub and Notion content.
+    Handles detection of GitHub content.
     Returns parsed data with source-specific metadata.
     """
     try:
@@ -239,19 +212,14 @@ def parse_source_response(text: str) -> Dict[str, Any]:
             return parsed_json
             
         except ValueError:
-            # Check if it contains GitHub or Notion links
+            # Check if it contains GitHub links
             has_github = "github.com" in text
-            has_notion = "notion.so" in text
             
             result = {"answer": text, "metadata": [], "error": ""}
             
             # Extract and add GitHub metadata if present
             if has_github:
                 result["metadata"].extend(extract_github_metadata(text))
-                
-            # Extract and add Notion metadata if present
-            if has_notion:
-                result["metadata"].extend(extract_notion_metadata(text))
                 
             # Sanitize strings to remove unescaped control characters
             for key, value in result.items():

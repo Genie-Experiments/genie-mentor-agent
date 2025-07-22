@@ -102,7 +102,7 @@ class WorkbenchAgent(RoutedAgent):
             )
             if any(
                 call.name
-                in ["notion_retrieve_block_children", "get_file_contents"]
+                in ["get_file_contents"]
                 for call in create_result.content
             ):
                 self._response_context.append(str(func_exec_result_msg))
