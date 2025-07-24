@@ -156,11 +156,15 @@ class ExecutorAgent(RoutedAgent):
                         valid_results[qid] = res
 
             if len(valid_results) == 1:
-                # Only one valid source, use it directly (and allow downstream evaluation)
                 only_result = list(valid_results.values())[0]
                 logger.info("Only one valid source present. Skipping aggregation, proceeding with single valid result.")
                 execution_time_ms = int((time.time() - start_time) * 1000)
-                return Message(content=json.dumps({
+
+                # Extract optional KB trace
+                kb_trace = only_result.get("trace")
+                kb_num_hops = only_result.get("num_hops")
+
+                payload = {
                     "combined_answer_of_sources": only_result["answer"],
                     "executor_answer": only_result["answer"],
                     "all_documents": [
@@ -169,9 +173,16 @@ class ExecutorAgent(RoutedAgent):
                     "documents_by_source": self._sources_documents,
                     "metadata_by_source": self._sources_metadata,
                     "error": None,
-                    "llm_usage": None,  # Will be added in next step
-                    "execution_time_ms": execution_time_ms
-                }))
+                    "llm_usage": None,
+                    "execution_time_ms": execution_time_ms,
+                }
+
+                if kb_trace is not None:
+                    payload["trace"] = kb_trace
+                if kb_num_hops is not None:
+                    payload["num_hops"] = kb_num_hops
+
+                return Message(content=json.dumps(payload))
 
             elif len(valid_results) < 1:
                 logger.warning("No valid sources. Returning error.")
