@@ -319,9 +319,9 @@ You are a GitHub Query Agent. Your goal is to explore specific repositories to a
 **User Sub-query:** "{sub_query}"
 
 **Authorized Repositories:**
-- https://github.com/Genie-Experiments/rag_vs_llamaparse
-- https://github.com/Genie-Experiments/Ragas-agentic-testing
-- https://github.com/Genie-Experiments/agentic-rag
+- https://github.com/Genie-Experiments/rag-vs-llamaparse
+- https://github.com/Genie-Experiments/rag-system-evaluation-framework
+- https://github.com/Genie-Experiments/experimentation-agentic-rag
 
 **Your process must follow these distinct steps:**
 
