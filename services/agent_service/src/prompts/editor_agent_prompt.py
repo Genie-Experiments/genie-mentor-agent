@@ -43,10 +43,11 @@ Your job is to **revise only the incorrect or hallucinated parts** of the answer
 Return a valid JSON object with escaped newlines (`\\n`) like this:
 
 ```json
-{
-  "edited_answer": "<your corrected answer with \\n for newlines>",
-  "reasoning": "<your explanation of the changes with \\n if needed>"
-}
+{{  
+  "edited_answer": "<your corrected answer with \\n for newlines>",  
+  "reasoning": "<your explanation of the changes with \\n if needed>"  
+}}
+```
 
 ### Input
 
