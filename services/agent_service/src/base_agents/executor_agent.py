@@ -4,7 +4,7 @@ from enum import Enum
 from typing import Any, Dict, Optional
 
 from autogen_core import AgentId, MessageContext, RoutedAgent, message_handler
-from groq import Groq
+from openai import OpenAI
 
 from ..prompts.aggregation_prompt import generate_aggregated_answer
 from ..prompts.prompts import GITHUB_PROMPT
@@ -16,7 +16,7 @@ from ..utils.exceptions import (AgentServiceException, ExecutionError,
                                 handle_agent_error)
 from ..utils.logging import get_logger, setup_logger
 from ..utils.parsing import extract_json_with_regex, strip_markdown_code_fence, escape_unescaped_newlines_in_json_strings
-from ..utils.settings import settings, GROQ_API_KEY_EXECUTOR
+from ..utils.settings import settings, create_llm_client
 from ..utils.token_tracker import token_tracker
 
 setup_logger()
@@ -42,14 +42,13 @@ class ExecutorAgent(RoutedAgent):
         self.answer_cleaner_agent_id = answer_cleaner_agent_id
         
         # Validate API key
-        if not settings.GROQ_API_KEY:
+        if not settings.GROQ_API_KEY_EXECUTOR:
             raise ValidationError(
                 message="GROQ_API_KEY is required for ExecutorAgent",
-                field="GROQ_API_KEY"
+                field="GROQ_API_KEY_EXECUTOR"
             )
         
-        self.client = Groq(api_key=settings.GROQ_API_KEY_EXECUTOR)
-        self.model = settings.DEFAULT_MODEL
+        self.client, self.model = create_llm_client("executor")
 
     def _handle_source_error(self, error: Exception, source: str, sub_query: str) -> Dict[str, Any]:
         """Handle errors from specific data sources with structured error handling."""
@@ -245,12 +244,11 @@ class ExecutorAgent(RoutedAgent):
         try:
             # Use enum for all source checks
             if source == SourceType.KNOWLEDGEBASE.value:
-                # Use main user query from plan if available
-                main_query = plan["user_query"] if plan and "user_query" in plan else sub_query
-                logger.info(f"[{qid}] Querying Knowledgebase with main user query: {main_query}")
+                # Use sub_query for knowledgebase (not main user query)
+                logger.info(f"[{qid}] Querying Knowledgebase with sub_query: {sub_query}")
                 try:
                     response_message = await self.send_message(
-                        Message(content=main_query), self.kb_agent_id
+                        Message(content=sub_query), self.kb_agent_id
                     )
                     response = KBResponse.model_validate_json(response_message.content).dict()
                     logger.info(f"[KB] Agent Response : {response}")
@@ -343,15 +341,59 @@ class ExecutorAgent(RoutedAgent):
                 details={"qid": qid, "sub_query": sub_query, "original_error": str(e)}
             )
 
+    def _fallback_aggregation(self, user_query: str, results: Dict[str, Any], strategy: Optional[str] = None) -> Dict[str, Any]:
+        """Fallback aggregation when LLM aggregation fails or times out."""
+        logger.info("Using fallback aggregation due to LLM failure")
+        
+        if not results:
+            return {"combined_answer_of_sources": "No valid results to combine"}
+        
+        # Strategy 1: Use the first valid result
+        if strategy == "single_source" or len(results) == 1:
+            first_result = list(results.values())[0]
+            answer = first_result.get("answer", "No answer available")
+            # Ensure answer is a valid string
+            if not isinstance(answer, str):
+                answer = str(answer) if answer is not None else "No answer available"
+            return {"combined_answer_of_sources": answer}
+        
+        # Strategy 2: Simple concatenation of answers
+        answers = []
+        for qid, result in results.items():
+            answer = result.get("answer", "")
+            if answer and answer.strip():
+                # Ensure each answer is a valid string
+                if not isinstance(answer, str):
+                    answer = str(answer)
+                answers.append(f"[Source {qid}]: {answer}")
+        
+        if answers:
+            combined = "\n\n".join(answers)
+            return {"combined_answer_of_sources": combined}
+        else:
+            return {"combined_answer_of_sources": "No valid answers found in any source"}
+
     async def _combine_answer_from_sources(
         self, user_query: str, results: Dict[str, Any], strategy: Optional[str] = None
     ) -> Dict[str, Any]:
         try:
+            # Filter out unnecessary fields that cause token limit issues
+            filtered_results = {}
+            for qid, result in results.items():
+                filtered_result = {
+                    "answer": result.get("answer", ""),
+                    "sources": result.get("sources", []),
+                    "metadata": result.get("metadata", []),
+                    "error": result.get("error")
+                }
+                # Only include essential fields, exclude trace, global_summary, local_summary
+                filtered_results[qid] = filtered_result
+            
             prompt = generate_aggregated_answer.format(
-                user_query=user_query, results=results, strategy=strategy
+                user_query=user_query, results=filtered_results, strategy=strategy
             )
 
-            logger.info(f"[Executor] Sending aggregation prompt to model : {prompt}")
+            logger.info(f"[Executor] Sending aggregation prompt to model (filtered out trace/summaries to prevent token limits)")
             
             # Add timeout for LLM call
             import asyncio
@@ -365,25 +407,39 @@ class ExecutorAgent(RoutedAgent):
                     timeout=60  # 1 minute timeout for LLM call
                 )
             except asyncio.TimeoutError:
-                raise TimeoutError(
-                    message="LLM aggregation request timed out",
-                    timeout_seconds=60,
-                    details={"user_query": user_query, "strategy": strategy}
-                )
+                logger.error("LLM aggregation request timed out, using fallback")
+                return self._fallback_aggregation(user_query, results, strategy)
+            except Exception as e:
+                logger.error(f"LLM call failed: {e}, using fallback")
+                return self._fallback_aggregation(user_query, results, strategy)
 
             # Track token usage
             token_usage = token_tracker.track_completion("executor_agent", response, self.model)
 
             content = response.choices[0].message.content
+            if not content or not content.strip():
+                logger.error("LLM returned empty content, using fallback")
+                return self._fallback_aggregation(user_query, results, strategy)
 
             try:
                 # Clean LLM output of markdown code fences before parsing
                 content_clean = strip_markdown_code_fence(content)
                 content_clean = escape_unescaped_newlines_in_json_strings(content_clean)
+                
+                logger.debug(f"[Executor] Attempting to parse cleaned content: {content_clean[:500]}...")
+                
                 result = extract_json_with_regex(content_clean)
                 logger.info(
                     f"Extracted and parsed aggregated answer successfully : {result}"
                 )
+                
+                # Validate that result has the expected structure
+                if not isinstance(result, dict):
+                    raise ValueError(f"Expected dict result, got {type(result)}")
+                
+                if "answer" not in result:
+                    logger.warning("LLM response missing 'answer' field, using raw content")
+                    result["answer"] = content
                 
                 # Create LLMUsage object if token usage is available
                 llm_usage_obj = None
@@ -403,6 +459,21 @@ class ExecutorAgent(RoutedAgent):
                 logger.error(f"Failed to parse structured JSON: {e}")
                 logger.error(f"Raw LLM output that failed to parse: {content}")
                 
+                # Try alternative parsing method
+                try:
+                    logger.info("Attempting alternative parsing with safe_json_parse")
+                    from ..utils.parsing import safe_json_parse
+                    result = safe_json_parse(content)
+                    
+                    if isinstance(result, dict) and "answer" in result:
+                        answer = result["answer"]
+                    else:
+                        answer = content
+                        
+                except Exception as fallback_error:
+                    logger.error(f"Fallback parsing also failed: {fallback_error}")
+                    answer = content
+                
                 # Create LLMUsage object if token usage is available
                 llm_usage_obj = None
                 if token_usage:
@@ -413,8 +484,12 @@ class ExecutorAgent(RoutedAgent):
                         total_tokens=token_usage.total_tokens
                     )
                 
+                # Ensure answer is a valid string
+                if not isinstance(answer, str):
+                    answer = str(answer) if answer is not None else "Error: Invalid response format"
+                
                 return {
-                    "combined_answer_of_sources": content,
+                    "combined_answer_of_sources": answer,
                     "llm_usage": llm_usage_obj.model_dump() if llm_usage_obj else None,
                 }
 

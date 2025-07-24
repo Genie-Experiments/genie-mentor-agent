@@ -9,12 +9,21 @@ class QueryComponent(BaseModel):
     source: Literal["knowledgebase", "github", "websearch"]
 
 
+class WorkflowStep(BaseModel):
+    step_id: str
+    query_id: str
+    source: Literal["knowledgebase", "github", "websearch"]
+    dependencies: List[str] = []  # List of step_ids this step depends on
+    order: int  # Execution order (1, 2, etc.)
+
+
 class ExecutionOrder(BaseModel):
     nodes: List[str]
     edges: List[List[str]]
     aggregation: Literal[
         "combine_and_summarize", "sequential", "parallel", "single_source"
     ]
+    workflow: Optional[List[WorkflowStep]] = None  # Only present for 2+ sub-queries
 
 
 class Think(BaseModel):
@@ -22,6 +31,7 @@ class Think(BaseModel):
     sub_query_reasoning: str
     source_selection: str
     execution_strategy: str
+    workflow_reasoning: Optional[str] = None  # Only present for 2+ sub-queries
 
 
 class QueryPlan(BaseModel):

@@ -182,3 +182,44 @@ ENABLE_EDITING = settings.ENABLE_EDITING
 GOOGLE_SERVICE_ACCOUNT_FILE = settings.GOOGLE_SERVICE_ACCOUNT_FILE
 KB_PROCESSED_FILES = settings.KB_PROCESSED_FILES
 KB_DATA_STORAGE_DRIVE_ID= settings.KB_DATA_STORAGE_DRIVE_ID
+
+
+def create_llm_client(agent_name: str = "default"):
+    """
+    Create an LLM client (OpenAI or Groq) based on environment variables.
+    
+    Args:
+        agent_name: Name of the agent for specific API key lookup
+        
+    Returns:
+        OpenAI client configured for either OpenAI or Groq
+    """
+    import os
+    from openai import OpenAI
+    
+    # Check if we should use OpenAI instead of Groq
+    use_openai = os.environ.get("USE_OPENAI", "").lower() == "true"
+    
+    if use_openai:
+        # Use OpenAI
+        api_key = os.environ.get("OPENAI_API_KEY")
+        if not api_key:
+            raise ValueError("OPENAI_API_KEY environment variable is required when USE_OPENAI=true")
+        
+        return OpenAI(
+            api_key=api_key,
+            base_url="https://api.openai.com/v1"
+        ), "gpt-4o"
+    else:
+        # Use Groq
+        # Try agent-specific key first, then fallback to general GROQ_API_KEY
+        groq_key_env = f"GROQ_API_KEY_{agent_name.upper()}" if agent_name != "default" else "GROQ_API_KEY"
+        api_key = os.environ.get(groq_key_env) or os.environ.get("GROQ_API_KEY")
+        
+        if not api_key:
+            raise ValueError(f"{groq_key_env} or GROQ_API_KEY environment variable is required")
+        
+        return OpenAI(
+            api_key=api_key,
+            base_url="https://api.groq.com/openai/v1"
+        ), "meta-llama/llama-4-scout-17b-16e-instruct"
