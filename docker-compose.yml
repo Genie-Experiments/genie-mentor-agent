@@ -25,6 +25,7 @@ services:
     volumes:
       - ./services/agent_service/src:/app/src
       - ./services/genie-kbdocs-v1/:/app/genie-kbdocs-v1
+      - ./services/hf_cache:/app/hf_cache
     environment:
       - PYTHONUNBUFFERED=1
     depends_on:

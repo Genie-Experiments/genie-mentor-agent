@@ -16,6 +16,8 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 # remove image's pip cache to reduce image size
 RUN rm -rf /root/.cache/pip
 
+ENV TRANSFORMERS_CACHE=/app/hf_cache
+
 COPY src/ ./src/
 
 CMD ["uvicorn", "src.main:app", "--loop", "asyncio", "--reload", "--host", "0.0.0.0", "--port", "8000"]
