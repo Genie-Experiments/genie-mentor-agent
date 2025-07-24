@@ -1,7 +1,17 @@
 /* Markdown content styles */
 .markdown-content {
-  /* Basic text styling */
+  /* Basic text styling and responsive behavior */
   overflow-wrap: break-word;
+  word-break: break-word;
+  max-width: 100%;
+}
+
+/* Responsive text scaling */
+@media (max-width: 768px) {
+  .markdown-content {
+    font-size: 14px;
+    line-height: 1.4;
+  }
 }
 
 .markdown-content h1, 
@@ -15,22 +25,23 @@
   font-weight: 600;
   line-height: 1.25;
   color: #002835;
+  word-break: break-word;
 }
 
 .markdown-content h1 {
-  font-size: 1.75em;
+  font-size: clamp(1.25rem, 1.75em, 2rem);
 }
 
 .markdown-content h2 {
-  font-size: 1.5em;
+  font-size: clamp(1.125rem, 1.5em, 1.75rem);
 }
 
 .markdown-content h3 {
-  font-size: 1.25em;
+  font-size: clamp(1rem, 1.25em, 1.5rem);
 }
 
 .markdown-content h4 {
-  font-size: 1.1em;
+  font-size: clamp(0.875rem, 1.1em, 1.25rem);
 }
 
 .markdown-content p {
@@ -78,6 +89,9 @@
   padding: 1em;
   margin-bottom: 1em;
   overflow-x: auto;
+  max-width: 100%;
+  white-space: pre-wrap;
+  word-break: break-all;
 }
 
 .markdown-content code {
@@ -85,17 +99,32 @@
   padding: 0.2em 0.4em;
   border-radius: 3px;
   font-family: monospace;
+  word-break: break-all;
+  max-width: 100%;
+  display: inline-block;
 }
 
 .markdown-content pre code {
   padding: 0;
   background-color: transparent;
+  word-break: normal;
+  white-space: pre-wrap;
 }
 
 .markdown-content table {
   border-collapse: collapse;
   margin-bottom: 1em;
   width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  display: block;
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .markdown-content table {
+    font-size: 0.875rem;
+  }
 }
 
 .markdown-content table th,
@@ -119,6 +148,33 @@
 .markdown-content img {
   max-width: 100%;
   height: auto;
+  display: block;
+  margin: 1em auto;
+}
+
+/* Responsive behavior for small modal widths */
+@media (max-width: 500px) {
+  .markdown-content {
+    padding: 1rem;
+    font-size: 0.875rem;
+  }
+  
+  .markdown-content h1,
+  .markdown-content h2,
+  .markdown-content h3 {
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .markdown-content pre {
+    padding: 0.5rem;
+    font-size: 0.75rem;
+  }
+  
+  .markdown-content ul,
+  .markdown-content ol {
+    margin-left: 1rem;
+  }
 }
 
 /* Citation styles */
