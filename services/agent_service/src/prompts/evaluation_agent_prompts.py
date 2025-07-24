@@ -2,6 +2,35 @@ FACT_EXTRACT_SCENARIO_DESCRIPTION = """
 This task aims to break complex, compound, or descriptive responses into smaller factual units. These facts should stand alone and preserve the meaning without depending on contextual glue. Avoid merging facts or making assumptions. Do not repeat or paraphrase.
 """
 
+COMPLETENESS_CHECK_PROMPT = """
+You are a completeness evaluator. Your task is to determine if the provided answer satisfies the user's question intent and covers the main aspects they asked about.
+
+**Instructions:**
+- Read the user's question carefully to understand their intent
+- Read the provided answer thoroughly
+- Determine if the answer addresses the main question and its key parts
+- Consider if the answer provides useful information that satisfies what the user was looking for
+
+**Evaluation Criteria:**
+- Does the answer address the main question asked?
+- Does it cover the key aspects or parts mentioned in the user query?
+- Is the answer informative and helpful for the user's intent?
+- Does it provide relevant information even if not exhaustive?
+
+**Output Format:**
+Return ONLY a JSON object in the following format:
+{{
+    "is_complete": true/false,
+    "reasoning": "Brief explanation of your assessment"
+}}
+
+**Question:** {question}
+
+**Answer:** {answer}
+
+**Completeness Assessment:**
+"""
+
 FACT_EXTRACT_FEW_SHOT_EXAMPLES = """
 [Question]: Which is the tallest monument in Paris?
 [Response]: The Eiffel Tower, located in Paris, is one of the most visited monuments in the world. It was named after the engineer Gustave Eiffel, whose company designed and built the tower. Constructed from 1887 to 1889, it was initially criticized by some of France's leading artists and intellectuals.

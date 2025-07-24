@@ -190,78 +190,10 @@ class ManagerAgent(RoutedAgent):
             plan_versions = [plan_data]
             self.trace_info["planner_agent"] = plan_versions
 
-            # Feedback loop between planner and refiner
-            max_retries = 3
-            retry_count = 0
+            # Execute the plan directly without refinement
             current_plan = plan_data.get("plan")
-            refinement_attempts = []
+            self.trace_info["planner_refiner_agent"] = []  # Empty since we removed refinement
 
-            while retry_count < max_retries:
-                # Get feedback from refiner
-                logger.info(f"[PlannerRefinerAgent] Input: {current_plan}")
-                try:
-                    refined = await self.send_message(
-                        Message(content=json.dumps(current_plan)),
-                        self.planner_refiner_agent_id,
-                    )
-                    logger.info(f"[PlannerRefinerAgent] Output: {refined.content}")
-                    refiner_data = safe_json_parse(refined.content)
-                    refinement_attempts.append(refiner_data)
-                except Exception as e:
-                    logger.warning(f"[ManagerAgent] Refiner error, continuing with current plan: {e}")
-                    break
-
-                # If no refinement needed, break the loop
-                if refiner_data.get("refinement_required") == "no":
-                    break
-
-                # Get refined plan from planner with feedback
-                logger.info(f"[PlannerAgent] Refining with feedback: {refiner_data}")
-                feedback_payload = {
-                    "query": user_query,
-                    "feedback": {
-                        "refinement_required": refiner_data.get(
-                            "refinement_required", "no"
-                        ),
-                        "feedback_summary": refiner_data.get("feedback_summary", ""),
-                        "feedback_reasoning": refiner_data.get(
-                            "feedback_reasoning", []
-                        ),
-                        "current_plan": current_plan,
-                    },
-                }
-                
-                try:
-                    plan = await self.send_message(
-                        Message(content=json.dumps(feedback_payload)), self.planner_agent_id
-                    )
-                    logger.info(f"[PlannerAgent] Refined output: {plan.content}")
-                    
-                    plan_data = safe_json_parse(plan.content)
-                    if 'error' in plan_data:
-                        logger.error(f"Error in planner refinement: {plan_data['error']}")
-                        break
-
-                    current_plan = plan_data.get("plan")
-                    if not current_plan:
-                        logger.error("No plan returned from planner after refinement")
-                        break
-
-                    # Store refined plan
-                    plan_versions.append(plan_data)
-                    self.trace_info["planner_agent"] = plan_versions
-                except Exception as e:
-                    logger.error(f"Error in planner refinement: {e}")
-                    break
-
-                retry_count += 1
-                logger.info(f"Refinement attempt {retry_count}/{max_retries}")
-
-                logger.info(f"Refined plan: {json.dumps(current_plan, indent=2)}")
-
-            self.trace_info["planner_refiner_agent"] = refinement_attempts
-
-            # Execute the plan
             try:
                 query_result = await self.send_message(Message(content=json.dumps(current_plan)), self.executor_agent_id)
                 self.trace_info['executor_agent'] = safe_json_parse(query_result.content)
@@ -315,11 +247,20 @@ class ManagerAgent(RoutedAgent):
                         contexts=documents,
                         documents_by_source=documents_by_source,
                     )
+                    
+                    # Extract completeness details from evaluation history
+                    completeness_details = None
+                    if eval_history and len(eval_history) > 0:
+                        # Use the latest evaluation attempt for completeness details
+                        latest_eval = eval_history[-1]
+                        completeness_details = latest_eval.get("completeness_details")
+                    
                 except Exception as e:
                     logger.error(f"[ManagerAgent] Evaluation loop failed: {e}")
                     final_answer, eval_history, editor_history = answer, [], []
                     skip_reason = "Evaluation or Editor failed."
                     skip_evaluation = False
+                    completeness_details = None
 
             self.trace_info.update({
                 'evaluation_agent': eval_history,
@@ -327,7 +268,8 @@ class ManagerAgent(RoutedAgent):
                 'final_answer': final_answer,
                 'total_time': time.time() - start_time,
                 'evaluation_skipped': False,
-                'skip_reason': None
+                'skip_reason': None,
+                'completeness_details': completeness_details
             })
             self._update_history(session_id, message.content, final_answer)
 

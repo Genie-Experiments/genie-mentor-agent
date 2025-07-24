@@ -41,6 +41,11 @@ class EvalAgentOutput(BaseModel):
     execution_time_ms: Optional[int] = Field(None, description="Total execution time for evaluation in milliseconds")
 
 
+class CompletenessCheckOutput(BaseModel):
+    is_complete: bool = Field(..., description="Whether the answer is complete according to the evaluation")
+    reasoning: str = Field(..., description="Explanation for the completeness assessment")
+
+
 class KBMetadata(BaseModel):
     title: Optional[str]
     source: Optional[str]
