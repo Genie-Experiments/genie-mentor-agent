@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import useClickOutside from '@/hooks/useClickOutside';
 
 // Import convertMarkdownToHtml from ResearchTab
@@ -61,10 +61,60 @@ const ContextModal: React.FC<ContextModalProps> = ({
   isHtml = false,
   isMarkdown = false, // Default to false
 }) => {
+  const [modalWidth, setModalWidth] = useState(450); // Initial width
+  const [isResizing, setIsResizing] = useState(false);
+  const resizeRef = useRef<HTMLDivElement>(null);
   const modalRef = useClickOutside<HTMLDivElement>({
     onClickOutside: onClose,
-    enabled: isVisible,
+    enabled: isVisible && !isResizing, // Disable click outside when resizing
   });
+
+  const MIN_WIDTH = 450;
+  const MAX_WIDTH = window.innerWidth * 0.8; // 80% of screen width
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+  }, []);
+
+  const handleMouseMove = useCallback(
+    (e: MouseEvent) => {
+      if (!isResizing) return;
+
+      const containerRect = document.body.getBoundingClientRect();
+      const newWidth = containerRect.right - e.clientX;
+
+      if (newWidth >= MIN_WIDTH && newWidth <= MAX_WIDTH) {
+        setModalWidth(newWidth);
+      }
+    },
+    [isResizing, MAX_WIDTH]
+  );
+
+  const handleMouseUp = useCallback(() => {
+    setIsResizing(false);
+  }, []);
+
+  useEffect(() => {
+    if (isResizing) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = 'ew-resize';
+      document.body.style.userSelect = 'none';
+    } else {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+  }, [isResizing, handleMouseMove, handleMouseUp]);
 
   if (!isVisible) return null;
 
@@ -73,20 +123,42 @@ const ContextModal: React.FC<ContextModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
-      {' '}
+      {/* Resize handle */}
+      <div
+        ref={resizeRef}
+        className="absolute top-0 left-0 z-10 h-full w-1 cursor-ew-resize bg-transparent transition-colors hover:bg-gray-400"
+        style={{
+          right: `${modalWidth}px`,
+        }}
+        onMouseDown={handleMouseDown}
+      />
+
       <div
         ref={modalRef}
-        className="animate-slide-in-right h-full w-[450px] overflow-auto bg-white shadow-xl"
+        className="animate-slide-in-right relative h-full overflow-auto bg-white shadow-xl"
         style={{
-          transition: 'transform 0.3s ease-out',
+          width: `${modalWidth}px`,
+          minWidth: `${MIN_WIDTH}px`,
+          maxWidth: `${MAX_WIDTH}px`,
+          transition: isResizing ? 'none' : 'transform 0.3s ease-out',
           borderRadius: '20px 0px 0px 20px',
         }}
       >
+        {/* Resize handle - left border */}
+        <div
+          className="absolute top-0 left-0 z-10 h-full w-2 cursor-ew-resize bg-transparent transition-colors hover:bg-gray-200"
+          onMouseDown={handleMouseDown}
+          style={{
+            background: isResizing ? 'rgba(156, 191, 188, 0.3)' : 'transparent',
+          }}
+        />
+
         <div
           className="sticky top-0 z-10 flex items-center justify-between bg-white px-[30px] py-[28.5px]"
           style={{ borderBottom: '1px solid #9CBFBC' }}
         >
           <h2
+            className="truncate pr-4" // Add truncate and padding for responsiveness
             style={{
               color: '#002835',
               fontFamily: 'Inter',
@@ -95,8 +167,11 @@ const ContextModal: React.FC<ContextModalProps> = ({
             }}
           >
             {title || 'Context Details'}
-          </h2>{' '}
-          <button onClick={onClose} className="flex cursor-pointer items-center justify-center">
+          </h2>
+          <button
+            onClick={onClose}
+            className="flex flex-shrink-0 cursor-pointer items-center justify-center"
+          >
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="30"
@@ -111,15 +186,20 @@ const ContextModal: React.FC<ContextModalProps> = ({
               />
             </svg>
           </button>
-        </div>{' '}
+        </div>
+
         {isHtml || isMarkdown ? (
           <div
-            className="markdown-content px-[30px] py-[30px]"
+            className="markdown-content px-[30px] py-[30px] break-words" // Add break-words for responsive text
             dangerouslySetInnerHTML={{ __html: processedContent }}
+            style={{
+              wordBreak: 'break-word', // Ensure long words break properly
+              overflowWrap: 'break-word',
+            }}
           />
         ) : (
           <div
-            className="px-[30px] py-[30px] whitespace-pre-wrap"
+            className="px-[30px] py-[30px] break-words whitespace-pre-wrap" // Add break-words for responsive text
             style={{
               color: '#002835',
               fontFamily: 'Inter',
@@ -127,6 +207,8 @@ const ContextModal: React.FC<ContextModalProps> = ({
               fontStyle: 'normal',
               fontWeight: 400,
               lineHeight: '24px',
+              wordBreak: 'break-word', // Ensure long words break properly
+              overflowWrap: 'break-word',
             }}
           >
             {content}
