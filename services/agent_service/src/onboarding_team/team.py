@@ -68,7 +68,7 @@ async def initialize_agent() -> None:
                        if not use_openai else os.environ.get("OPENAI_API_KEY"))
         if llm_api_key:
             llm_client = OpenAIChatCompletionClient(
-                model="moonshotai/kimi-k2-instruct" if not use_openai else "gpt-4o",
+                model="moonshotai/kimi-k2-instruct" if not use_openai else "gpt-4o-mini",
                 api_key=llm_api_key,
                 base_url="https://api.groq.com/openai/v1" if not use_openai else "https://api.openai.com/v1",
                 model_info={
