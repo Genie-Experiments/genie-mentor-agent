@@ -9,7 +9,7 @@ from ..protocols.message import Message
 from ..protocols.schemas import EditorAgentInput, EditorAgentOutput, LLMUsage
 from ..utils.logging import get_logger, setup_logger
 from ..utils.parsing import extract_json_with_regex
-from ..utils.settings import settings, create_llm_client
+from ..utils.settings import settings, create_light_llm_client
 from ..utils.token_tracker import token_tracker
 
 setup_logger()
@@ -19,7 +19,7 @@ logger = get_logger("EditorAgent")
 class EditorAgent(RoutedAgent):
     def __init__(self) -> None:
         super().__init__("editor_agent")
-        self.client, self.model = create_llm_client("editor")
+        self.client, self.model = create_light_llm_client("editor")
 
     @message_handler
     async def fix_answer(self, message: Message, ctx: MessageContext) -> Message:
