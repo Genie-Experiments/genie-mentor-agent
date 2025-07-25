@@ -23,10 +23,9 @@ COMPLETENESS FEEDBACK:
    - If completeness feedback indicates the previous answer was incomplete:
      - **Review the previous answer** to understand what was already provided and what gaps exist
      - **Analyze the completeness reasoning** to understand what was missing or insufficient
-     - **Generate improved sub-queries** that specifically address the gaps identified
+     - **Generate improved and targeted sub-query/queries** that specifically address the gaps identified
      - **Consider more specific or detailed queries** to get better information for missing aspects
      - **Focus on the aspects** that were not covered or were inadequately addressed in the previous attempt
-     - **Use the feedback** to create more targeted and comprehensive sub-queries
      - **Ensure the new plan addresses** the specific deficiencies mentioned in the feedback
      - **Avoid repeating** the same approach that led to the incomplete answer
    - If no completeness feedback, proceed with normal planning
