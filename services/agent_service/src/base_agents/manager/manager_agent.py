@@ -234,6 +234,8 @@ class ManagerAgent(RoutedAgent):
             )
             skip_reason = "Evaluation skipped because GitHub source was used" if skip_evaluation else None
 
+            completeness_details = None
+
             if skip_evaluation:
                 final_answer, eval_history, editor_history = answer, [], []
             else:
@@ -249,11 +251,10 @@ class ManagerAgent(RoutedAgent):
                     )
                     
                     # Extract completeness details from evaluation history
-                    completeness_details = None
                     if eval_history and len(eval_history) > 0:
                         # Use the latest evaluation attempt for completeness details
                         latest_eval = eval_history[-1]
-                        completeness_details = latest_eval.get("completeness_details")
+                        completeness_details = latest_eval.get("completeness_details", None)
                     
                 except Exception as e:
                     logger.error(f"[ManagerAgent] Evaluation loop failed: {e}")
@@ -269,7 +270,7 @@ class ManagerAgent(RoutedAgent):
                 'total_time': time.time() - start_time,
                 'evaluation_skipped': False,
                 'skip_reason': None,
-                'completeness_details': completeness_details
+                'completeness_details': completeness_details if completeness_details else None,
             })
             self._update_history(session_id, message.content, final_answer)
 
