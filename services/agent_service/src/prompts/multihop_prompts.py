@@ -181,6 +181,8 @@ Do not repeat or paraphrase previous sub-questions.
 
 Keep sub-questions specific and targeted to one report, metric, and dataset.
 
+Now determine whether the current information is sufficient to answer the main question. If not, output the required JSON object with appropriate sub-questions.
+
 Table of Contents:
 {genie_docs_toc}
 
@@ -195,8 +197,7 @@ Global Evidence Memory (summary across all retrieved chunks):
 
 Local Pathway Memory (summary of most recent sub-question's result):
 {local_memory}
-
-Now determine whether the current information is sufficient to answer the main question. If not, output the required JSON object with appropriate sub-questions."""
+"""
 
 GENIE_DOCS_TOC = """
 1. Experiment Report: Advanced RAG – Context Expansion

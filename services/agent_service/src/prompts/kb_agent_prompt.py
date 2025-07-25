@@ -32,6 +32,4 @@ Context (from Knowledge Base):
 {context}
 ---
 Your Answer:
-
-
 """
