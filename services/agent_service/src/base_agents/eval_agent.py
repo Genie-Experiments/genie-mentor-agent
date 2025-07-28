@@ -5,19 +5,19 @@ from typing import List
 import time
 
 from autogen_core import MessageContext, RoutedAgent, message_handler
-from groq import Groq
+from openai import OpenAI
 
 from ..prompts.evaluation_agent_prompts import (
     EVALUATE_FEW_SHOT_EXAMPLES, EVALUATE_OUTPUT_FORMAT,
     EVALUATE_PROMPTING_INSTRUCTIONS, EVALUATE_SCENARIO_DESCRIPTION,
     FACT_EVAL_PROMPT_TEMPLATE, FACT_EXTRACT_FEW_SHOT_EXAMPLES,
     FACT_EXTRACT_OUTPUT_FORMAT, FACT_EXTRACT_PROMPT_TEMPLATE,
-    FACT_EXTRACT_SCENARIO_DESCRIPTION)
+    FACT_EXTRACT_SCENARIO_DESCRIPTION, COMPLETENESS_CHECK_PROMPT)
 from ..protocols.message import Message
-from ..protocols.schemas import EvalAgentInput, EvalAgentOutput, LLMUsage
+from ..protocols.schemas import EvalAgentInput, EvalAgentOutput, LLMUsage, CompletenessCheckOutput
 from ..utils.logging import get_logger, setup_logger
 from ..utils.parsing import extract_json_with_brace_counting
-from ..utils.settings import settings
+from ..utils.settings import settings, create_llm_client
 from ..utils.token_tracker import token_tracker
 
 setup_logger()
@@ -26,8 +26,7 @@ logger = get_logger("EvalAgent")
 class EvalAgent(RoutedAgent):
     def __init__(self) -> None:
         super().__init__("eval_agent")
-        self.client = Groq(api_key=settings.GROQ_API_KEY)
-        self.model = settings.WEBRAG_LLM_DEFAULT_MODEL
+        self.client, self.model = create_llm_client("eval")
 
     def _flatten_context(self, contexts: List[List[str]]) -> str:
         return " ".join(chain.from_iterable(contexts))
@@ -67,6 +66,10 @@ class EvalAgent(RoutedAgent):
         context=context
     )
 
+        # Log the context being used for fact evaluation
+        logger.info(f"[EvalAgent] Context length for fact evaluation: {len(context)} characters")
+        #logger.info(f"[EvalAgent] Context used for fact evaluation: {context}")
+
         result = self.client.chat.completions.create(
             model=self.model,
             messages=[{"role": "user", "content": prompt}],
@@ -101,7 +104,83 @@ class EvalAgent(RoutedAgent):
             context_text = self._flatten_context(contexts)
 
             logger.info(f"[EvalAgent] Received Payload: {payload}")
+            logger.info(f"[EvalAgent] Question: {question}")
+            logger.info(f"[EvalAgent] Answer length: {len(response)} characters")
+            logger.info(f"[EvalAgent] Context count: {len(contexts)}")
 
+            # Completeness Check
+            completeness_prompt = COMPLETENESS_CHECK_PROMPT.format(
+                question=question,
+                answer=response
+            )
+            logger.info(f"[EvalAgent] Completeness Check Prompt: {completeness_prompt}")
+            
+            completeness_result = self.client.chat.completions.create(
+                model=self.model,
+                messages=[{"role": "user", "content": completeness_prompt}],
+                temperature=0.2
+            )
+            token_tracker.track_completion("eval_agent_completeness_check", completeness_result, self.model)
+            completeness_content = completeness_result.choices[0].message.content.strip()
+            logger.info(f"[EvalAgent] Completeness Check Raw Output: {completeness_content}")
+            
+            # Parse JSON response
+            try:
+                completeness_data = extract_json_with_brace_counting(completeness_content)
+                logger.info(f"[EvalAgent] Parsed Completeness Data: {completeness_data}")
+                
+                # Validate against schema
+                completeness_check = CompletenessCheckOutput(**completeness_data)
+                is_complete = completeness_check.is_complete
+                completeness_reasoning = completeness_check.reasoning
+                
+                logger.info(f"[EvalAgent] Completeness Assessment - Complete: {is_complete}, Reasoning: {completeness_reasoning}")
+                
+            except Exception as e:
+                logger.error(f"[EvalAgent] Failed to parse completeness check JSON: {e}")
+                logger.error(f"[EvalAgent] Raw completeness content: {completeness_content}")
+                # Fallback to simple Yes/No parsing
+                is_complete = completeness_content.lower().startswith("yes")
+                completeness_reasoning = completeness_content
+                logger.info(f"[EvalAgent] Fallback completeness assessment: {is_complete}")
+
+            if not is_complete:
+                logger.warning(f"[EvalAgent] Answer is incomplete. Completeness assessment: {completeness_reasoning}")
+                # Skip fact evaluation for incomplete answers
+                completeness_note = f"Answer marked as incomplete: {completeness_reasoning}"
+                
+                # Return early with incomplete assessment
+                reasoning = [{
+                    "type": "completeness_warning",
+                    "message": completeness_note,
+                    "assessment": completeness_reasoning
+                }]
+                
+                # Get token usage for completeness check only
+                completeness_check_usage = token_tracker.get_agent_usage("eval_agent_completeness_check")
+                combined_usage = None
+                if completeness_check_usage:
+                    combined_usage = LLMUsage(
+                        model=completeness_check_usage.model,
+                        input_tokens=completeness_check_usage.input_tokens,
+                        output_tokens=completeness_check_usage.output_tokens,
+                        total_tokens=completeness_check_usage.total_tokens
+                    )
+                
+                execution_time_ms = int((time.time() - start_time) * 1000)
+                eval_output = EvalAgentOutput(
+                    score=0.0,  # Score 0 for incomplete answers
+                    reasoning=reasoning,
+                    error=None,
+                    llm_usage=combined_usage,
+                    execution_time_ms=execution_time_ms
+                )
+                
+                return Message(content=eval_output.model_dump_json())
+            else:
+                completeness_note = f"Answer passed completeness check: {completeness_reasoning}"
+
+            # Proceed with fact evaluation only if answer is complete
             facts = await self._extract_facts(question, response)
             if not facts:
                 raise ValueError("[EvalAgent] No facts could be extracted from the response.")
@@ -109,13 +188,28 @@ class EvalAgent(RoutedAgent):
             evaluations = await self._evaluate_facts(facts, context_text)
             score, reasoning = self._compute_score_and_reasoning(evaluations)
             
+            # Add completeness note to reasoning
+            reasoning.append({
+                "type": "completeness_check",
+                "message": completeness_note,
+                "assessment": completeness_reasoning
+            })
+            
             # Get combined token usage for both fact extraction and evaluation
             fact_extraction_usage = token_tracker.get_agent_usage("eval_agent_fact_extraction")
             fact_evaluation_usage = token_tracker.get_agent_usage("eval_agent_fact_evaluation")
+            completeness_check_usage = token_tracker.get_agent_usage("eval_agent_completeness_check")
             
             # Combine token usage
             combined_usage = None
-            if fact_extraction_usage and fact_evaluation_usage:
+            if fact_extraction_usage and fact_evaluation_usage and completeness_check_usage:
+                combined_usage = LLMUsage(
+                    model=fact_extraction_usage.model,
+                    input_tokens=fact_extraction_usage.input_tokens + fact_evaluation_usage.input_tokens + completeness_check_usage.input_tokens,
+                    output_tokens=fact_extraction_usage.output_tokens + fact_evaluation_usage.output_tokens + completeness_check_usage.output_tokens,
+                    total_tokens=fact_extraction_usage.total_tokens + fact_evaluation_usage.total_tokens + completeness_check_usage.total_tokens
+                )
+            elif fact_extraction_usage and fact_evaluation_usage:
                 combined_usage = LLMUsage(
                     model=fact_extraction_usage.model,
                     input_tokens=fact_extraction_usage.input_tokens + fact_evaluation_usage.input_tokens,

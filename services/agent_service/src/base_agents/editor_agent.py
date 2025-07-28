@@ -1,15 +1,15 @@
 import json
-import os
+import time
 
 from autogen_core import MessageContext, RoutedAgent, message_handler
-from groq import Groq
+from openai import OpenAI
 
 from ..prompts.editor_agent_prompt import EDITOR_PROMPT
 from ..protocols.message import Message
 from ..protocols.schemas import EditorAgentInput, EditorAgentOutput, LLMUsage
 from ..utils.logging import get_logger, setup_logger
-from ..utils.parsing import extract_json_with_brace_counting
-from ..utils.settings import settings
+from ..utils.parsing import extract_json_with_regex
+from ..utils.settings import settings, create_light_llm_client
 from ..utils.token_tracker import token_tracker
 
 setup_logger()
@@ -19,8 +19,7 @@ logger = get_logger("EditorAgent")
 class EditorAgent(RoutedAgent):
     def __init__(self) -> None:
         super().__init__("editor_agent")
-        self.client = Groq(api_key=settings.GROQ_API_KEY)
-        self.model = settings.WEBRAG_LLM_DEFAULT_MODEL
+        self.client, self.model = create_light_llm_client("editor")
 
     @message_handler
     async def fix_answer(self, message: Message, ctx: MessageContext) -> Message:
@@ -45,7 +44,7 @@ class EditorAgent(RoutedAgent):
 
             content = response.choices[0].message.content
 
-            result = extract_json_with_brace_counting(content)
+            result = extract_json_with_regex(content)
             final_answer = result.get("edited_answer")
             logger.info(f"[EditorAgent] Final Answer : {final_answer}")
             
@@ -68,7 +67,9 @@ class EditorAgent(RoutedAgent):
 
         except Exception as e:
             logger.error(f"EditorAgent Encountered Error : {e}")
+            # Use the previous_answer from the payload if available, otherwise use error message
+            fallback_answer = getattr(payload, 'previous_answer', "Error Occurred in Editor Agent") if 'payload' in locals() else "Error Occurred in Editor Agent"
             return Message(content=json.dumps({
-                "answer": payload.get("previous_answer","Error Occured in Editor Agent"),
+                "answer": fallback_answer,
                 "error": str(e)
             }))

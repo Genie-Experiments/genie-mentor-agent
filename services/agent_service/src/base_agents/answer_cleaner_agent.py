@@ -2,14 +2,14 @@ import json
 import time
 
 from autogen_core import MessageContext, RoutedAgent, message_handler
-from groq import Groq
+from openai import OpenAI
 
 # Make sure this prompt is defined
 from ..prompts.prompts import ANSWER_CLEANING_PROMPT
 from ..protocols.message import Message
 from ..protocols.schemas import LLMUsage
 from ..utils.logging import get_logger, setup_logger
-from ..utils.settings import settings
+from ..utils.settings import settings, create_light_llm_client
 from ..utils.token_tracker import token_tracker
 
 setup_logger()
@@ -19,8 +19,7 @@ logger = get_logger("answer_cleaner")
 class AnswerCleanerAgent(RoutedAgent):
     def __init__(self) -> None:
         super().__init__("answer_cleaner_agent")
-        self.client = Groq(api_key=settings.GROQ_API_KEY)
-        self.model = settings.DEFAULT_MODEL
+        self.client, self.model = create_light_llm_client("answer_cleaner")
 
     @message_handler
     async def handle_cleaning_request(self, message: Message, ctx: MessageContext) -> Message:

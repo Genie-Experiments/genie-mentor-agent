@@ -4,7 +4,7 @@ import time
 
 from autogen_core import MessageContext, RoutedAgent, message_handler
 from autogen_core.models import UserMessage
-from groq import Groq
+from openai import OpenAI
 from pydantic import ValidationError
 
 from ..prompts.prompts import REFINEMENT_NEEDED_PROMPT
@@ -13,7 +13,7 @@ from ..protocols.planner_schema import QueryPlan, RefinerOutput
 from ..protocols.schemas import LLMUsage
 from ..utils.logging import get_logger, setup_logger
 from ..utils.parsing import extract_json_with_regex
-from ..utils.settings import settings, GROQ_API_KEY_PLANNER_REFINER
+from ..utils.settings import settings, create_light_llm_client
 from ..utils.token_tracker import token_tracker
 
 setup_logger()
@@ -23,8 +23,7 @@ logger = get_logger("planner_refiner")
 class PlannerRefinerAgent(RoutedAgent):
     def __init__(self) -> None:
         super().__init__("planner_refiner_agent")
-        self.client = Groq(api_key=GROQ_API_KEY_PLANNER_REFINER)
-        self.model = settings.DEFAULT_MODEL
+        self.client, self.model = create_light_llm_client("planner_refiner")
 
     @message_handler
     async def handle_plan_message(

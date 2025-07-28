@@ -4,8 +4,8 @@ import os
 import re
 from typing import Any, Dict
 from autogen_core import MessageContext, RoutedAgent, message_handler
-from langchain_groq import ChatGroq
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from openai import OpenAI
+from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import torch
@@ -13,6 +13,7 @@ from ..prompts.multihop_prompts import GENERATOR_PROMPT, GLOBAL_SUMMARIZER_PROMP
 from ..protocols.message import Message
 from ..utils.logging import get_logger, setup_logger
 from ..protocols.schemas import KBResponse
+from ..utils.settings import create_light_llm_client
 
 setup_logger()
 logger = get_logger("KBAgent")
@@ -120,11 +121,10 @@ class KBAgent(RoutedAgent):
         except Exception as e:
             logger.warning(
                 f"[KBAgent] Could not get Chroma vector store document count: {e}")
-        self.llm = ChatGroq(
-            temperature=0.1,
-            groq_api_key=self.groq_api_key,
-            model_name="meta-llama/llama-4-scout-17b-16e-instruct"
-        )
+        
+        # Create LLM client using the generic factory
+        self.llm_client, self.model_name = create_light_llm_client("kb")
+        self.llm = self.llm_client.chat.completions
 
     def run_resp_pipeline(self, main_question: str, max_hops: int = 5) -> Dict[str, Any]:
         """Run the ReSP (Retrieval-enhanced Summarization Pipeline) for multi-hop reasoning"""
@@ -151,13 +151,23 @@ class KBAgent(RoutedAgent):
             main_question=main_question,
             docs="\n".join(doc_texts)
         )
-        global_summary = self.llm.invoke(global_summary_prompt).content
+        global_summary_response = self.llm.create(
+            messages=[{"role": "user", "content": global_summary_prompt}],
+            model=self.model_name,
+            temperature=0.1
+        )
+        global_summary = global_summary_response.choices[0].message.content
 
         local_summary_prompt = LOCAL_SUMMARIZER_PROMPT.format(
             sub_question=main_question,
             docs="\n".join(doc_texts)
         )
-        local_summary = self.llm.invoke(local_summary_prompt).content
+        local_summary_response = self.llm.create(
+            messages=[{"role": "user", "content": local_summary_prompt}],
+            model=self.model_name,
+            temperature=0.1
+        )
+        local_summary = local_summary_response.choices[0].message.content
 
         global_memory.append(global_summary)
         local_memory.append(
@@ -183,7 +193,12 @@ class KBAgent(RoutedAgent):
         )
 
         logger.debug(f"[Planner Prompt Debug] {planner_reasoner_prompt}")
-        reasoner_raw = self.llm.invoke(planner_reasoner_prompt).content
+        reasoner_response = self.llm.create(
+            messages=[{"role": "user", "content": planner_reasoner_prompt}],
+            model=self.model_name,
+            temperature=0.1
+        )
+        reasoner_raw = reasoner_response.choices[0].message.content
         logger.info(f"[Hop 1] Reasoner raw: {reasoner_raw}")
         reasoner = parse_reasoner_json(reasoner_raw)
         hop_info["reasoner_output"] = reasoner
@@ -233,13 +248,23 @@ class KBAgent(RoutedAgent):
                     main_question=main_question,
                     docs="\n".join(doc_texts)
                 )
-                global_summary = self.llm.invoke(global_summary_prompt).content
+                global_summary_response = self.llm.create(
+                    messages=[{"role": "user", "content": global_summary_prompt}],
+                    model=self.model_name,
+                    temperature=0.1
+                )
+                global_summary = global_summary_response.choices[0].message.content
 
                 local_summary_prompt = LOCAL_SUMMARIZER_PROMPT.format(
                     sub_question=query_text,
                     docs="\n".join(doc_texts)
                 )
-                local_summary = self.llm.invoke(local_summary_prompt).content
+                local_summary_response = self.llm.create(
+                    messages=[{"role": "user", "content": local_summary_prompt}],
+                    model=self.model_name,
+                    temperature=0.1
+                )
+                local_summary = local_summary_response.choices[0].message.content
 
                 global_memory.append(global_summary)
                 local_memory.append(
@@ -270,7 +295,12 @@ class KBAgent(RoutedAgent):
             )
 
             logger.debug(f"[Planner Prompt Debug] {planner_reasoner_prompt}")
-            reasoner_raw = self.llm.invoke(planner_reasoner_prompt).content
+            reasoner_response = self.llm.create(
+                messages=[{"role": "user", "content": planner_reasoner_prompt}],
+                model=self.model_name,
+                temperature=0.1
+            )
+            reasoner_raw = reasoner_response.choices[0].message.content
             logger.info(f"[Hop {hop}] Reasoner raw: {reasoner_raw}")
             reasoner = parse_reasoner_json(reasoner_raw)
 
@@ -315,7 +345,12 @@ class KBAgent(RoutedAgent):
             combined_memory=combined_memory,
             main_question=main_question
         )
-        answer = self.llm.invoke(generator_prompt).content
+        answer_response = self.llm.create(
+            messages=[{"role": "user", "content": generator_prompt}],
+            model=self.model_name,
+            temperature=0.1
+        )
+        answer = answer_response.choices[0].message.content
 
         hops_trace.append({
             "hop": "final",
