@@ -9,17 +9,9 @@ Message: {{query}}
 PLANNER_PROMPT = """
 You are a Planner Agent responsible for generating a structured query plan from the user's input. Your job is to analyze the query and determine the appropriate data source and query strategy.
 
----
-USER QUERY:
-{user_query}
-
-COMPLETENESS FEEDBACK:
-{ans_completeness_feedback}
----
-
 ### Your Tasks:
 
-1. **Handle Completeness Feedback (if provided)**:
+1. **Handle Completeness Feedback (provided at end of prompt if available)**:
    - If completeness feedback indicates the previous answer was incomplete:
      - **Review the previous answer** to understand what was already provided and what gaps exist
      - **Analyze the completeness reasoning** to understand what was missing or insufficient
@@ -119,6 +111,7 @@ Before generating the final output, think through these steps:
    - Each sub-query should be focused and specific to the user's query especially the knowledgebase sub-query should be as detailed as main q
 5. For 2 sub-queries: Determine the execution order and reasoning
 6. Document your reasoning process in the "think" field
+
 ---
 
 ### Format:
@@ -191,6 +184,9 @@ VERY IMPORTANT: ONCE THE FINAL ANSWER IS GENERATED, DO NOT MAKE ANY MORE TOOL CA
 ---
 USER QUERY:
 {user_query}
+
+COMPLETENESS FEEDBACK:
+{ans_completeness_feedback}
 ---
 """
 
