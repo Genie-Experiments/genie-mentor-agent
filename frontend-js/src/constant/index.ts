@@ -21,8 +21,8 @@ export const EXTERNAL_SOURCES = [
 export const PREDEFINED_QUESTIONS = [
   'What is Genie Mentor Agent?',
   'How can I use this application?',
-  'What are the main features of Genie Mentor Agent?',
-  'How do I get started with Genie Mentor Agent?',
+  'Which of our advanced RAG experiments were only evaluated using the Hit Rate metric and not Answer Similarity?',
+  'From all the reports on Advanced RAG experiments, find the technique which provided the maximum score for *UpTrain* Evaluation for “Context Precision” for the github code files data?',
 ];
 
 export const LARGE_SCREEN_BREAKPOINT = 1525;
