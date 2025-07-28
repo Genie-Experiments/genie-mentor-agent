@@ -72,14 +72,15 @@ async def run_evaluation_loop(
     contexts: List[str],
     documents_by_source: List[str],
     max_attempts: int = 2,
-) -> Tuple[str, List[dict], List[dict]]:
+) -> Tuple[str, List[dict], List[dict], dict]:
     """
     Runs up to `max_attempts` Eval→Edit cycles.
-    Returns (final_answer, eval_history, editor_history).
+    Returns (final_answer, eval_history, editor_history, completeness_info).
     """
     current_answer = initial_answer
     eval_history: List[dict] = []
     editor_history: List[dict] = []
+    completeness_info = {"is_incomplete": False, "details": None}
 
     # ── 1. Completeness Check ─────────────────────────────────────────
     logger.info(f"[EvaluationAgent] Initial completeness check")
@@ -127,11 +128,14 @@ async def run_evaluation_loop(
         "attempt": 1,
         "completeness_details": completeness_details
     })
+    
+    logger.info(f"[ManagerUtils] Initial completeness check - Completeness details: {completeness_details}")
 
     # If incomplete, return early
     if is_incomplete:
         logger.info("[EvaluationAgent] Answer is incomplete, skipping fact evaluation and editing.")
-        return current_answer, eval_history, editor_history
+        completeness_info = {"is_incomplete": True, "details": completeness_details}
+        return current_answer, eval_history, editor_history, completeness_info
 
     # ── 2. Fact Evaluation and Editing Loop ───────────────────────────────────
     logger.info("[EvaluationAgent] Answer is complete, proceeding with fact evaluation and editing.")
@@ -151,6 +155,17 @@ async def run_evaluation_loop(
         eval_result = EvalAgentOutput.model_validate_json(eval_resp.content)
 
         score = float(eval_result.score)
+        
+        # Extract completeness details from every evaluation attempt
+        completeness_details = None
+        if isinstance(eval_result.reasoning, list):
+            for item in eval_result.reasoning:
+                if isinstance(item, dict) and item.get("type") in ["completeness_check", "completeness_warning"]:
+                    completeness_details = {
+                        "is_complete": item.get("type") == "completeness_check",
+                        "reasoning": item.get("assessment", item.get("message", "No reasoning provided"))
+                    }
+                    break
         
         # Filter out completeness items from reasoning for fact evaluation
         if isinstance(eval_result.reasoning, list):
@@ -173,7 +188,10 @@ async def run_evaluation_loop(
                 "llm_usage": llm_usage,
             },
             "attempt": attempt + 2,  # +2 because attempt 1 was completeness check
+            "completeness_details": completeness_details
         })
+        
+        logger.info(f"[ManagerUtils] Evaluation attempt {attempt + 2} - Completeness details: {completeness_details}")
 
         # Handle evaluation error
         if error is not None:
@@ -199,4 +217,4 @@ async def run_evaluation_loop(
         editor_history.append(editor_log)
         current_answer = new_answer
 
-    return current_answer, eval_history, editor_history
+    return current_answer, eval_history, editor_history, completeness_info
