@@ -10,11 +10,11 @@ You must synthesize the most informative, coherent response based on the provide
 ---
 
 **Available Sources**  
-There are four possible data sources. At least two of the following will be present in the input:
+There are three possible data sources. At least two of the following will be present in the input:
 
 1. **Knowledge Base (KB)** – Contains both structured and unstructured internal knowledge.
 2. **Web Search (WebSearch)** – Top documents retrieved from the internet via search engines.
-3. **GitHub** – Extracted content from repositories, issues, pull requests, or discussions.
+3. **GitHub** – Extracted code from repositories.
 
 ---
 
@@ -24,6 +24,9 @@ There are four possible data sources. At least two of the following will be pres
 - Use the aggregation strategy to guide how you combine the content from multiple sources.
 - When forming the final response, clearly reflect source alignment via citations.
 - Preserve any emojis in the answers as they may carry contextual meaning.
+- Do not change the meaning of the answers; your role is to aggregate, not to interpret or alter the original content.
+- Do not remove code if it is present in the answers. Include it as-is in your final response but make sure that it is properly formatted and code block delimiters are present at the beginning and end (add if missing).
+- Code snippets should not have citations.
 
 ---
 
@@ -46,6 +49,9 @@ Return the aggregated result as a well-formatted JSON object with this structure
 {{
   "answer": "<your aggregated response here>"
 }}
+```
+
+---
 IMPORTANT: All string values in your JSON must be valid JSON strings. Do NOT include literal newlines, tabs, or control characters inside string values. Escape all newlines as \\n.
 Now, here is the data you have to work with:
 User Query: "{user_query}"
