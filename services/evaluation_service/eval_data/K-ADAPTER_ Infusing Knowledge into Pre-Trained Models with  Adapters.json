@@ -1,0 +1,122 @@
+[
+  {
+    "questions": [
+      {
+        "question": "What is the purpose of the K-Adapter in the context of pre-trained models?",
+        "answer": "The purpose of the K-Adapter in the context of pre-trained models is to inject specific knowledge into these models by training a knowledge-specific adapter. This allows the model to incorporate additional information relevant to specific tasks while leveraging the existing capabilities of the pre-trained language model (PTM). The K-Adapter facilitates the fusion of intermediate representations, enhancing the model's performance on task-specific layers."
+      },
+      {
+        "question": "What type of knowledge does the K-Adapter inject into pre-trained models?",
+        "answer": "The K-Adapter injects specific knowledge into pre-trained models by training a knowledge-specific adapter on the pre-training task."
+      },
+      {
+        "question": "What is the role of the task-specific layer in the K-Adapter framework?",
+        "answer": "The task-specific layer in the K-Adapter framework serves to inject specific knowledge into the pre-trained language model (PTM) by training a knowledge-specific adapter. This layer is designed to adapt the model's representations for particular tasks, allowing it to effectively utilize the additional knowledge provided during the training process. It helps in refining the model's output by integrating task-relevant information, thereby enhancing its performance on specific tasks."
+      }
+    ],
+    "metadata": {
+      "page_number": 11,
+      "header": "PTM",
+      "chunk_index": 35,
+      "file_path": "K-ADAPTER_ Infusing Knowledge into Pre-Trained Models with  Adapters.pdf",
+      "token_count": 906
+    },
+    "context": "Representations |Pre-training Task|Col2|Col3|Col4|Col5|Col6|Col7|Col8|Col9| |---|---|---|---|---|---|---|---|---| |Task-speciﬁc Layer|Task-speciﬁc Layer|Task-speciﬁc Layer|Task-speciﬁc Layer|Task-speciﬁc Layer|Task-speciﬁc Layer|Task-speciﬁc Layer|Task-speciﬁc Layer|Task-speciﬁc Layer| |||||||||| |||||||||| Input: Knowledge |ut tations K-Adapter|Col2| |---|---| |Pre-trained Language Model (PTM)<br>Adapter<br>Intermediate<br>Representaions<br>Fusion<br>tions<br>r<br>ations<br>concat<br><br>Obama was<br>born<br>in<br>Honolulu<br>.<br>[SEP]<br>[CLS] Barack|Pre-trained Language Model (PTM)<br>Adapter<br>Intermediate<br>Representaions<br>Fusion<br>tions<br>r<br>ations<br>concat<br><br>Obama was<br>born<br>in<br>Honolulu<br>.<br>[SEP]<br>[CLS] Barack| |[CLS]|Barack| Figure 3: An overview of our K-A DAPTER to inject specific knowledge by training a knowledge-specific adapter on the pre-training task."
+  },
+  {
+    "questions": [
+      {
+        "question": "What is the primary function of the model introduced by Lauscher et al. in 2019?",
+        "answer": "The primary function of the model introduced by Lauscher et al. in 2019 is to inject pairs of words with synonym and hyponym-hypernym relations from WordNet. The model takes a pair of words as input, separated by a special token, and is optimized through a binary classification problem that predicts whether the input holds a particular relation or not."
+      },
+      {
+        "question": "How does SenseBERT utilize word-supersense knowledge?",
+        "answer": "SenseBERT utilizes word-supersense knowledge by predicting the supersense of the masked word in the input. In this approach, the candidates for the supersense are nouns and verbs, and the ground truth for these predictions is derived from WordNet."
+      },
+      {
+        "question": "What type of relationships does KnowBERT incorporate from WordNet?",
+        "answer": "KnowBERT incorporates synset-synset and lemma-lemma relationships from WordNet."
+      }
+    ],
+    "metadata": {
+      "page_number": 2,
+      "header": "LIBERT",
+      "chunk_index": 4,
+      "file_path": "K-ADAPTER_ Infusing Knowledge into Pre-Trained Models with  Adapters.pdf",
+      "token_count": 2734
+    },
+    "context": "(Lauscher et al., 2019) injects pairs of words with synonym and hyponym-hypernym relations in WordNet. The model takes a pair of words separated by a special token as the input, and is optimized by a binary classification problem, which predicts whether the input holds a particular relation or not. **SenseBERT** (Levine et al., 2019) considers word-supersense knowledge. It inject knowledge by predicting the supersense of the masked word in the input, where the candidates are nouns and verbs and the ground truth comes from WordNet. **KnowBERT** (Peters et al., 2019) incorporates knowledge bases into BERT using Knowledge attention and recontextualization, where the knowledge comes from synset-synset and lemmalemma relationships in WordNet, and entity linking information in Wikipedia. If entity linking supervision is available, the model is learned with an additional knowledge-aware log-likelihood or maxmargin objective. **WKLM** (Xiong et al., 2020) replaces entity mentions in the original document with names of other entities of the same type. The model is trained to distinguish the correct entity mention from randomly chosen ones. **BERT-MK** (He et al., 2019) integrates fact triples from knowledge graph. For each entity, it sample incoming and outcoming instances from the neighbors on the knowledge graph, and replaces head or tail entity to create negative instances. The model is learned to discriminate between real and fake facts. As shown in Table 1, our model (K-A DAPTER ) differs from previous studies in three aspects. First, Language Pre-train (b) K-Adapter Figure 1: (a) Pre-trained language models inject multiple kinds of knowledge with multi-task learning. Model parameters need to be retrained when injecting new kinds of knowledge, which may result in the catastrophic forgetting (b) Our K-A DAPTER injects multiple kinds of knowledge by training adapters independently on different pre-train tasks, which supports continual knowledge infusion. When we inject new kinds of knowledge, the existing knowledge-specific adapters will not be affected. KIA represents the adapter layer and TRM represents the transformer layer, both of which are shown in Figure 2. we consider both fact-related objective (i.e. predicate/relation prediction) and linguistic-related objective (i.e. dependency relation prediction). Second, the original parameter of BERT is clamped in the knowledge infusion process. Third, our approach supports continual learning, which means that the learning of different adapters are not entangled. This flexibility enables us to efficiently inject different types of knowledge independently, and inject more types of knowledge without any loss on the previously injected knowledge."
+  },
+  {
+    "questions": [
+      {
+        "question": "Which language models are considered in the document?",
+        "answer": "The language models considered in the document are ELMo, ELMo5.5B, Transformer-XL, BERT _LARGE_, and RoBERTa _LARGE_."
+      },
+      {
+        "question": "What are LAMA-GoogleRE and LAMA-T-REx aimed at?",
+        "answer": "LAMA-GoogleRE and LAMA-T-REx are aimed at factual knowledge."
+      },
+      {
+        "question": "What is the purpose of conducting probe experiments on LAMA-UHN?",
+        "answer": "The purpose of conducting probe experiments on LAMA-UHN is to evaluate the models' ability to handle a more \"factual\" subset of queries by filtering out those that can be easily answered based solely on entity names. This allows for a more rigorous assessment of how well the models can utilize factual knowledge in their responses."
+      }
+    ],
+    "metadata": {
+      "page_number": 11,
+      "header": "Settings",
+      "chunk_index": 30,
+      "file_path": "K-ADAPTER_ Infusing Knowledge into Pre-Trained Models with  Adapters.pdf",
+      "token_count": 784
+    },
+    "context": "We consider several language models including: ELMo (Peters et al., 2018), ELMo5.5B (Peters et al., 2018), Transformer-XL (Dai et al., 2019), BERT _LARGE_ and RoBERTa _LARGE_ . We focus on LAMA-GoogleRE and LAMA-T-REx, which are aimed at factual knowledge. We also conduct probe experiments on LAMA-UHN (Poerner et al., 2019), a more “factual” subset of LAMA, by filtering out queries that are easy to answer from entity names alone. Different models have different vocabulary sizes. To conduct a more fair comparison experiment, we adopt the intersection of vocabularies and let every language model rank only tokens in this vocabulary following Petroni et al. (2019). For simplicity, we only compare KA PDATER (F) which is infused with factual knowledge, with other baseline models."
+  },
+  {
+    "questions": [
+      {
+        "question": "What is the structure of the knowledge-specific adapter described in the work?",
+        "answer": "The structure of the knowledge-specific adapter consists of _K_ adapter layers, each containing _N_ transformer layers (specifically, _N_ = 2 in the example provided) and two projection layers. A skip-connection is applied across the two projection layers. The adapter layers are integrated among different transformer layers of the pre-trained model. The output hidden feature of the transformer layer in the pre-trained model is concatenated with the output feature of the previous adapter layer to serve as the input feature for the current adapter layer. The final output feature of the adapter model is obtained by concatenating the last hidden features of the pre-trained model and the adapter. Each knowledge-specific adapter is trained on different pre-training tasks individually, and during fine-tuning for various downstream tasks, the output features of the adapters can be used as input for task-specific layers."
+      },
+      {
+        "question": "How many transformer layers are contained in each adapter model?",
+        "answer": "Each adapter model contains _N_ = 2 transformer layers."
+      },
+      {
+        "question": "What type of connection is applied across the two projection layers in the adapter?",
+        "answer": "A skip connection is applied across the two projection layers in the adapter."
+      }
+    ],
+    "metadata": {
+      "page_number": 2,
+      "header": "3.1 Adapter Structure",
+      "chunk_index": 6,
+      "file_path": "K-ADAPTER_ Infusing Knowledge into Pre-Trained Models with  Adapters.pdf",
+      "token_count": 1693
+    },
+    "context": "In this work, we present a different adapter structure as shown in Figure 2, which is referred to as the knowledge-specific adapter. In contrast to Houlsby et al. (2019) add adapter layers into each transformer layer, our adapter works as outside plug-ins. Each adapter model consists of _K_ adapter layers that contain _N_ transformer (Vaswani et al., 2017) layers and two projection layers. A skipconnection is applied across two projection layers. Specifically, for each adapter model, we plug Figure 2: Structure of the adapter layer (left). The adapter layer consists of two projection layers and _N_ =2 transformer layers, and a skip-connection between two projection layers. adapter layers among different transformer layers of the pre-trained model. We concatenate the output hidden feature of the transformer layer in the pre-trained model and the output feature of the former adapter layer, as the input feature of the current adapter layer. For each knowledge-specific adapter, we concatenate the last hidden features of the pre-trained model and adapter as the final output feature of this adapter model. In the pre-training procedure, we train each knowledge-specific adapter on different pretraining tasks individually. For various downstream tasks, K-A DAPTER can adopt the fine-tuning procedure similar to RoBERTa and BERT. When only one knowledge-specific adapter is adopted, we can take the final output feature of this adapter model as the input for task-specific layers of the downstream task. When multiple knowledge-specific adapters are adopted, we concatenate the output features of different adapter models as the input for task-specific layers of the downstream task."
+  },
+  {
+    "questions": [
+      {
+        "question": "What tasks is K-ADAPTER evaluated on?",
+        "answer": "K-ADAPTER is evaluated on three knowledge-driven downstream tasks: entity typing, question answering, and relation classification."
+      },
+      {
+        "question": "What do the notations K-A DAPTER (F+L), K-A DAPTER (F), and K-A DAPTER (L) represent?",
+        "answer": "The notations K-A DAPTER (F+L), K-A DAPTER (F), and K-A DAPTER (L) represent different configurations of the K-A DAPTER model. Specifically, K-A DAPTER (F+L) denotes the model that includes both the factual adapter and the linguistic adapter. K-A DAPTER (F) refers to the model that consists only of the factual adapter, while K-A DAPTER (L) indicates the model that consists only of the linguistic adapter."
+      },
+      {
+        "question": "What types of analyses are conducted to explore the effectiveness of K-ADAPTER?",
+        "answer": "The analyses conducted to explore the effectiveness of K-ADAPTER include detailed case studies and probing experiments."
+      }
+    ],
+    "metadata": {
+      "page_number": 5,
+      "header": "4 Experiments",
+      "chunk_index": 11,
+      "file_path": "K-ADAPTER_ Infusing Knowledge into Pre-Trained Models with  Adapters.pdf",
+      "token_count": 593
+    },
+    "context": "We evaluate our K-A DAPTER on three knowledgedriven downstream tasks, i.e., entity typing, question answering and relation classification. Furthermore, we conduct detailed analyses with the case study and probing experiments to explore the effectiveness and ability of models for learning factual knowledge. The notations of K-A DAPTER (F+L), K-A DAPTER (F), and K-A DAPTER (L) denote our model which consists of both factual adapter and linguistic adapter, only factual adapter and only linguistic adapter, respectively. Implementation details, and statistics of datasets are in the Appendix."
+  }
+]
