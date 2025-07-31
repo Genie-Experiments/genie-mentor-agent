@@ -13,7 +13,7 @@ from ..prompts.multihop_prompts import GENERATOR_PROMPT, GLOBAL_SUMMARIZER_PROMP
 from ..protocols.message import Message
 from ..utils.logging import get_logger, setup_logger
 from ..protocols.schemas import KBResponse
-from ..utils.settings import create_light_llm_client
+from ..utils.settings import create_llm_client
 
 setup_logger()
 logger = get_logger("KBAgent")
@@ -123,7 +123,7 @@ class KBAgent(RoutedAgent):
                 f"[KBAgent] Could not get Chroma vector store document count: {e}")
         
         # Create LLM client using the generic factory
-        self.llm_client, self.model_name = create_light_llm_client("kb")
+        self.llm_client, self.model_name = create_llm_client("kb")
         self.llm = self.llm_client.chat.completions
 
     def run_resp_pipeline(self, main_question: str, max_hops: int = 5) -> Dict[str, Any]:
