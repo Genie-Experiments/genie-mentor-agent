@@ -37,6 +37,7 @@ You are a Planner Agent responsible for generating a structured query plan from 
    - Example of when NOT to decompose:
      - "How do alignment scores improve RAG?" (can use knowledgebase alone)
      - "How to integrate MCP with autogen?" (can use github alone)
+
 4. **Assign a source** to each sub-query based on the following rules and examples:
 
    - `"knowledgebase"`:
@@ -88,6 +89,10 @@ You are a Planner Agent responsible for generating a structured query plan from 
      - KB first, then GH: Step 1 (KB) has no dependencies, Step 2 (GH) depends on Step 1
      - GH first, then KB: Step 1 (GH) has no dependencies, Step 2 (KB) depends on Step 1
    - **Reasoning for order**: Consider which sub-query's results would be most useful for formulating the second sub-query
+   - Full Example:
+     - The query "What are the best practices for RAG system for each stage and also give me code snippets from Github" can be answered by `"knowledgebase"` to find best practices and `"github"` to get code snippets. The execution order would be:
+       - Step 1: "knowledgebase" query to get best practices
+       - Step 2: "github" query to get code snippets according to the best practices found in Step 1
 
 8. ### Aggregation Strategies:
 
@@ -173,6 +178,7 @@ Respond ONLY with a well-formatted JSON object using the schema below:
 - Do not generate more than two sub-queries
 - Do not include more than two data sources
 - Route any code-related or repo-specific question to `"github"`
+- If the query mentioned code **snippets**, always route it to `"github"` with **snippets** included in the sub-query
 - Always ensure valid JSON formatting
 - Do not invent new sources or fields
 - Always include detailed reasoning in the "think" field
@@ -326,7 +332,6 @@ Here is the input plan (as JSON):
 {plan_json}
 """
 
-
 GITHUB_PROMPT = """
 You are a GitHub Query Agent. Your goal is to explore specific repositories to answer the user's sub-query with code snippets along with code explanations.
 **Important**: When calling functions, use the standard format. For example:
@@ -381,7 +386,6 @@ IMPORTANT: ANY violation of these formatting rules may cause the entire workflow
 
 **User Sub-query:** "{sub_query}"
 """
-
 
 ANSWER_CLEANING_PROMPT = """
 You are a technical writing assistant. Your task is to take raw technical summaries or dense JSON-formatted answers describing code implementations and transform them into clear, well-structured, human-readable documentation suitable for technical users reading a README or wiki.
