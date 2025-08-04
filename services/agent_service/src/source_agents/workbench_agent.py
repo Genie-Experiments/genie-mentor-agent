@@ -203,6 +203,7 @@ class WorkbenchAgent(RoutedAgent):
             print("---------Function Call Results-----------")
             results: List[ToolResult] = []
             valid_results = []
+            all_results = []
             for call in create_result.content:
                 result = await self._workbench.call_tool(
                     call.name,
@@ -211,6 +212,8 @@ class WorkbenchAgent(RoutedAgent):
                 )
                 results.append(result)
                 #print(result)
+
+                all_results.append((call, result))
                 
                 # Check if this is a directory listing (path ends with /)
                 args = json.loads(call.arguments)
@@ -230,7 +233,7 @@ class WorkbenchAgent(RoutedAgent):
                         is_error=result.is_error,
                         name=result.name,
                     )
-                    for call, result in valid_results
+                    for call, result in all_results
                 ]
             )
             if any(
