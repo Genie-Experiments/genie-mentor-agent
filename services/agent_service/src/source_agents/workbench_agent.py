@@ -202,7 +202,7 @@ class WorkbenchAgent(RoutedAgent):
             # Call the tools using the workbench.
             print("---------Function Call Results-----------")
             results: List[ToolResult] = []
-            non_error_results = []
+            valid_results = []
             for call in create_result.content:
                 result = await self._workbench.call_tool(
                     call.name,
@@ -219,9 +219,9 @@ class WorkbenchAgent(RoutedAgent):
                 # Don't filter directory listings, only filter individual file reads
                 if not getattr(result, 'is_error', False):
                     if is_directory_listing or self.is_code_result(result):
-                        non_error_results.append((call, result))
+                        valid_results.append((call, result))
 
-            # Add only non-error function execution results to the model context.
+            # Add only valid function execution results to the model context (non-error and valid code results)
             func_exec_result_msg = FunctionExecutionResultMessage(
                 content=[
                     FunctionExecutionResult(
@@ -230,13 +230,13 @@ class WorkbenchAgent(RoutedAgent):
                         is_error=result.is_error,
                         name=result.name,
                     )
-                    for call, result in non_error_results
+                    for call, result in valid_results
                 ]
             )
             if any(
                 call.name
                 in ["get_file_contents"]
-                for call, result in non_error_results
+                for call, result in valid_results
             ):
                 self._response_context.append(str(func_exec_result_msg))
 
