@@ -130,8 +130,8 @@ class ExecutorAgent(RoutedAgent):
             for qid in execution_order["nodes"]:
                 logger.info(f"Executing query ID: {qid}")
                 try:
-                    # Pass plan to execute_query so it can access user_query
-                    result = await self.execute_query(qid, query_components, plan)
+                    # Pass plan and results to execute_query for dependency handling
+                    result = await self.execute_query(qid, query_components, plan, results)
                     results[qid] = result
                 except Exception as e:
                     logger.error(f"Error executing query {qid}: {e}")
@@ -147,9 +147,11 @@ class ExecutorAgent(RoutedAgent):
                 if source_type in {SourceType.GITHUB.value}:
                     # For GitHub we don't require sources to be present.
                     valid_results[qid] = res
-                    # Ensure we have an entry so downstream aggregation doesn't fail.
+                    # Ensure we have entries so downstream aggregation doesn't fail.
                     if source_type not in self._sources_documents:
                         self._sources_documents[source_type] = res.get("sources", []) or []
+                    if source_type not in self._sources_metadata:
+                        self._sources_metadata[source_type] = res.get("metadata", {}) or {}
                 else:
                     # For other sources require at least one source document.
                     if res.get("sources"):
@@ -161,8 +163,8 @@ class ExecutorAgent(RoutedAgent):
                 execution_time_ms = int((time.time() - start_time) * 1000)
 
                 # Extract optional KB trace
-                kb_trace = only_result.get("trace")
-                kb_num_hops = only_result.get("num_hops")
+                kb_trace = only_result.get("trace") or None
+                kb_num_hops = only_result.get("num_hops") or None
 
                 payload = {
                     "combined_answer_of_sources": only_result["answer"],
@@ -177,9 +179,9 @@ class ExecutorAgent(RoutedAgent):
                     "execution_time_ms": execution_time_ms,
                 }
 
-                if kb_trace is not None:
+                if kb_trace:
                     payload["trace"] = kb_trace
-                if kb_num_hops is not None:
+                if kb_num_hops:
                     payload["num_hops"] = kb_num_hops
 
                 return Message(content=json.dumps(payload))
@@ -244,13 +246,57 @@ class ExecutorAgent(RoutedAgent):
             return Message(content=json.dumps(error_response))
 
     async def execute_query(
-        self, qid: str, query_components: Dict[str, Any], plan: dict = None
+        self, qid: str, query_components: Dict[str, Any], plan: dict = None, results: Dict[str, Any] = None
     ) -> Dict[str, Any]:
         q = query_components[qid]
         sub_query = q["sub_query"]
         source = q.get("source")
 
         logger.info(f"Executing sub-query from source: {source}")
+
+        # Handle dependencies - if this query depends on others, append their answers
+        dependency_context = ""
+        workflow_steps = plan.get("execution_order", {}).get("workflow", [])
+        current_step = None
+
+        logger.info(f"[{qid}] Checking for dependencies from workflow steps: {workflow_steps}")
+
+        # Find the current step in workflow
+        for step in workflow_steps:
+            if step.get("query_id") == qid:
+                current_step = step
+                break
+
+        if current_step and current_step.get("dependencies") and results:
+            logger.info(f"[{qid}] Found dependencies: {current_step.get('dependencies')}")
+
+            dependency_answers = []
+            step_dependencies = current_step.get("dependencies", [])
+
+            for step_dep in step_dependencies:
+                # Find the query_id for this step dependency
+                dep_query_id = None
+                for step in workflow_steps:
+                    if step.get("step_id") == step_dep:
+                        dep_query_id = step.get("query_id")
+                        break
+
+                # Get the result for the dependent query
+                if dep_query_id and dep_query_id in results and results[dep_query_id].get("answer"):
+                    dep_answer = results[dep_query_id]["answer"]
+                    # Ensure the answer is a string
+                    if not isinstance(dep_answer, str):
+                        dep_answer = str(dep_answer)
+                    dependency_answers.append(
+                        f"Context from {step_dep} ({dep_query_id}): {dep_answer}")
+
+            if dependency_answers:
+                dependency_context = "\n\nContext from previous sources:\n" + \
+                    "\n".join(dependency_answers) + \
+                    "\n\nBased on the above context, please provide a comprehensive answer to: "
+                sub_query = dependency_context + sub_query
+                logger.info(f"[{qid}] Enhanced sub-query with dependency context from steps: {step_dependencies}")
+                logger.info(f"[{qid}] Modified sub-query to: {sub_query}")
 
         try:
             # Use enum for all source checks

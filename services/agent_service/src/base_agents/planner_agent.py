@@ -31,17 +31,15 @@ class PlannerAgent(RoutedAgent):
     ) -> Message:
         start_time = time.time()
         try:
-            # Parse message content to extract query and optional completeness feedback
+            # Parse message content to extract query
             try:
                 content_data = json.loads(message.content)
                 query = content_data.get("query", message.content)
-                ans_completeness_feedback = content_data.get("feedback", "")
             except (json.JSONDecodeError, KeyError):
                 # If not JSON, treat the entire content as query
                 query = message.content
-                ans_completeness_feedback = ""
             
-            return await self.process_query(query, ans_completeness_feedback)
+            return await self.process_query(query)
 
         except Exception as e:
             logger.error(f"Error in handle_user_message: {str(e)}")
@@ -65,7 +63,7 @@ class PlannerAgent(RoutedAgent):
             return False, ""
         return True, content
 
-    async def process_query(self, query: str, ans_completeness_feedback: str = "") -> Message:
+    async def process_query(self, query: str) -> Message:
         start_time = time.time()
         retry_count = 0
         current_plan = None
@@ -100,20 +98,8 @@ class PlannerAgent(RoutedAgent):
 
         while retry_count < self.max_retries:
             try:
-                # Format completeness feedback to include previous answer if available
-                formatted_feedback = ans_completeness_feedback
-                if ans_completeness_feedback:
-                    try:
-                        feedback_data = json.loads(ans_completeness_feedback)
-                        if feedback_data.get("previous_answer"):
-                            formatted_feedback = f"Previous Answer: {feedback_data.get('previous_answer')}\n\nCompleteness Assessment: {feedback_data.get('message', 'No reasoning provided')}"
-                    except (json.JSONDecodeError, KeyError):
-                        # If parsing fails, use the original feedback
-                        formatted_feedback = ans_completeness_feedback
-                
                 prompt = PLANNER_PROMPT.format(
-                    user_query=query,
-                    ans_completeness_feedback=formatted_feedback
+                    user_query=query
                 )
 
                 # Generate plan using LLM
