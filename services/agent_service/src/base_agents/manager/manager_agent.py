@@ -234,13 +234,11 @@ class ManagerAgent(RoutedAgent):
             )
             skip_reason = "Evaluation skipped because GitHub source was used" if skip_evaluation else None
 
-            completeness_details = None
-
             if skip_evaluation:
                 final_answer, eval_history, editor_history = answer, [], []
             else:
                 try:
-                    final_answer, eval_history, editor_history, completeness_info = await run_evaluation_loop(
+                    final_answer, eval_history, editor_history = await run_evaluation_loop(
                         send_message_func=self.send_message,
                         eval_agent_id=self.eval_agent_id,
                         editor_agent_id=self.editor_agent_id,
@@ -249,68 +247,12 @@ class ManagerAgent(RoutedAgent):
                         contexts=documents,
                         documents_by_source=documents_by_source,
                     )
-                    
-                    # Extract completeness details from evaluation history
-                    if eval_history and len(eval_history) > 0:
-                        # Use the latest evaluation attempt for completeness details
-                        latest_eval = eval_history[-1]
-                        completeness_details = latest_eval.get("completeness_details", None)
-                        logger.info(f"[ManagerAgent] Extracted completeness details: {completeness_details}")
-                    else:
-                        logger.warning("[ManagerAgent] No evaluation history found, completeness_details will be None")
-                    
-                    # Handle replanning if answer is incomplete
-                    if completeness_info.get("is_incomplete", False):
-                        logger.info("[ManagerAgent] Answer is incomplete, attempting replanning")
-                        try:
-                            # Generate new plan with completeness feedback
-                            completeness_feedback = {
-                                "completeness_details": completeness_info.get("details"),
-                                "feedback_type": "incomplete_answer",
-                                "previous_answer": final_answer,
-                                "message": f"Previous answer was incomplete: {completeness_info.get('details', {}).get('reasoning', 'No reasoning provided')}"
-                            }
-                            
-                            new_plan = await self.send_message(
-                                Message(content=json.dumps({
-                                    "query": user_query,
-                                    "feedback": json.dumps(completeness_feedback)
-                                })), self.planner_agent_id
-                            )
-                            logger.info(f"[ManagerAgent] New plan generated: {new_plan.content}")
-                            
-                            # Execute the new plan
-                            new_plan_data = safe_json_parse(new_plan.content)
-                            new_current_plan = new_plan_data.get("plan")
-                            
-                            if new_current_plan:
-                                logger.info("[ManagerAgent] Executing new plan with completeness feedback")
-                                new_query_result = await self.send_message(Message(content=json.dumps(new_current_plan)), self.executor_agent_id)
-                                new_q_output = safe_json_parse(new_query_result.content)
-                                
-                                # Update trace info with new plan execution
-                                self.trace_info['replanning_agent'] = {
-                                    "original_plan": current_plan,
-                                    "completeness_feedback": completeness_feedback,
-                                    "new_plan": new_plan_data,
-                                    "new_executor_result": new_q_output
-                                }
-                                
-                                # Use the new answer
-                                final_answer = new_q_output.get("executor_answer", final_answer)
-                            else:
-                                logger.warning("[ManagerAgent] New plan is empty, keeping original answer")
-                                
-                        except Exception as replan_error:
-                            logger.error(f"[ManagerAgent] Replanning failed: {replan_error}")
-                            # Keep the original answer if replanning fails
-                    
+
                 except Exception as e:
                     logger.error(f"[ManagerAgent] Evaluation loop failed: {e}")
                     final_answer, eval_history, editor_history = answer, [], []
                     skip_reason = "Evaluation or Editor failed."
                     skip_evaluation = False
-                    completeness_details = None
 
             self.trace_info.update({
                 'evaluation_agent': eval_history,
@@ -319,7 +261,6 @@ class ManagerAgent(RoutedAgent):
                 'total_time': time.time() - start_time,
                 'evaluation_skipped': False,
                 'skip_reason': None,
-                'completeness_details': completeness_details if completeness_details else None,
             })
             self._update_history(session_id, message.content, final_answer)
 
