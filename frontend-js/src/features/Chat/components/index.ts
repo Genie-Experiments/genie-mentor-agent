@@ -10,3 +10,6 @@ export { default as LoadingIndicator } from './LoadingIndicator';
 export { default as MessageItem } from './MessageItem';
 export { default as ConversationHistory } from './ConversationHistory';
 export { default as ChatContainer } from './ChatContainer';
+
+// Knowledge Base components
+export * from './KnowledgeBase';

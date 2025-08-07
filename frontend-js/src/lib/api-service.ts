@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // Service for communicating with the backend API
+import type { TraceHop } from '@/types/knowledgeBaseTypes';
+
 const DEFAULT_BACKEND = "http://127.0.0.1:8000";
 
 // Main response structure
@@ -110,6 +112,9 @@ export interface ExecutorAgent { // Exporting ExecutorAgent
   metadata_by_source?: MetadataBySource;
   llm_usage?: LLMUsage;
   execution_time_ms?: number;
+  // Knowledge base specific fields
+  trace?: TraceHop[];
+  num_hops?: number;
 }
 
 // Data Sources (Handles any combination of sources)
