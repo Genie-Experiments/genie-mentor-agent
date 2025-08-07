@@ -212,6 +212,7 @@ export const SECTION_TITLES = {
   QUERY_REFINEMENT: 'Query refinement agent',
   EXECUTOR_AGENT: 'EXECUTOR AGENT',
   EVALUATOR_AGENT: 'Evaluator agent',
+  KNOWLEDGE_BASE_AGENT: 'KNOWLEDGE BASE AGENT',
 } as const;
 
 export const FIELD_LABELS = {
@@ -228,4 +229,9 @@ export const FIELD_LABELS = {
   EVALUATION_ATTEMPT: 'Evaluation Attempt',
   SCORE: 'Score',
   ERROR: 'Error',
+  RESEARCH_HOPS: 'Research Hops',
+  HOP_NUMBER: 'Hop',
+  SUB_QUESTIONS: 'Sub-Questions',
+  REASONING_SUFFICIENT: 'Reasoning Sufficient',
+  FINAL_ANSWER: 'Final Answer',
 } as const;

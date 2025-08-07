@@ -14,6 +14,7 @@ const AnswerTab: React.FC<AnswerTabProps> = ({ finalAnswer, executorAgent }) => 
   const topSources = useMemo(() => extractTopSources(executorAgent), [executorAgent]);
   const contexts = useMemo(() => extractContexts(executorAgent), [executorAgent]);
 
+  // Traditional view for all responses - Knowledge base details are now in Research tab
   return (
     <div className="flex w-full flex-col gap-8">
       <TopSourcesSection sources={topSources} />
