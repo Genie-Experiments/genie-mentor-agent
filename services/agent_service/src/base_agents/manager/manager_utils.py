@@ -23,16 +23,27 @@ async def run_editor_pass(
     question: str,
     previous_answer: str,
     score: float,
+    reasoning,
     contexts: List[str],
     attempt: int,
 ) -> Tuple[str, dict]:
     """Single call to the EditorAgent, returns (new_answer, editor_log)."""
     logger.info(f"[EditorAgent] Editing (Attempt {attempt})")
 
+    # Convert reasoning to string format for editor agent
+    if isinstance(reasoning, list):
+        reasoning_str = "\n".join([
+            f"- {item.get('type', 'fact')}: {item.get('message', str(item))}"
+            for item in reasoning
+        ])
+    else:
+        reasoning_str = str(reasoning) if reasoning else ""
+
     payload = EditorAgentInput(
         question=question,
         previous_answer=previous_answer,
         score=score,
+        reasoning=reasoning_str,
         contexts=contexts,
     )
 
@@ -69,6 +80,9 @@ async def run_evaluation_loop(
     current_answer = initial_answer
     eval_history: List[dict] = []
     editor_history: List[dict] = []
+
+    # ── 1. Initial Evaluation ─────────────────────────────────────────
+    logger.info(f"[EvaluationAgent] Initial evaluation")
     
     eval_payload = EvalAgentInput(
         question=question,
@@ -80,10 +94,30 @@ async def run_evaluation_loop(
     )
     eval_result = EvalAgentOutput.model_validate_json(eval_resp.content)
 
+    score = float(eval_result.score)
+    reasoning = eval_result.reasoning
+    error = eval_result.error
+    llm_usage = eval_result.llm_usage.model_dump() if eval_result.llm_usage else None
+    execution_time_ms = getattr(eval_result, "execution_time_ms", None)
+
+    eval_history.append({
+        "execution_time_ms": execution_time_ms,
+        "evaluation_history": {
+            "score": score,
+            "reasoning": reasoning,
+            "error": error,
+            "llm_usage": llm_usage,
+        },
+        "attempt": 1,
+    })
+
+    logger.info(f"[ManagerUtils] Initial evaluation - Score: {score}")
+
     # ── 2. Fact Evaluation and Editing Loop ───────────────────────────────────
-    logger.info("[EvaluationAgent] Answer is complete, proceeding with fact evaluation and editing.")
+    logger.info("[EvaluationAgent] Proceeding with fact evaluation and editing.")
     
     for attempt in range(max_attempts):
+        # Evaluate facts
         logger.info(f"[EvaluationAgent] Fact evaluation (Attempt {attempt + 1})")
 
         eval_payload = EvalAgentInput(
@@ -97,6 +131,28 @@ async def run_evaluation_loop(
         eval_result = EvalAgentOutput.model_validate_json(eval_resp.content)
 
         score = float(eval_result.score)
+        reasoning = eval_result.reasoning
+        error = eval_result.error
+        llm_usage = eval_result.llm_usage.model_dump() if eval_result.llm_usage else None
+        execution_time_ms = getattr(eval_result, "execution_time_ms", None)
+
+        eval_history.append({
+            "execution_time_ms": execution_time_ms,
+            "evaluation_history": {
+                "score": score,
+                "reasoning": reasoning,
+                "error": error,
+                "llm_usage": llm_usage,
+            },
+            "attempt": attempt + 2,  # +2 because attempt 1 was initial evaluation
+        })
+        
+        logger.info(f"[ManagerUtils] Evaluation attempt {attempt + 2} - Score: {score}")
+
+        # Handle evaluation error
+        if error is not None:
+            logger.error(f"[ManagerUtils] EvalAgent returned error: {error}")
+            break
 
         # Threshold met → stop looping, no edit needed
         if score >= EVALUATION_PASS_THRESHOLD:
@@ -110,6 +166,7 @@ async def run_evaluation_loop(
             question=question,
             previous_answer=current_answer,
             score=score,
+            reasoning=reasoning,
             contexts=documents_by_source,
             attempt=attempt + 1,
         )
