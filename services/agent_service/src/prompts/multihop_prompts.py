@@ -200,19 +200,57 @@ Local Pathway Memory (summary of most recent sub-question's result):
 """
 
 GENIE_DOCS_TOC = """
-1. Experiment Report: Advanced RAG – Context Expansion
-   Covered Techniques/Tools: Auto-Merging Retrieval, Sentence Window Retrieval, Recursive Retrieval
+1. Experimentation Report - Advance RAG - Context Expansion
+   Techniques / Tools / Models / Concepts:
+     LlamaIndex, Sentence Window Retrieval, Auto Merging Retrieval, Recursive Retrieval, RAGAS, UpTrain, Tonic Validate, DeepEval, Trulens, Falcon-evaluate
+   Document Goal:
+     Evaluates the effectiveness of different context expansion techniques in RAG pipelines and compares their impact on answer quality and retrieval precision across two datasets.
 
-2. Experiment Report: Advanced RAG – Query Optimization
-   Covered Techniques/Tools: Multiquery, Query Rewriting, Subquery (Sub-Question Decomposition), HYDE (Hypothetical Document Embeddings), Multi-Step Prompting, Step Back Prompting
+2. Experimentation Report - Advance RAG - Context Rerankers
+   Techniques / Tools / Models / Concepts:
+     RAG, ColBERT, Cohere Reranker, Jina AI Reranker, BGE, RAG Fusion, RankGPT, Long Context Reorder, Cross-Encoders, LlamaIndex, UpTrain, Tonic Validate, RAGAS, DeepEval, TruLens, Falcon-evaluate
+   Document Goal:
+     Evaluates the impact of various reranking techniques on retrieval quality in RAG pipelines, with comparisons across multiple datasets and evaluation frameworks.
 
-3. Experiment Report: Advanced RAG – Context Rerankers
-   Covered Techniques/Tools: ColBERT Reranker, Cohere Reranker, RAG Fusion, RankGPT, Long Context Reorder, BGE Reranker, BERT-Based Reranker, Jina AI Reranker, Cross-Encoder Rerankers (General)
+3. Experimentation Report - Advance RAG - Query Optimization
+   Techniques / Tools / Models / Concepts:
+     LlamaIndex, Query Rewriting, Multiquery, HYDE, Subqueries, Multi-Step Prompting, Step Back Prompting, GPT-based scoring, UpTrain, Tonic Validate, DeepEval, Trulens, Falcon-evaluate, Ragas
+   Document Goal:
+     Evaluates how various query optimization techniques improve retrieval quality and answer accuracy in advanced RAG pipelines using LlamaIndex.
 
-4. Experiment Report: Advanced RAG – AutoHyDE
-   Covered Techniques/Tools: None (focuses on improving limitations of standard HyDE)
+4. Experimentation Report - Chunking and Indexing Techniques for RAG Pipelines
+   Techniques / Tools / Models / Concepts:
+     Chunking (semantic, character, TikToken, recursive), Metadata tagging, Hierarchical Indexing, LangChain, FAISS, Weaviate, UpTrain, Tonic Validate, RAGAS, DeepEval
+   Document Goal:
+     Evaluates how different chunking, indexing, and metadata techniques affect retrieval accuracy and answer quality in RAG pipelines.
 
-5. Experiment Report: Advanced RAG – Fine-Tuning Embeddings
-   Covered Techniques/Tools: None (focuses on improving base embedding models through fine-tuning)
+5. Experimentation Report - Comparison of Chunking Techniques for RAG Applications
+   Techniques:
+     Chunking
+   Document Goal:
+     Explains how different chunking techniques improve retrieval in RAG pipelines, leading to better answer creation.
 
+6. Experimentation Report - Embedding Model Comparison for RAG Pipelines
+   Techniques / Tools / Models / Concepts:
+     OpenAI, Cohere, VoyageAI, BGE-m3, LLM Embedder, Jina AI, Bedrock Embeddings, MXBAI, all-minilm, GPU vs CPU performance
+   Document Goal:
+     Compares multiple embedding models across answer similarity and context retrieval metrics in RAG pipelines, using PDF and code-based datasets.
+
+7. Experimentation Report - Extracting GitHub Content and Evaluation via Multi-LLM Pipelines
+   Techniques / Tools / Models / Concepts:
+     LangChain, Claude-V2, LLaMA 2 70B, GPT4All, OpenAI Ada-002, Amazon Titan, Cohere Embed English V3, FAISS, Weaviate, RAGAS, RAPTOR clustering
+   Document Goal:
+     Compares different pipelines built using GitHub-sourced content and multiple LLM, embedding, and vector store combinations to evaluate RAG performance across relevance, precision, and faithfulness metrics.
+
+8. Experimentation Report - Multi-Modal RAG for Diagram-Based QA
+   Techniques / Tools / Models / Concepts:
+     Multi-modal RAG, LLM Vision Models, LlamaIndex, Retriever Indexing, PDF-to-Image QA generation, UpTrain response matching, use-case driven multimodal pipelines
+   Document Goal:
+     Evaluates how various multi-modal RAG pipelines perform when answering visual + textual questions over PDF-based diagram datasets, using combinations of retrieved context, image annotation, and LLM scoring.
+
+9. Experimentation Report - Multi-Source RAG with Query Routing in LlamaIndex
+   Techniques / Tools / Models / Concepts:
+     LlamaIndex, RetrieverRouterQueryEngine, VectorQueryEngine, PandasQueryEngine, structured vs unstructured data, query routing, strict prompting
+   Document Goal:
+     Evaluates how well LlamaIndex routes queries to specialized engines when working with mixed data types (PDF, tabular data) in a unified RAG pipeline.
 """
