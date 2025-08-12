@@ -113,10 +113,18 @@ async def run_evaluation_loop(
 
     logger.info(f"[ManagerUtils] Initial evaluation - Score: {score}")
 
+    # If initial evaluation already meets threshold, stop immediately
+    if score >= EVALUATION_PASS_THRESHOLD:
+        logger.info("[EvaluationAgent] Initial score ≥ threshold, no further evaluation or edits needed.")
+        return current_answer, eval_history, editor_history
+
     # ── 2. Fact Evaluation and Editing Loop ───────────────────────────────────
     logger.info("[EvaluationAgent] Proceeding with fact evaluation and editing.")
     
-    for attempt in range(max_attempts):
+    # We already performed the initial evaluation above, so we only have
+    # (max_attempts - 1) additional evaluation attempts remaining.
+    remaining_attempts = max(0, max_attempts - 1)
+    for attempt in range(remaining_attempts):
         # Evaluate facts
         logger.info(f"[EvaluationAgent] Fact evaluation (Attempt {attempt + 1})")
 

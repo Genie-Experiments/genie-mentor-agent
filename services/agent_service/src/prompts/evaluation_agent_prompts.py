@@ -35,14 +35,16 @@ FACT_EXTRACT_FEW_SHOT_EXAMPLES = """
 [Question]: Which is the tallest monument in Paris?
 [Response]: The Eiffel Tower, located in Paris, is one of the most visited monuments in the world. It was named after the engineer Gustave Eiffel, whose company designed and built the tower. Constructed from 1887 to 1889, it was initially criticized by some of France's leading artists and intellectuals.
 [Output]:
-[
-    { "Fact": "The Eiffel Tower is located in Paris." },
-    { "Fact": "The Eiffel Tower is one of the most visited monuments in the world." },
-    { "Fact": "The Eiffel Tower was named after engineer Gustave Eiffel." },
-    { "Fact": "Gustave Eiffel's company designed and built the Eiffel Tower." },
-    { "Fact": "The Eiffel Tower was constructed between 1887 and 1889." },
-    { "Fact": "The Eiffel Tower was initially criticized by some French artists and intellectuals." }
-]
+{
+  "Facts": [
+    "The Eiffel Tower is located in Paris.",
+    "The Eiffel Tower is one of the most visited monuments in the world.",
+    "The Eiffel Tower was named after engineer Gustave Eiffel.",
+    "Gustave Eiffel's company designed and built the Eiffel Tower.",
+    "The Eiffel Tower was constructed between 1887 and 1889.",
+    "The Eiffel Tower was initially criticized by some French artists and intellectuals."
+  ]
+}
 """
 
 FACT_EXTRACT_OUTPUT_FORMAT = """
@@ -53,7 +55,7 @@ FACT_EXTRACT_OUTPUT_FORMAT = """
         ...
     ]
 }
-In case of no facts, return an empty list: []
+If there are no facts, return exactly this JSON: {"Facts": []}
 """
 
 FACT_EXTRACT_PROMPT_TEMPLATE = """
