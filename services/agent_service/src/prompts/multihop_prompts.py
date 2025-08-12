@@ -1,34 +1,34 @@
-# services/agent_service/src/multihop_resp/prompts.py
+# # services/agent_service/src/multihop_resp/prompts.py
 
-JUDGE_PROMPT = """
-Judging based solely on the current known information and without allowing for inference, are you able to completely and accurately respond to the question:
-Overarching question: {main_question}
-Known information: {combined_memory}
-If you can, please reply with \"Yes\" directly; if you cannot and need more information, please reply with \"No\" directly.
-"""
+# JUDGE_PROMPT = """
+# Judging based solely on the current known information and without allowing for inference, are you able to completely and accurately respond to the question:
+# Overarching question: {main_question}
+# Known information: {combined_memory}
+# If you can, please reply with \"Yes\" directly; if you cannot and need more information, please reply with \"No\" directly.
+# """
 
-PLAN_PROMPT = """
-You serve as an intelligent assistant, adept at facilitating users through complex, multi-hop reasoning across multiple documents. Please understand the information gap between the currently known information and the target problem. Your task is to generate one thought in the form of a question for next retrieval step directly. DON’T generate the whole thoughts at once!
-DON’T generate thought which has been retrieved.
-Known information: {combined_memory}
-Target question: {main_question}
-[You Thought]:
-"""
+# PLAN_PROMPT = """
+# You serve as an intelligent assistant, adept at facilitating users through complex, multi-hop reasoning across multiple documents. Please understand the information gap between the currently known information and the target problem. Your task is to generate one thought in the form of a question for next retrieval step directly. DON’T generate the whole thoughts at once!
+# DON’T generate thought which has been retrieved.
+# Known information: {combined_memory}
+# Target question: {main_question}
+# [You Thought]:
+# """
 
-SUMMARIZER_PROMPT_GLOBAL = """
-Passages: {docs}
-Your job is to act as a professional writer. You will write a good-quality passage that can support the given prediction about the question only based on the information in the provided supporting passages. Now, let’s start.
-Question: {main_question}
-Passage:
-"""
+# SUMMARIZER_PROMPT_GLOBAL = """
+# Passages: {docs}
+# Your job is to act as a professional writer. You will write a good-quality passage that can support the given prediction about the question only based on the information in the provided supporting passages. Now, let’s start.
+# Question: {main_question}
+# Passage:
+# """
 
-SUMMARIZER_PROMPT_LOCAL = """
-Passages: {docs}
-Judging based solely on the current known information and without allowing for inference, are you able to respond completely and accurately to the question:
-Sub-question: {sub_question}
-Known information: {combined_memory}
-If yes, please reply with \"Yes\", followed by an accurate response to the question Sub-question, without restating the question; if no, please reply with \"No\" directly.
-"""
+# SUMMARIZER_PROMPT_LOCAL = """
+# Passages: {docs}
+# Judging based solely on the current known information and without allowing for inference, are you able to respond completely and accurately to the question:
+# Sub-question: {sub_question}
+# Known information: {combined_memory}
+# If yes, please reply with \"Yes\", followed by an accurate response to the question Sub-question, without restating the question; if no, please reply with \"No\" directly.
+# """
 
 GENERATOR_PROMPT = """
 You are an expert assistant. Using ALL the information in the combined memory below, write a comprehensive answer to the main question.
@@ -129,9 +129,9 @@ Each experimental report in the ToC follows a consistent internal structure:
 1. Use the **ToC** to identify which experiment reports and techniques/tools are relevant to the main question.
 2. Use **chunk metadata** (`doc_title`, `section_title`, `chunk_type`) and the summaries to determine which documents and techniques have already been retrieved.
 3. Use **global and local summaries** to avoid repeating sub-questions and to assess if all necessary results are in context.
-4. Only set `"sufficient": true` if:
-   - All relevant techniques or documents have been identified via the ToC,
-   - Their experimental results are confirmed to be in the current retrieved content.
+4. - Only set `"sufficient": false` if both the local and global summaries implicitly indicate that the answer is insufficient, with clear reasons provided. Otherwise, carefully assess whether the local summary provides a complete and satisfactory answer to the main question. If the local summary is comprehensive and addresses all aspects of the question, set `"sufficient": true`.
+- Carefully check whether the local and global summaries provide specific, detailed answers to all aspects of the main question, not just general overviews. 
+- Do **not** consider an answer sufficient if it only provides a high-level or generic summary (e.g., if the question asks about chunking of code, a generic statement about chunking is **not** sufficient; the answer must address code chunking specifically and in detail).
 
 ---
 
