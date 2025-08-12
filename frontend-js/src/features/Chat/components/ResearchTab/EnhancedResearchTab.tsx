@@ -78,14 +78,12 @@ const EnhancedResearchTab: React.FC<ResearchTabProps> = ({ traceInfo }) => {
       )}
 
       {/* Separator before Editor Agents */}
-      {((hasEvaluationAgents && hasEditorAgents) || (hasExecutorAgent && hasEditorAgents && !hasEvaluationAgents)) && <Separator />}
+      {((hasEvaluationAgents && hasEditorAgents) ||
+        (hasExecutorAgent && hasEditorAgents && !hasEvaluationAgents)) && <Separator />}
 
       {/* Editor Agent Section */}
       {hasEditorAgents && (
-        <EditorAgentSection
-          editors={traceInfo.editor_agent}
-          onViewDetails={openEditorModal}
-        />
+        <EditorAgentSection editors={traceInfo.editor_agent} onViewDetails={openEditorModal} />
       )}
 
       {/* Modals */}

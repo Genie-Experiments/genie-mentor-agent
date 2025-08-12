@@ -19,8 +19,8 @@ export const EditorAgentSection: React.FC<EditorAgentSectionProps> = ({
           <div style={{ marginBottom: '11px' }}>
             <KeyValueRow keyText={FIELD_LABELS.EDITOR_ATTEMPT} value={editor.attempt} />
             {editor.editor_history.answer && (
-              <KeyValueRow 
-                keyText={FIELD_LABELS.EDITOR_ANSWER} 
+              <KeyValueRow
+                keyText={FIELD_LABELS.EDITOR_ANSWER}
                 value={editor.editor_history.answer}
               />
             )}
