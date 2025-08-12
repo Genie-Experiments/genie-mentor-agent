@@ -2,6 +2,7 @@ import type {
   PlannerAgent,
   ExecutorAgent,
   EvaluationAgent,
+  EditorAgent,
   LLMUsage,
 } from '@/lib/api-service';
 
@@ -331,4 +332,43 @@ export const formatDisplayValue = (value?: string | boolean | null): string => {
     return capitalizeFirst(value.toString());
   }
   return String(value);
+};
+
+/**
+ * Format editor detailed response as structured HTML
+ */
+export const formatEditorDetailedResponse = (editor: EditorAgent): string => {
+  const keyStyle =
+    'color: #002835; font-family: Inter; font-size: 18px; font-style: normal; font-weight: 600; line-height: 24px;';
+  const valueStyle =
+    'color: #002835; font-family: Inter; font-size: 16px; font-style: normal; font-weight: 400; line-height: 24px;';
+
+  let content = '';
+
+  // Editor Attempt
+  content += `<div style="${keyStyle}">Editor Attempt</div>`;
+  content += `<div style="${valueStyle}">${editor.attempt}</div>`;
+  content += `<div style="margin-bottom: 20px;"></div>`;
+
+  // Editor Answer
+  if (editor.editor_history.answer) {
+    content += `<div style="${keyStyle}">Editor Answer</div>`;
+    content += `<div>${convertMarkdownToHtml(editor.editor_history.answer)}</div>`;
+    content += `<div style="margin-bottom: 20px;"></div>`;
+  }
+
+  // Skipped Status
+  if (editor.editor_history.skipped) {
+    content += `<div style="${keyStyle}">Skipped</div>`;
+    content += `<div style="${valueStyle}">Yes</div>`;
+    content += `<div style="margin-bottom: 20px;"></div>`;
+  }
+
+  // Error if present
+  if (editor.editor_history.error) {
+    content += `<div style="${keyStyle}">Error</div>`;
+    content += `<div style="${valueStyle}">${editor.editor_history.error}</div>`;
+  }
+
+  return content;
 };
