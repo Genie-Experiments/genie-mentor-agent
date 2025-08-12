@@ -205,6 +205,7 @@ export const MODAL_TITLES = {
   PLANNER: 'Planner Detailed Response',
   EXECUTOR: 'Executor Detailed Response',
   EVALUATOR: 'Evaluator Detailed Response',
+  EDITOR: 'Editor Detailed Response',
 } as const;
 
 export const SECTION_TITLES = {
@@ -212,6 +213,7 @@ export const SECTION_TITLES = {
   QUERY_REFINEMENT: 'Query refinement agent',
   EXECUTOR_AGENT: 'EXECUTOR AGENT',
   EVALUATOR_AGENT: 'Evaluator agent',
+  EDITOR_AGENT: 'Editor agent',
   KNOWLEDGE_BASE_AGENT: 'KNOWLEDGE BASE AGENT',
 } as const;
 
@@ -229,6 +231,9 @@ export const FIELD_LABELS = {
   EVALUATION_ATTEMPT: 'Evaluation Attempt',
   SCORE: 'Score',
   ERROR: 'Error',
+  EDITOR_ATTEMPT: 'Editor Attempt',
+  EDITOR_ANSWER: 'Editor Answer',
+  SKIPPED: 'Skipped',
   RESEARCH_HOPS: 'Research Hops',
   HOP_NUMBER: 'Hop',
   SUB_QUESTIONS: 'Sub-Questions',

@@ -101,8 +101,8 @@ export const EnhancedEvaluatorAgentSection: React.FC<EvaluatorKnowledgeBaseProps
               onClick={() => onViewDetails?.(evaluator)}
               text={
                 hasKnowledgeBase
-                  ? `View Evaluator #${index + 1} Knowledge Base Details`
-                  : `View Evaluator #${index + 1} Details`
+                  ? `View Evaluator Agent Iteration #${evaluator.attempt || index + 1} Knowledge Base Details`
+                  : `View Evaluator Agent Iteration #${evaluator.attempt || index + 1} Details`
               }
             />
           </div>

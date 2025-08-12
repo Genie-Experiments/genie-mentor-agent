@@ -5,12 +5,14 @@ import { RefinerAgentSection } from './RefinerAgentSection';
 import { EnhancedExecutorAgentSection } from './EnhancedExecutorAgentSection';
 import { KnowledgeBaseAgentSection } from './KnowledgeBaseAgentSection';
 import { DetailedEvaluatorAgentSection } from './DetailedEvaluatorAgentSection';
+import { EditorAgentSection } from './EditorAgentSection';
 import { Separator } from './Separator';
 import { useResearchModals } from '@/hooks/useResearchModals';
 import { MODAL_TITLES } from '@/constant/researchTab';
 import { isKnowledgeBaseResponse } from '@/utils/knowledgeBaseUtils';
 import type { ResearchTabProps } from '@/types/ResearchTabTypes';
 import type { ExecutorAgentEnhanced, EvaluatorAgentEnhanced } from '@/types/knowledgeBaseTypes';
+import type { ExecutorAgent } from '@/lib/api-service';
 
 const EnhancedResearchTab: React.FC<ResearchTabProps> = ({ traceInfo }) => {
   const {
@@ -21,10 +23,13 @@ const EnhancedResearchTab: React.FC<ResearchTabProps> = ({ traceInfo }) => {
     closeExecutorModal,
     openEvaluatorModal,
     closeEvaluatorModal,
+    openEditorModal,
+    closeEditorModal,
   } = useResearchModals();
 
   const hasExecutorAgent = !!traceInfo.executor_agent;
   const hasEvaluationAgents = traceInfo.evaluation_agent && traceInfo.evaluation_agent.length > 0;
+  const hasEditorAgents = traceInfo.editor_agent && traceInfo.editor_agent.length > 0;
 
   // Check if executor has knowledge base
   const executorHasKB =
@@ -46,7 +51,7 @@ const EnhancedResearchTab: React.FC<ResearchTabProps> = ({ traceInfo }) => {
       {executorHasKB && (
         <KnowledgeBaseAgentSection
           knowledgeBaseAgent={traceInfo.executor_agent as ExecutorAgentEnhanced}
-          onViewDetails={(agent) => openExecutorModal(agent as any)}
+          onViewDetails={(agent) => openExecutorModal(agent as ExecutorAgent)}
         />
       )}
 
@@ -72,6 +77,15 @@ const EnhancedResearchTab: React.FC<ResearchTabProps> = ({ traceInfo }) => {
         />
       )}
 
+      {/* Separator before Editor Agents */}
+      {((hasEvaluationAgents && hasEditorAgents) ||
+        (hasExecutorAgent && hasEditorAgents && !hasEvaluationAgents)) && <Separator />}
+
+      {/* Editor Agent Section */}
+      {hasEditorAgents && (
+        <EditorAgentSection editors={traceInfo.editor_agent} onViewDetails={openEditorModal} />
+      )}
+
       {/* Modals */}
       <ContextModal
         isVisible={modalState.plannerVisible}
@@ -94,6 +108,14 @@ const EnhancedResearchTab: React.FC<ResearchTabProps> = ({ traceInfo }) => {
         title={MODAL_TITLES.EVALUATOR}
         content={modalState.evaluatorContent}
         onClose={closeEvaluatorModal}
+        isHtml={true}
+      />
+
+      <ContextModal
+        isVisible={modalState.editorVisible}
+        title={MODAL_TITLES.EDITOR}
+        content={modalState.editorContent}
+        onClose={closeEditorModal}
         isHtml={true}
       />
     </div>

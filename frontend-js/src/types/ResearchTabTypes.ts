@@ -4,6 +4,7 @@ import type {
   PlannerRefinerAgent,
   ExecutorAgent,
   EvaluationAgent,
+  EditorAgent,
   LLMUsage,
 } from '@/lib/api-service';
 
@@ -49,6 +50,11 @@ export interface EvaluatorAgentSectionProps {
   onViewDetails: (evaluator: EvaluationAgent) => void;
 }
 
+export interface EditorAgentSectionProps {
+  editors: EditorAgent[];
+  onViewDetails: (editor: EditorAgent) => void;
+}
+
 export interface QueryComponentProps {
   components: Array<{
     id: string;
@@ -73,6 +79,8 @@ export interface ResearchModalState {
   executorContent: string;
   evaluatorVisible: boolean;
   evaluatorContent: string;
+  editorVisible: boolean;
+  editorContent: string;
 }
 
 export interface UseResearchModalsReturn {
@@ -83,4 +91,6 @@ export interface UseResearchModalsReturn {
   closeExecutorModal: () => void;
   openEvaluatorModal: (evaluator: EvaluationAgent) => void;
   closeEvaluatorModal: () => void;
+  openEditorModal: (editor: EditorAgent) => void;
+  closeEditorModal: () => void;
 }

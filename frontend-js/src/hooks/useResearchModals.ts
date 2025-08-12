@@ -3,12 +3,14 @@ import type {
   PlannerAgent,
   ExecutorAgent,
   EvaluationAgent,
+  EditorAgent,
 } from '@/lib/api-service';
 import type { UseResearchModalsReturn, ResearchModalState } from '@/types/ResearchTabTypes';
 import {
   formatPlannerDetailedResponse,
   formatExecutorDetailedResponse,
   formatEvaluatorDetailedResponse,
+  formatEditorDetailedResponse,
 } from '@/utils/researchTabUtils';
 
 export const useResearchModals = (): UseResearchModalsReturn => {
@@ -19,6 +21,8 @@ export const useResearchModals = (): UseResearchModalsReturn => {
     executorContent: '',
     evaluatorVisible: false,
     evaluatorContent: '',
+    editorVisible: false,
+    editorContent: '',
   });
 
   const openPlannerModal = (planner: PlannerAgent) => {
@@ -69,6 +73,22 @@ export const useResearchModals = (): UseResearchModalsReturn => {
     }));
   };
 
+  const openEditorModal = (editor: EditorAgent) => {
+    const content = formatEditorDetailedResponse(editor);
+    setModalState(prev => ({
+      ...prev,
+      editorVisible: true,
+      editorContent: content,
+    }));
+  };
+
+  const closeEditorModal = () => {
+    setModalState(prev => ({
+      ...prev,
+      editorVisible: false,
+    }));
+  };
+
   return {
     modalState,
     openPlannerModal,
@@ -77,5 +97,7 @@ export const useResearchModals = (): UseResearchModalsReturn => {
     closeExecutorModal,
     openEvaluatorModal,
     closeEvaluatorModal,
+    openEditorModal,
+    closeEditorModal,
   };
 };
