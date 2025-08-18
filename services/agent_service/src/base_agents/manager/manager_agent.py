@@ -184,6 +184,8 @@ class ManagerAgent(RoutedAgent):
                     'total_time': time.time() - start_time
                 })
                 self._update_history(session_id, message.content, final_answer)
+                # Include token usage in trace
+                self.trace_info['token_usage'] = token_tracker.get_all_usage()
                 return Message(content=json.dumps({'trace_info': self.trace_info}))
 
             # Store original plan
@@ -210,6 +212,8 @@ class ManagerAgent(RoutedAgent):
                     'total_time': time.time() - start_time
                 })
                 self._update_history(session_id, message.content, self.trace_info['final_answer'])
+                # Include token usage in trace
+                self.trace_info['token_usage'] = token_tracker.get_all_usage()
                 return Message(content=json.dumps({'trace_info': self.trace_info}))
 
             answer = q_output.get("executor_answer")
@@ -222,6 +226,8 @@ class ManagerAgent(RoutedAgent):
                     'total_time': time.time() - start_time
                 })
                 self._update_history(session_id, message.content, self.trace_info['final_answer'])
+                # Include token usage in trace
+                self.trace_info['token_usage'] = token_tracker.get_all_usage()
                 return Message(content=json.dumps({'trace_info': self.trace_info}))
 
             documents = q_output.get("all_documents", [])
@@ -263,7 +269,8 @@ class ManagerAgent(RoutedAgent):
                 'skip_reason': None,
             })
             self._update_history(session_id, message.content, final_answer)
-
+            # Include token usage in trace
+            self.trace_info['token_usage'] = token_tracker.get_all_usage()
             return Message(content=json.dumps({'trace_info': self.trace_info}))
 
         except Exception as e:

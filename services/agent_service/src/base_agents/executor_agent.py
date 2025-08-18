@@ -162,9 +162,10 @@ class ExecutorAgent(RoutedAgent):
                 logger.info("Only one valid source present. Skipping aggregation, proceeding with single valid result.")
                 execution_time_ms = int((time.time() - start_time) * 1000)
 
-                # Extract optional KB trace
+                # Extract optional KB trace and usage
                 kb_trace = only_result.get("trace") or None
                 kb_num_hops = only_result.get("num_hops") or None
+                kb_llm_usage = only_result.get("llm_usage") or None
 
                 payload = {
                     "combined_answer_of_sources": only_result["answer"],
@@ -183,6 +184,8 @@ class ExecutorAgent(RoutedAgent):
                     payload["trace"] = kb_trace
                 if kb_num_hops:
                     payload["num_hops"] = kb_num_hops
+                if kb_llm_usage:
+                    payload["llm_usage"] = kb_llm_usage
 
                 return Message(content=json.dumps(payload))
 

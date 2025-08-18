@@ -12,8 +12,9 @@ import torch
 from ..prompts.multihop_prompts import GENERATOR_PROMPT, GLOBAL_SUMMARIZER_PROMPT, LOCAL_SUMMARIZER_PROMPT, PLANNER_REASONER_PROMPT, GENIE_DOCS_TOC
 from ..protocols.message import Message
 from ..utils.logging import get_logger, setup_logger
-from ..protocols.schemas import KBResponse
+from ..protocols.schemas import KBResponse, LLMUsage
 from ..utils.settings import create_llm_client, create_light_llm_client
+from ..utils.token_tracker import token_tracker
 
 setup_logger()
 logger = get_logger("KBAgent")
@@ -136,6 +137,9 @@ class KBAgent(RoutedAgent):
         all_sub_questions = []  # Flat list of all sub-questions ever asked
         hops_trace = []
         hop = 0
+        # Cumulative token usage
+        cumulative_input_tokens = 0
+        cumulative_output_tokens = 0
 
         # --- First hop: always answer the main question ---
         hop += 1
@@ -159,6 +163,12 @@ class KBAgent(RoutedAgent):
             model=self.light_model_name,
             temperature=0.1
         )
+        try:
+            usage = token_tracker.track_completion("kb_agent_global_summary_hop1", global_summary_response, self.light_model_name)
+            cumulative_input_tokens += getattr(usage, "input_tokens", 0)
+            cumulative_output_tokens += getattr(usage, "output_tokens", 0)
+        except Exception:
+            pass
         global_summary = global_summary_response.choices[0].message.content
         logger.info(f"[Hop 1] Global summary: {global_summary}")
 
@@ -171,6 +181,12 @@ class KBAgent(RoutedAgent):
             model=self.light_model_name,
             temperature=0.1
         )
+        try:
+            usage = token_tracker.track_completion("kb_agent_local_summary_hop1", local_summary_response, self.light_model_name)
+            cumulative_input_tokens += getattr(usage, "input_tokens", 0)
+            cumulative_output_tokens += getattr(usage, "output_tokens", 0)
+        except Exception:
+            pass
         local_summary = local_summary_response.choices[0].message.content
         logger.info(
             f"[Hop 1] Local summary for '{main_question}': {local_summary}")
@@ -204,6 +220,12 @@ class KBAgent(RoutedAgent):
             model=self.model_name,
             temperature=0.1
         )
+        try:
+            usage = token_tracker.track_completion("kb_agent_reasoner_hop1", reasoner_response, self.model_name)
+            cumulative_input_tokens += getattr(usage, "input_tokens", 0)
+            cumulative_output_tokens += getattr(usage, "output_tokens", 0)
+        except Exception:
+            pass
         reasoner_raw = reasoner_response.choices[0].message.content
         logger.info(f"[Hop 1] Reasoner raw: {reasoner_raw}")
         reasoner = parse_reasoner_json(reasoner_raw)
@@ -220,14 +242,15 @@ class KBAgent(RoutedAgent):
             # Just use the local summary as the answer - no need for additional LLM call
             final_answer = local_summary
 
-            # Add the final answer to trace
-            hops_trace.append({
-                "hop": "final_simple",
-                "answer": final_answer,
-                "method": "single_hop_local_summary"
-            })
+            # Track cumulative LLM usage for single-hop case
+            llm_usage = LLMUsage(
+                model=self.model_name,
+                input_tokens=cumulative_input_tokens,
+                output_tokens=cumulative_output_tokens,
+                total_tokens=cumulative_input_tokens + cumulative_output_tokens,
+            )
 
-            return {"answer": final_answer, "trace": hops_trace, "num_hops": 1}
+            return {"answer": final_answer, "trace": hops_trace, "num_hops": 1, "llm_usage": llm_usage.model_dump()}
 
         # --- Use 'next_sub_questions' as the key for sub-questions ---
         current_sub_questions = reasoner.get("next_sub_questions", [])
@@ -287,6 +310,12 @@ class KBAgent(RoutedAgent):
                     model=self.light_model_name,
                     temperature=0.1
                 )
+                try:
+                    usage = token_tracker.track_completion(f"kb_agent_global_summary_hop{hop}", global_summary_response, self.light_model_name)
+                    cumulative_input_tokens += getattr(usage, "input_tokens", 0)
+                    cumulative_output_tokens += getattr(usage, "output_tokens", 0)
+                except Exception:
+                    pass
                 global_summary = global_summary_response.choices[0].message.content
                 logger.info(f"[Hop {hop}] Global summary: {global_summary}")
 
@@ -300,6 +329,12 @@ class KBAgent(RoutedAgent):
                     model=self.light_model_name,
                     temperature=0.1
                 )
+                try:
+                    usage = token_tracker.track_completion(f"kb_agent_local_summary_hop{hop}", local_summary_response, self.light_model_name)
+                    cumulative_input_tokens += getattr(usage, "input_tokens", 0)
+                    cumulative_output_tokens += getattr(usage, "output_tokens", 0)
+                except Exception:
+                    pass
                 local_summary = local_summary_response.choices[0].message.content
                 logger.info(
                     f"[Hop {hop}] Local summary for '{query_text}': {local_summary}")
@@ -338,6 +373,12 @@ class KBAgent(RoutedAgent):
                 model=self.model_name,
                 temperature=0.1
             )
+            try:
+                usage = token_tracker.track_completion(f"kb_agent_reasoner_hop{hop}", reasoner_response, self.model_name)
+                cumulative_input_tokens += getattr(usage, "input_tokens", 0)
+                cumulative_output_tokens += getattr(usage, "output_tokens", 0)
+            except Exception:
+                pass
             reasoner_raw = reasoner_response.choices[0].message.content
             logger.info(f"[Hop {hop}] Reasoner raw: {reasoner_raw}")
             reasoner = parse_reasoner_json(reasoner_raw)
@@ -388,6 +429,12 @@ class KBAgent(RoutedAgent):
             model=self.model_name,
             temperature=0.1
         )
+        try:
+            usage = token_tracker.track_completion("kb_agent_generator_final", answer_response, self.model_name)
+            cumulative_input_tokens += getattr(usage, "input_tokens", 0)
+            cumulative_output_tokens += getattr(usage, "output_tokens", 0)
+        except Exception:
+            pass
         answer = answer_response.choices[0].message.content
 
         hops_trace.append({
@@ -399,7 +446,13 @@ class KBAgent(RoutedAgent):
 
         num_real_hops = sum(
             1 for h in hops_trace if isinstance(h.get("hop"), int))
-        return {"answer": answer, "trace": hops_trace, "num_hops": num_real_hops}
+        llm_usage = LLMUsage(
+            model=self.model_name,
+            input_tokens=cumulative_input_tokens,
+            output_tokens=cumulative_output_tokens,
+            total_tokens=cumulative_input_tokens + cumulative_output_tokens,
+        )
+        return {"answer": answer, "trace": hops_trace, "num_hops": num_real_hops, "llm_usage": llm_usage.model_dump()}
 
     def query_knowledgebase(self, query: str, max_hops: int = 5) -> Dict[str, Any]:
         """Query the knowledge base using ReSP pipeline with intelligent single/multi-hop detection"""
@@ -495,7 +548,8 @@ class KBAgent(RoutedAgent):
                 "num_hops": result.get("num_hops", 0),
                 "trace": trace,
                 "global_summary": global_summary,
-                "local_summary": local_summary
+                "local_summary": local_summary,
+                "llm_usage": result.get("llm_usage")
             }
             logger.debug(
                 f"[KBAgent] Final response: {json.dumps(response_dict, indent=2)}")
