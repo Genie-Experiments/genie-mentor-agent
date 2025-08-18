@@ -59,6 +59,7 @@ class KBResponse(BaseModel):
     error: Optional[str] = None
     num_hops: int = 0
     trace: List[Dict[str, Any]] = []
+    llm_usage: Optional[LLMUsage] = Field(None, description="Token usage information for the KB agent")
 
 
 
