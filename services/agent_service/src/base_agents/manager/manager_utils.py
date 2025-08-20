@@ -165,7 +165,7 @@ async def run_evaluation_loop(
         # Threshold met → stop looping, no edit needed
         if score >= EVALUATION_PASS_THRESHOLD:
             logger.info("[EvaluationAgent] Score ≥ threshold, skipping edits.")
-            break
+            return current_answer, eval_history, editor_history
 
         # ── Edit ───────────────────────────────────────────────────────────────
         new_answer, editor_log = await run_editor_pass(
