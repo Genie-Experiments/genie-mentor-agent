@@ -387,6 +387,38 @@ IMPORTANT: ANY violation of these formatting rules may cause the entire workflow
 **User Sub-query:** "{sub_query}"
 """
 
+CODERAG_MCP_PROMPT = """
+You are an agent responsible for querying a vector database and generating a final answer based on the retrieved information.
+Use the tools available to you to query the vector database and generate a final answer based on the retrieved information.
+Only provide the query in the json for the get_chunks_tool tool call 
+
+  Don't throw error for 404 errors, keep at it until you have a definite answer
+Dont stop until you have a definite answer, with code extracted and code snippets
+Do not give a blank answer
+**Final Answer JSON Structure:**
+```json
+{{
+  "answer": "<A comprehensive, detailed answer to the sub-query, including code examples and explanations derived from the tool results. Should be a definitive answer only, not simply directing user towards files and repositories. Its very important that this answer be detailed and include all code and file content extracted from repo.It should only be educational, not say relevant information wasnt found, always an answer based on the information retrieved>",
+  "metadata": [{{
+      "repo_links": ["<A list of links to the repositories that were actually used.>"],
+      "repo_names": ["<A list of names of the repositories that were used.>"] 
+    }}],
+}}
+```
+
+**CRITICAL JSON FORMATTING INSTRUCTIONS:**
+1. Your final response MUST be ONLY the JSON object above - no other text, comments, or explanation
+2. Ensure ALL brackets, braces and quotes are properly closed and balanced
+4. Double-check that your JSON is properly formatted and parseable
+5. DO NOT include markdown formatting elements like ```json or ``` in your final response
+6. Return ONLY THE RAW JSON OBJECT with no other text
+7. Make sure all quotes and control characters in strings are properly escaped
+
+IMPORTANT: ANY violation of these formatting rules may cause the entire workflow to fail.
+
+**User Sub-query:** "{sub_query}"
+"""
+
 ANSWER_CLEANING_PROMPT = """
 You are a technical writing assistant. Your task is to take raw technical summaries or dense JSON-formatted answers describing code implementations and transform them into clear, well-structured, human-readable documentation suitable for technical users reading a README or wiki.
 

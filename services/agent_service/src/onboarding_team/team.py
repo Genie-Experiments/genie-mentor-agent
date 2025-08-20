@@ -40,16 +40,18 @@ ANSWER_CLEANER_AGENT_ID = AgentId("answer_cleaner_agent", "default")
 
 agent_initialized = False
 
-github_mcp_server_params = SseServerParams(
+""" github_mcp_server_params = SseServerParams(
     url="http://github-mcp-gateway:8010/sse",
     timeout=60*60,
     sse_read_timeout=60*60,
-)
+) """
 # For local testing
-'''
+
 github_mcp_server_params = SseServerParams(
-    url="http://localhost:8010/sse",
-)'''
+    url="http://host.docker.internal:8010/sse",  # Connect to host machine
+    timeout=60*60,
+    sse_read_timeout=60*60,
+)
 
 
 async def initialize_agent() -> None:
@@ -213,6 +215,56 @@ async def send_to_agent(user_message: Message) -> str:
         # Convert any other exceptions to structured errors
         logging.error(f"Unexpected error in send_to_agent: {e}")
         return handle_agent_error(e, "send_to_agent")
+
+
+async def send_to_github_agent(user_message: Message) -> str:
+    """Send message directly to the GitHub Workbench agent and return raw response.
+
+    Mirrors validation and timeout/error handling of `send_to_agent`,
+    but routes the message straight to `GITHUB_WORKBENCH_AGENT_ID`.
+    """
+    try:
+        # Validate input
+        if not user_message or not user_message.content:
+            raise ValidationError(
+                message="User message is required and cannot be empty",
+                field="user_message",
+                user_message="Please provide a valid message."
+            )
+
+        # Check if agent is initialized
+        if not agent_initialized:
+            raise AgentServiceException(
+                message="Agent service is not initialized",
+                error_code="SERVICE_NOT_INITIALIZED",
+                user_message="Service is starting up. Please try again in a moment."
+            )
+
+        logging.info(
+            f"Sending message directly to GitHub Workbench Agent: {user_message.content}")
+
+        # Add timeout handling
+        import asyncio
+        try:
+            response = await asyncio.wait_for(
+                RUNTIME.send_message(user_message, GITHUB_WORKBENCH_AGENT_ID),
+                timeout=300  # 5 minutes timeout
+            )
+            return response.content
+        except asyncio.TimeoutError as e:
+            raise AgentServiceException(
+                message="Request timed out after 5 minutes",
+                error_code="REQUEST_TIMEOUT",
+                user_message="The request is taking longer than expected. Please try again.",
+            ) from e
+
+    except AgentServiceException:
+        # Re-raise our custom exceptions
+        raise
+    except Exception as e:
+        # Convert any other exceptions to structured errors
+        logging.error(f"Unexpected error in send_to_github_agent: {e}")
+        return handle_agent_error(e, "send_to_github_agent")
 
 
 async def shutdown_agent() -> None:
