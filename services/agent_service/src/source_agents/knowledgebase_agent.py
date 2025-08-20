@@ -84,6 +84,18 @@ def parse_reasoner_json(text: str) -> dict:
         return {}
 
 
+def strip_think_tags(text: str) -> str:
+    """
+    Remove any <think>...</think> tags (and their contents) from LLM outputs.
+    Uses a regex to strip tags case-insensitively and across newlines.
+    """
+    if not text:
+        return text
+    # Remove any <think ...>...</think> blocks
+    cleaned = re.sub(r'<think\b[^>]*>.*?</think>', '', text, flags=re.S | re.I)
+    return cleaned.strip()
+
+
 class KBAgent(RoutedAgent):
     def __init__(self, persist_directory: str = None):
         super().__init__("knowledgebase_agent")
@@ -169,7 +181,7 @@ class KBAgent(RoutedAgent):
             cumulative_output_tokens += getattr(usage, "output_tokens", 0)
         except Exception:
             pass
-        global_summary = global_summary_response.choices[0].message.content
+        global_summary = strip_think_tags(global_summary_response.choices[0].message.content)
         logger.info(f"[Hop 1] Global summary: {global_summary}")
 
         local_summary_prompt = LOCAL_SUMMARIZER_PROMPT.format(
@@ -187,7 +199,7 @@ class KBAgent(RoutedAgent):
             cumulative_output_tokens += getattr(usage, "output_tokens", 0)
         except Exception:
             pass
-        local_summary = local_summary_response.choices[0].message.content
+        local_summary = strip_think_tags(local_summary_response.choices[0].message.content)
         logger.info(
             f"[Hop 1] Local summary for '{main_question}': {local_summary}")
 
@@ -226,7 +238,7 @@ class KBAgent(RoutedAgent):
             cumulative_output_tokens += getattr(usage, "output_tokens", 0)
         except Exception:
             pass
-        reasoner_raw = reasoner_response.choices[0].message.content
+        reasoner_raw = strip_think_tags(reasoner_response.choices[0].message.content)
         logger.info(f"[Hop 1] Reasoner raw: {reasoner_raw}")
         reasoner = parse_reasoner_json(reasoner_raw)
         hop_info["reasoner_output"] = reasoner
@@ -316,7 +328,7 @@ class KBAgent(RoutedAgent):
                     cumulative_output_tokens += getattr(usage, "output_tokens", 0)
                 except Exception:
                     pass
-                global_summary = global_summary_response.choices[0].message.content
+                global_summary = strip_think_tags(global_summary_response.choices[0].message.content)
                 logger.info(f"[Hop {hop}] Global summary: {global_summary}")
 
                 local_summary_prompt = LOCAL_SUMMARIZER_PROMPT.format(
@@ -335,7 +347,7 @@ class KBAgent(RoutedAgent):
                     cumulative_output_tokens += getattr(usage, "output_tokens", 0)
                 except Exception:
                     pass
-                local_summary = local_summary_response.choices[0].message.content
+                local_summary = strip_think_tags(local_summary_response.choices[0].message.content)
                 logger.info(
                     f"[Hop {hop}] Local summary for '{query_text}': {local_summary}")
 
@@ -379,7 +391,7 @@ class KBAgent(RoutedAgent):
                 cumulative_output_tokens += getattr(usage, "output_tokens", 0)
             except Exception:
                 pass
-            reasoner_raw = reasoner_response.choices[0].message.content
+            reasoner_raw = strip_think_tags(reasoner_response.choices[0].message.content)
             logger.info(f"[Hop {hop}] Reasoner raw: {reasoner_raw}")
             reasoner = parse_reasoner_json(reasoner_raw)
 
@@ -435,7 +447,7 @@ class KBAgent(RoutedAgent):
             cumulative_output_tokens += getattr(usage, "output_tokens", 0)
         except Exception:
             pass
-        answer = answer_response.choices[0].message.content
+        answer = strip_think_tags(answer_response.choices[0].message.content)
 
         hops_trace.append({
             "hop": "final",
