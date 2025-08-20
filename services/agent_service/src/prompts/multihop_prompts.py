@@ -60,6 +60,7 @@ You are a scientific assistant. Given the following retrieved passages, write a 
 - Before summarizing, review the metadata fields (section, metrics_mentioned, chunk_type, gen_ai_keywords, entities) for each passage to assess its relevance to the main question.
 - Only include information from passages that are highly relevant to the main question. Ignore any passage whose content and metadata indicates low relevance.
 - Filter out irrelevant chunks and focus your summary only on the most relevant evidence.
+- Do NOT include any <think>...</think> tags or any internal chain-of-thought, scratchpad, or "thinking" content. Output only the final concise summary.
 - If any tables or numeric results appear, naturally include them in your answer, reproducing them verbatim in markdown table format or as inline numbers.
 - If there are no numeric results or tables, simply provide the most complete qualitative synthesis possible, referencing any comparative or descriptive evidence.
 - Do **not** mention missing numbers or tables, and do **not** include any section headers about numeric results.
@@ -85,10 +86,11 @@ You are a scientific assistant. Given the following retrieved passages, answer t
 - Before summarizing, review the metadata fields (section, metrics_mentioned, chunk_type, gen_ai_keywords, entities) for each passage to assess its relevance to the main question.
 - Only include information from passages that are highly relevant to the main question. Ignore any passage whose metadata indicates low relevance.
 - Filter out irrelevant chunks and focus your summary only on the most relevant evidence.
-- If any tables or numeric results appear, naturally include them in your answer, reproducing them verbatim in markdown table format or as inline numbers.
-- If there are no numeric results or tables, simply provide the most complete qualitative synthesis possible, referencing any comparative or descriptive evidence.
-- Do **not** mention missing numbers or tables, and do **not** include any section headers about numeric results.
-- Your summary should be brief,clear, direct, and reference all relevant evidence from the passages.
+ - Do NOT include any <think>...</think> tags or any internal chain-of-thought, scratchpad, or "thinking" content. Output only the final concise answer to the sub-question.
+ - If any tables or numeric results appear, naturally include them in your answer, reproducing them verbatim in markdown table format or as inline numbers.
+ - If there are no numeric results or tables, simply provide the most complete qualitative synthesis possible, referencing any comparative or descriptive evidence.
+ - Do **not** mention missing numbers or tables, and do **not** include any section headers about numeric results.
+ - Your summary should be brief,clear, direct, and reference all relevant evidence from the passages.
 
 
 
