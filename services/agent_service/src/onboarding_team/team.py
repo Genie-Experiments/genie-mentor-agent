@@ -196,7 +196,7 @@ async def send_to_agent(user_message: Message) -> str:
         try:
             response = await asyncio.wait_for(
                 RUNTIME.send_message(user_message, MANAGER_AGENT_ID),
-                timeout=300  # 5 minutes timeout
+                timeout=600  # 5 minutes timeout
             )
             return response.content
         except asyncio.TimeoutError as e:

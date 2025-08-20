@@ -464,7 +464,7 @@ class ExecutorAgent(RoutedAgent):
                         messages=[{"role": "user", "content": prompt}],
                         model=self.model
                     ),
-                    timeout=60  # 1 minute timeout for LLM call
+                    timeout=300  # 1 minute timeout for LLM call
                 )
             except asyncio.TimeoutError:
                 logger.error("LLM aggregation request timed out, using fallback")
