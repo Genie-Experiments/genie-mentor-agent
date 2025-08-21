@@ -1,5 +1,5 @@
 import json
-from typing import List
+from typing import List, Dict, Any
 
 from autogen_core import (FunctionCall, MessageContext, RoutedAgent,
                           message_handler)
@@ -30,6 +30,109 @@ class WorkbenchAgent(RoutedAgent):
         self._model_context = model_context
         self._workbench = workbench
         self._response_context = []
+        self._metadata_context = []
+
+    def extract_metadata_from_result(self, result: ToolResult) -> List[Dict[str, Any]]:
+        """Extract metadata from tool results, especially for chunking tool results."""
+        metadata_list = []
+        
+        try:
+            content = result.to_text()
+            data = json.loads(content)
+            
+            # Handle query_chromadb_tool or get_chunks_tool results
+            if isinstance(data, dict):
+                # Check if this is a chunking tool result
+                if 'chunks' in data or 'results' in data:
+                    chunks = data.get('chunks', []) or data.get('results', [])
+                    for chunk in chunks:
+                        if isinstance(chunk, dict) and 'metadata' in chunk:
+                            chunk_metadata = chunk['metadata']
+                            # Extract relevant metadata
+                            metadata_entry = {
+                                'repo_name': chunk_metadata.get('repo_name', ''),
+                                'repo_link': chunk_metadata.get('repo_link', ''), 
+                            } 
+                            metadata_list.append(metadata_entry)
+                
+                # Handle direct metadata field
+                elif 'metadata' in data:
+                    if isinstance(data['metadata'], list):
+                        metadata_list.extend(data['metadata'])
+                    elif isinstance(data['metadata'], dict):
+                        metadata_list.append(data['metadata'])
+        
+        except (json.JSONDecodeError, AttributeError):
+            pass
+        
+        return metadata_list
+
+    def _build_compact_metadata(self, items: List[Dict[str, Any]]) -> Dict[str, List[str]]:
+        """Convert list of metadata dicts into a compact object with de-duplicated lists.
+
+        Output shape:
+        {
+            "repo_names": [unique repo names],
+            "repo_links": [unique repo links]
+        }
+        Empty values are ignored.
+        """
+        repo_names: List[str] = []
+        repo_links: List[str] = []
+        seen_names = set()
+        seen_links = set()
+
+        for item in items or []:
+            if isinstance(item, dict):
+                name = (item.get("repo_name") or "").strip()
+                link = (item.get("repo_link") or "").strip()
+
+                if name and name not in seen_names:
+                    seen_names.add(name)
+                    repo_names.append(name)
+
+                if link and link not in seen_links:
+                    seen_links.add(link)
+                    repo_links.append(link)
+
+        return [{"repo_names": repo_names, "repo_links": repo_links}]
+
+    def extract_sources_from_result(self, result: ToolResult) -> List[str]:
+        """Extract source content from tool results."""
+        sources = []
+        
+        try:
+            content = result.to_text()
+            data = json.loads(content)
+            
+            # Handle query_chromadb_tool or get_chunks_tool results
+            if isinstance(data, dict):
+                # Check if this is a chunking tool result
+                if 'chunks' in data or 'results' in data:
+                    chunks = data.get('chunks', []) or data.get('results', [])
+                    for chunk in chunks:
+                        if isinstance(chunk, dict) and 'page_content' in chunk:
+                            sources.append(chunk['page_content'])
+                
+                # Handle source_documents field
+                elif 'source_documents' in data:
+                    for doc in data['source_documents']:
+                        if isinstance(doc, dict) and 'page_content' in doc:
+                            sources.append(doc['page_content'])
+                        elif isinstance(doc, str):
+                            sources.append(doc)
+                
+                # Handle direct content field
+                elif 'content' in data and isinstance(data['content'], str):
+                    sources.append(data['content'])
+        
+        except (json.JSONDecodeError, AttributeError):
+            # If parsing fails, try to use the raw text as a source
+            text = result.to_text()
+            if text and len(text) > 0:
+                sources.append(text)
+        
+        return sources
 
     def contains_answer(self, messages):
         for m in messages:
@@ -57,6 +160,7 @@ class WorkbenchAgent(RoutedAgent):
             for file in files:
                 name = file.get('name', '').lower()
                 print("---------File Name-----------")
+                print(f"\n\n")
                 print(name)
                 if name == 'readme.md' or name == 'readme' or name.endswith('readme.md') or name == 'requirements.txt':
                     return False
@@ -122,6 +226,11 @@ class WorkbenchAgent(RoutedAgent):
         # Cumulative token usage trackers
         cumulative_prompt_tokens = 0
         cumulative_completion_tokens = 0
+        
+        # Reset context for new message
+        self._response_context = []
+        self._metadata_context = []
+        
         # Add the user message to the model context.
         await self._model_context.add_message(
             UserMessage(content=message.content, source="user")
@@ -133,22 +242,18 @@ class WorkbenchAgent(RoutedAgent):
         messages = self._system_messages + all_user_messages
         # Only provide the 'get_file_contents' tool
         all_tools = await self._workbench.list_tools()
-        get_file_contents_tools = [tool for tool in all_tools if tool['name'] == 'get_file_contents']
-        if len(get_file_contents_tools) == 0:
-            print("No get_file_contents tool found, breaking the flow")
-            return
+        print("---------All Tools-----------")
+        print(all_tools)
         
         try:
             create_result = await self._model_client.create(
                 messages=self._system_messages + (await self._model_context.get_messages()),
-                tools=get_file_contents_tools,
+                tools=all_tools,
                 cancellation_token=ctx.cancellation_token,
             )
         except Exception as e:
             print(e)
             if "tool_use_failed" in str(e) and "failed_generation" in str(e):
-                
-            
                 # Add a correction message
                 correction_msg = UserMessage(
                     content="The previous function calls failed due to incorrect format. "
@@ -161,7 +266,7 @@ class WorkbenchAgent(RoutedAgent):
                 # Retry
                 create_result = await self._model_client.create(
                     messages=self._system_messages + (await self._model_context.get_messages()),
-                    tools=get_file_contents_tools,
+                    tools=all_tools,
                     cancellation_token=ctx.cancellation_token,
                 )
 
@@ -172,7 +277,7 @@ class WorkbenchAgent(RoutedAgent):
                 result_json = {
                     "answer": "An error occurred while processing your request",
                     "sources": [],
-                    "metadata": [],
+                    "metadata": {"repo_names": [], "repo_links": []},
                     "error": str(e),
                     
                 }
@@ -183,11 +288,6 @@ class WorkbenchAgent(RoutedAgent):
         while (isinstance(create_result.content, list) and all(
             isinstance(call, FunctionCall) for call in create_result.content
         )) or self.is_function_calls_string(create_result.content):
-
-            # If the content is a tool call string, parse it into a list of FunctionCall objects
-            if isinstance(create_result.content, str) and self.is_function_calls_string(create_result.content):
-                function_calls = self.parse_function_calls_from_string(create_result.content)
-                create_result.content = function_calls
 
             print("---------Function Calls-----------")
             for call in create_result.content:
@@ -204,6 +304,7 @@ class WorkbenchAgent(RoutedAgent):
             results: List[ToolResult] = []
             valid_results = []
             all_results = []
+            
             for call in create_result.content:
                 result = await self._workbench.call_tool(
                     call.name,
@@ -211,7 +312,26 @@ class WorkbenchAgent(RoutedAgent):
                     cancellation_token=ctx.cancellation_token,
                 )
                 results.append(result)
-                #print(result)
+                print(result)
+                
+                # Extract sources and metadata from ALL tool results
+                # This is especially important for chunking tools
+                if call.name in ["query_chromadb_tool", "get_chunks_tool", "search_by_file_tool"]:
+                    # Extract sources
+                    sources = self.extract_sources_from_result(result)
+                    self._response_context.extend(sources)
+                    
+                    # Extract metadata
+                    metadata = self.extract_metadata_from_result(result)
+                    self._metadata_context.extend(metadata)
+                    
+                    print("---------Tool Result-----------")
+                    try:
+                        content = result.to_text()
+                        data = json.loads(content)
+                        print(data)
+                    except:
+                        print(result.to_text())
 
                 all_results.append((call, result))
                 
@@ -236,12 +356,6 @@ class WorkbenchAgent(RoutedAgent):
                     for call, result in all_results
                 ]
             )
-            if any(
-                call.name
-                in ["get_file_contents"]
-                for call, result in valid_results
-            ):
-                self._response_context.append(str(func_exec_result_msg))
 
             await self._model_context.add_message(func_exec_result_msg)
 
@@ -258,7 +372,7 @@ class WorkbenchAgent(RoutedAgent):
             messages = self._system_messages + (await self._model_context.get_messages())
             create_result = await self._model_client.create(
                 messages=messages,
-                tools=get_file_contents_tools,
+                tools=all_tools,
                 cancellation_token=ctx.cancellation_token,
             )
         assert isinstance(create_result.content, str)
@@ -268,20 +382,33 @@ class WorkbenchAgent(RoutedAgent):
             AssistantMessage(content=create_result.content, source="assistant")
         )
 
+        # Print debug information
+        print("---------Content (Sources)------------")
+        print(f"Number of sources: {len(self._response_context)}")
+        
+        print("---------Metadata------------")
+        print(f"Number of metadata items: {len(self._metadata_context)}")
+        for meta in self._metadata_context:
+            print(f"Repo: {meta.get('repo_name', 'Unknown')}")
+            
+
         try:
-            """ print("---------Context------------")
-            print(self._response_context) """
             result_json = parse_source_response(create_result.content)
             print("---------Final Response From MCP Agent-----------")
             print(result_json)
+            
+            # Use the collected sources and metadata
+            compact_metadata = self._build_compact_metadata(self._metadata_context)
             response = WorkbenchResponse(
-                answer=result_json.get("answer"),
-                sources=self._response_context,
-                metadata=result_json.get("metadata"),
+                answer=result_json.get("answer", ""),
+                sources=self._response_context,  # Use the collected sources
+                metadata=compact_metadata,  # Compact, de-duplicated metadata
                 error=None
             )
+            
             print("---------Final Response From MCP Agent-----------")
-            print(response)
+            #print(response.sources)
+            print(response.metadata)
             print("---------Token Usage-----------")
             print(create_result.usage.prompt_tokens)
             print(create_result.usage.completion_tokens)
@@ -296,11 +423,12 @@ class WorkbenchAgent(RoutedAgent):
             return Message(content=response.model_dump_json())
         except Exception as e:
             print(f"Error extracting JSON from response: {e}")
-            # Create a fallback result with the original content as the answer
+            # Create a fallback result with the collected context
+            compact_metadata = self._build_compact_metadata(self._metadata_context)
             result_json = {
                 "answer": create_result.content,
-                "sources": [],
-                "metadata": [],
+                "sources": self._response_context,
+                "metadata": compact_metadata,
                 "error": str(e)
             }
             return Message(content=json.dumps(result_json))

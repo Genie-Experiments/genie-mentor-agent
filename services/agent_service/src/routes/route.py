@@ -20,3 +20,15 @@ async def invoke_agent_service(
         response_data["trace_info"]["session_id"] = session_id
 
     return response_data
+
+
+""" @router.post("/github_agent")
+async def invoke_github_agent(
+    query: str = Query(..., description="User query to send directly to GitHub agent"),
+):
+    response = await send_to_github_agent(Message(content=query))
+    try:
+        return json.loads(response)
+    except json.JSONDecodeError:
+        # Fallback: wrap plain text as answer-only response
+        return {"answer": response, "sources": [], "metadata": [], "error": None} """

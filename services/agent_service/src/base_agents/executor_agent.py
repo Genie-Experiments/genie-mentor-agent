@@ -7,7 +7,7 @@ from autogen_core import AgentId, MessageContext, RoutedAgent, message_handler
 from openai import OpenAI
 
 from ..prompts.aggregation_prompt import generate_aggregated_answer
-from ..prompts.prompts import GITHUB_PROMPT
+from ..prompts.prompts import GITHUB_PROMPT, CODERAG_MCP_PROMPT
 from ..protocols.message import Message
 from ..protocols.schemas import KBResponse, LLMUsage
 from ..utils.exceptions import (AgentServiceException, ExecutionError,
@@ -339,15 +339,17 @@ class ExecutorAgent(RoutedAgent):
             elif source == SourceType.GITHUB.value:
                 logger.info(f"[{qid}] Querying GitHub")
                 try:
-                    prompt = GITHUB_PROMPT.format(sub_query=sub_query)
+                    prompt = CODERAG_MCP_PROMPT.format(sub_query=sub_query)
                     response_message = await self.send_message(
                         Message(content=prompt), self.github_workbench_agent_id
                     )
                     response = json.loads(response_message.content)
                     logger.info(f"[GitHub] Agent Response : {response}")
                     try:
+                        cleaner_input = dict(response)
+                        cleaner_input.pop("sources", None)
                         cleaner_response = await self.send_message(
-                            Message(content=json.dumps(response)), self.answer_cleaner_agent_id
+                            Message(content=json.dumps(cleaner_input)), self.answer_cleaner_agent_id
                         )
                         cleaned_payload = json.loads(cleaner_response.content)
                         cleaned_answer = cleaned_payload.get("cleaned_answer", response.get("answer", ""))

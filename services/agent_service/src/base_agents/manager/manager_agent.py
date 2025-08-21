@@ -233,32 +233,22 @@ class ManagerAgent(RoutedAgent):
             documents = q_output.get("all_documents", [])
             documents_by_source = q_output.get("documents_by_source", {})
             
-            # Check if GitHub sources are used
-            skip_evaluation = any(
-                src.lower().find("github") != -1
-                for src in documents_by_source
-            )
-            skip_reason = "Evaluation skipped because GitHub source was used" if skip_evaluation else None
+            
+            try:
+                final_answer, eval_history, editor_history = await run_evaluation_loop(
+                    send_message_func=self.send_message,
+                    eval_agent_id=self.eval_agent_id,
+                    editor_agent_id=self.editor_agent_id,
+                    question=user_query,
+                    initial_answer=answer,
+                    contexts=documents,
+                    documents_by_source=documents_by_source,
+                )
 
-            if skip_evaluation:
+            except Exception as e:
+                logger.error(f"[ManagerAgent] Evaluation loop failed: {e}")
                 final_answer, eval_history, editor_history = answer, [], []
-            else:
-                try:
-                    final_answer, eval_history, editor_history = await run_evaluation_loop(
-                        send_message_func=self.send_message,
-                        eval_agent_id=self.eval_agent_id,
-                        editor_agent_id=self.editor_agent_id,
-                        question=user_query,
-                        initial_answer=answer,
-                        contexts=documents,
-                        documents_by_source=documents_by_source,
-                    )
-
-                except Exception as e:
-                    logger.error(f"[ManagerAgent] Evaluation loop failed: {e}")
-                    final_answer, eval_history, editor_history = answer, [], []
-                    skip_reason = "Evaluation or Editor failed."
-                    skip_evaluation = False
+                
 
             self.trace_info.update({
                 'evaluation_agent': eval_history,
