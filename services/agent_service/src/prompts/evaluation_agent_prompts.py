@@ -134,7 +134,7 @@ For the given task data, go over each fact sentence one by one, and write down y
 
 {scenario_description}
 
-Example Data.
+Example Data for reference only:
 {few_shot_examples}
 
 Return the output only in the corresponding JSON format. Do not output anything other than this JSON object:
