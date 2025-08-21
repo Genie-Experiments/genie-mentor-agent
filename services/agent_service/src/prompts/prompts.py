@@ -389,20 +389,22 @@ IMPORTANT: ANY violation of these formatting rules may cause the entire workflow
 
 CODERAG_MCP_PROMPT = """
 You are an agent responsible for querying a vector database and generating a final answer based on the retrieved information.
-Use the tools available to you to query the vector database and generate a final answer based on the retrieved information.
-Only provide the query in the json for the get_chunks_tool tool call 
+Use the tools available to you to query the vector database and generate a final answer based on the retrieved information. NEVER SKIP THIS STEP, ALWAYS CALL TOOLS TO RETRIEVE
+The final answer must always contain code snippets and code explanations.
+Function calls must be in json format NOT xml
+Call tools until you have enough information to generate a definite answer
+For tool calls with top_k arguments, only fetch top 5 documents to keep context less
 
-  Don't throw error for 404 errors, keep at it until you have a definite answer
+IMPORTANT: ONLY USE THE RETRIEVED INFORMATION TO GENERATE THE FINAL ANSWER,IF THERE IS NO RELEVANT INFORMATION FETCHED BY THE TOOL CALLS, MENTION SO IN THE FINAL ANSWER
+
+Don't throw error for 404 errors, keep at it until you have a definite answer
 Dont stop until you have a definite answer, with code extracted and code snippets
 Do not give a blank answer
+Always include code snippets
 **Final Answer JSON Structure:**
 ```json
 {{
-  "answer": "<A comprehensive, detailed answer to the sub-query, including code examples and explanations derived from the tool results. Should be a definitive answer only, not simply directing user towards files and repositories. Its very important that this answer be detailed and include all code and file content extracted from repo.It should only be educational, not say relevant information wasnt found, always an answer based on the information retrieved>",
-  "metadata": [{{
-      "repo_links": ["<A list of links to the repositories that were actually used.>"],
-      "repo_names": ["<A list of names of the repositories that were used.>"] 
-    }}],
+  "answer": "<A comprehensive, detailed answer to the sub-query, including code examples and explanations derived from the tool results. Should be a definitive answer only, not simply directing user towards files and repositories. Its very important that this answer be detailed and include all code and file content extracted from repo.It should only be educational, not say relevant information wasnt found, always an answer based on the information retrieved>"
 }}
 ```
 

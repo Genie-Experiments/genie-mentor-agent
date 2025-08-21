@@ -346,8 +346,10 @@ class ExecutorAgent(RoutedAgent):
                     response = json.loads(response_message.content)
                     logger.info(f"[GitHub] Agent Response : {response}")
                     try:
+                        cleaner_input = dict(response)
+                        cleaner_input.pop("sources", None)
                         cleaner_response = await self.send_message(
-                            Message(content=json.dumps(response)), self.answer_cleaner_agent_id
+                            Message(content=json.dumps(cleaner_input)), self.answer_cleaner_agent_id
                         )
                         cleaned_payload = json.loads(cleaner_response.content)
                         cleaned_answer = cleaned_payload.get("cleaned_answer", response.get("answer", ""))

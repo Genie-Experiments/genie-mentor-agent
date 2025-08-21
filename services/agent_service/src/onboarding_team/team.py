@@ -40,15 +40,11 @@ ANSWER_CLEANER_AGENT_ID = AgentId("answer_cleaner_agent", "default")
 
 agent_initialized = False
 
-""" github_mcp_server_params = SseServerParams(
-    url="http://github-mcp-gateway:8010/sse",
-    timeout=60*60,
-    sse_read_timeout=60*60,
-) """
-# For local testing
+# Resolve MCP SSE URL: allow override via env, default to docker service name
+MCP_SSE_URL = os.environ.get("MCP_SSE_URL", "http://mcp-service:8010/sse")
 
 github_mcp_server_params = SseServerParams(
-    url="http://host.docker.internal:8010/sse",  # Connect to host machine
+    url=MCP_SSE_URL,
     timeout=60*60,
     sse_read_timeout=60*60,
 )
@@ -217,12 +213,7 @@ async def send_to_agent(user_message: Message) -> str:
         return handle_agent_error(e, "send_to_agent")
 
 
-async def send_to_github_agent(user_message: Message) -> str:
-    """Send message directly to the GitHub Workbench agent and return raw response.
-
-    Mirrors validation and timeout/error handling of `send_to_agent`,
-    but routes the message straight to `GITHUB_WORKBENCH_AGENT_ID`.
-    """
+""" async def send_to_github_agent(user_message: Message) -> str:
     try:
         # Validate input
         if not user_message or not user_message.content:
@@ -265,7 +256,7 @@ async def send_to_github_agent(user_message: Message) -> str:
         # Convert any other exceptions to structured errors
         logging.error(f"Unexpected error in send_to_github_agent: {e}")
         return handle_agent_error(e, "send_to_github_agent")
-
+ """
 
 async def shutdown_agent() -> None:
     """Shutdown agent service gracefully."""

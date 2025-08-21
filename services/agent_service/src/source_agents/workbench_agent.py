@@ -43,15 +43,16 @@ class WorkbenchAgent(RoutedAgent):
             # Handle query_chromadb_tool or get_chunks_tool results
             if isinstance(data, dict):
                 # Check if this is a chunking tool result
-                if 'chunks' in data:
-                    chunks = data.get('chunks', [])
+                if 'chunks' in data or 'results' in data:
+                    chunks = data.get('chunks', []) or data.get('results', [])
                     for chunk in chunks:
                         if isinstance(chunk, dict) and 'metadata' in chunk:
                             chunk_metadata = chunk['metadata']
                             # Extract relevant metadata
                             metadata_entry = {
                                 'repo_name': chunk_metadata.get('repo_name', ''),
-                            }
+                                'repo_link': chunk_metadata.get('repo_link', ''), 
+                            } 
                             metadata_list.append(metadata_entry)
                 
                 # Handle direct metadata field
@@ -66,6 +67,36 @@ class WorkbenchAgent(RoutedAgent):
         
         return metadata_list
 
+    def _build_compact_metadata(self, items: List[Dict[str, Any]]) -> Dict[str, List[str]]:
+        """Convert list of metadata dicts into a compact object with de-duplicated lists.
+
+        Output shape:
+        {
+            "repo_names": [unique repo names],
+            "repo_links": [unique repo links]
+        }
+        Empty values are ignored.
+        """
+        repo_names: List[str] = []
+        repo_links: List[str] = []
+        seen_names = set()
+        seen_links = set()
+
+        for item in items or []:
+            if isinstance(item, dict):
+                name = (item.get("repo_name") or "").strip()
+                link = (item.get("repo_link") or "").strip()
+
+                if name and name not in seen_names:
+                    seen_names.add(name)
+                    repo_names.append(name)
+
+                if link and link not in seen_links:
+                    seen_links.add(link)
+                    repo_links.append(link)
+
+        return [{"repo_names": repo_names, "repo_links": repo_links}]
+
     def extract_sources_from_result(self, result: ToolResult) -> List[str]:
         """Extract source content from tool results."""
         sources = []
@@ -77,8 +108,8 @@ class WorkbenchAgent(RoutedAgent):
             # Handle query_chromadb_tool or get_chunks_tool results
             if isinstance(data, dict):
                 # Check if this is a chunking tool result
-                if 'chunks' in data:
-                    chunks = data.get('chunks', [])
+                if 'chunks' in data or 'results' in data:
+                    chunks = data.get('chunks', []) or data.get('results', [])
                     for chunk in chunks:
                         if isinstance(chunk, dict) and 'page_content' in chunk:
                             sources.append(chunk['page_content'])
@@ -223,8 +254,6 @@ class WorkbenchAgent(RoutedAgent):
         except Exception as e:
             print(e)
             if "tool_use_failed" in str(e) and "failed_generation" in str(e):
-                
-            
                 # Add a correction message
                 correction_msg = UserMessage(
                     content="The previous function calls failed due to incorrect format. "
@@ -248,7 +277,7 @@ class WorkbenchAgent(RoutedAgent):
                 result_json = {
                     "answer": "An error occurred while processing your request",
                     "sources": [],
-                    "metadata": [],
+                    "metadata": {"repo_names": [], "repo_links": []},
                     "error": str(e),
                     
                 }
@@ -259,11 +288,6 @@ class WorkbenchAgent(RoutedAgent):
         while (isinstance(create_result.content, list) and all(
             isinstance(call, FunctionCall) for call in create_result.content
         )) or self.is_function_calls_string(create_result.content):
-
-            # If the content is a tool call string, parse it into a list of FunctionCall objects
-            if isinstance(create_result.content, str) and self.is_function_calls_string(create_result.content):
-                function_calls = self.parse_function_calls_from_string(create_result.content)
-                create_result.content = function_calls
 
             print("---------Function Calls-----------")
             for call in create_result.content:
@@ -366,6 +390,7 @@ class WorkbenchAgent(RoutedAgent):
         print(f"Number of metadata items: {len(self._metadata_context)}")
         for meta in self._metadata_context:
             print(f"Repo: {meta.get('repo_name', 'Unknown')}")
+            
 
         try:
             result_json = parse_source_response(create_result.content)
@@ -373,10 +398,11 @@ class WorkbenchAgent(RoutedAgent):
             print(result_json)
             
             # Use the collected sources and metadata
+            compact_metadata = self._build_compact_metadata(self._metadata_context)
             response = WorkbenchResponse(
                 answer=result_json.get("answer", ""),
                 sources=self._response_context,  # Use the collected sources
-                metadata=self._metadata_context,  # Use the collected metadata
+                metadata=compact_metadata,  # Compact, de-duplicated metadata
                 error=None
             )
             
@@ -398,10 +424,11 @@ class WorkbenchAgent(RoutedAgent):
         except Exception as e:
             print(f"Error extracting JSON from response: {e}")
             # Create a fallback result with the collected context
+            compact_metadata = self._build_compact_metadata(self._metadata_context)
             result_json = {
                 "answer": create_result.content,
                 "sources": self._response_context,
-                "metadata": self._metadata_context,
+                "metadata": compact_metadata,
                 "error": str(e)
             }
             return Message(content=json.dumps(result_json))
