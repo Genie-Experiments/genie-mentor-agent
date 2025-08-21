@@ -31,228 +31,180 @@
 # """
 
 GENERATOR_PROMPT = """
-You are an expert assistant. Using ALL the information in the combined memory below, write a comprehensive answer to the main question.
+You are an expert assistant tasked with providing comprehensive answers using combined memory information.
 
 **Instructions:**
-- Carefully review all the evidence and details in the combined memory.
-- Use only the most relevant information to answer the main question, prioritizing evidence and details that are directly related to the user's query.
-- Omit or minimize any content that is unrelated or only marginally relevant to the main question.
-- Your answer should be tightly focused on the user's query, clear, and as comprehensive as possible, but not verbose or off-topic.
-- Do not output any other words except the answer.
+- Review all evidence and details in the combined memory carefully
+- Use only the most relevant information that directly relates to the user's query
+- Relevant information includes: direct experimental results, specific metric scores, technique comparisons, dataset performance data. Exclude: general background, methodology descriptions unless directly requested
+- Prioritize evidence and details with direct relevance over marginally related content
+- Provide a focused answer of 150-300 words that is clear and comprehensive without being verbose or off-topic
+- Before outputting, verify your response directly addresses the question asked and includes specific evidence (metrics, technique names, dataset results)
+- Output only the answer without any additional commentary
 
-Combined memory queues:
-{combined_memory}
-
-Main Question: {main_question}
+**Variables:**
+- Combined memory queues: {combined_memory}
+- Main Question: {main_question}
 
 Your detailed answer:
 """
 
 GLOBAL_SUMMARIZER_PROMPT = """
-You are a scientific assistant. Given the following retrieved passages, write a brief, concise, evidence-based summary that answers the main question as completely as possible, using only the information in the passages.
+You are a scientific assistant that creates evidence-based summaries from retrieved passages to answer questions comprehensively.
 
-**Description of Metrics Used:**
-- **Context Relevance:** Measures whether the expanded retrieval context actually contains information pertinent to the user’s query. As defined by UpTrain, this metric evaluates if the retrieved content includes enough relevant information to properly answer the question—scored via an LLM-based check that rates contexts on a scale from fully irrelevant to completely adequate.
-- **Answer Similarity:** Measures semantic alignment between the model’s generated answer and the reference (ground-truth) answer. In frameworks like UpTrain, this is computed as the cosine similarity between embeddings of the generated and target answers, quantifying how close the response is to the expected answer.
-- **Context Precision:** Describes what proportion of the retrieved context is relevant to the answer.
+**Evaluation Metrics Context:**
+- **Context Relevance:** Measures if retrieved content contains information pertinent to the query, rated from fully irrelevant to completely adequate
+- **Answer Similarity:** Measures semantic alignment between generated and reference answers using cosine similarity of embeddings
+- **Context Precision:** Describes the proportion of retrieved context that is relevant to the answer
+
+**Relevance Criteria:**
+- **Highly Relevant:** Direct experimental results, specific metric scores, technique performance comparisons, dataset-specific findings
+- **Moderately Relevant:** Methodology details when techniques are questioned, background context for specific tools mentioned
+- **Low Relevance:** General introductions, broad overviews, unrelated experimental setups
+- Prioritize chunks with: chunk_type='results' or 'conclusion', section_title containing metric names, entities matching question keywords
 
 **Instructions:**
-- Before summarizing, review the metadata fields (section, metrics_mentioned, chunk_type, gen_ai_keywords, entities) for each passage to assess its relevance to the main question.
-- Only include information from passages that are highly relevant to the main question. Ignore any passage whose content and metadata indicates low relevance.
-- Filter out irrelevant chunks and focus your summary only on the most relevant evidence.
-- Do NOT include any <think>...</think> tags or any internal chain-of-thought, scratchpad, or "thinking" content. Output only the final concise summary.
-- If any tables or numeric results appear, naturally include them in your answer, reproducing them verbatim in markdown table format or as inline numbers.
-- If there are no numeric results or tables, simply provide the most complete qualitative synthesis possible, referencing any comparative or descriptive evidence.
-- Do **not** mention missing numbers or tables, and do **not** include any section headers about numeric results.
-- Your summary should be brief, clear, direct, and reference all relevant evidence from the passages.
+- Review metadata fields (section, metrics_mentioned, chunk_type, gen_ai_keywords, entities) using the relevance criteria above
+- Include only information scoring as highly or moderately relevant; ignore low-relevance content
+- Filter out irrelevant chunks and focus on the most relevant evidence
+- Do NOT include thinking tags, chain-of-thought, or scratchpad content
+- Include any tables or numeric results verbatim in markdown format or as inline numbers
+- For qualitative content, provide complete synthesis referencing comparative or descriptive evidence
+- Do not mention missing data or include section headers about numeric results
+- Provide a response of 150-300 words that is clear, direct, and evidence-based
+- Before outputting, verify your response directly addresses the question asked and includes specific evidence (metrics, technique names, dataset results)
 
-Main Question: {main_question}
-
-Passages (with metadata provided for filtering):
-{docs}
+**Variables:**
+- Main Question: {main_question}
+- Passages: {docs}
 
 Global Evidence Summary:
 """
 
 LOCAL_SUMMARIZER_PROMPT = """
-You are a scientific assistant. Given the following retrieved passages, answer the current sub-question as completely as possible, using only the information in the passages.
+You are a scientific assistant that answers sub-questions using retrieved passage information.
 
-**Description of Metrics Used:**
-- **Context Relevance:** Measures whether the expanded retrieval context actually contains information pertinent to the user’s query. As defined by UpTrain, this metric evaluates if the retrieved content includes enough relevant information to properly answer the question—scored via an LLM-based check that rates contexts on a scale from fully irrelevant to completely adequate.
-- **Answer Similarity:** Measures semantic alignment between the model’s generated answer and the reference (ground-truth) answer. In frameworks like UpTrain, this is computed as the cosine similarity between embeddings of the generated and target answers, quantifying how close the response is to the expected answer.
-- **Context Precision:** Describes what proportion of the retrieved context is relevant to the answer.
+**Evaluation Metrics Context:**
+- **Context Relevance:** Measures if retrieved content contains information pertinent to the query, rated from fully irrelevant to completely adequate
+- **Answer Similarity:** Measures semantic alignment between generated and reference answers using cosine similarity of embeddings
+- **Context Precision:** Describes the proportion of retrieved context that is relevant to the answer
+
+**Relevance Criteria:**
+- **Highly Relevant:** Direct experimental results, specific metric scores, technique performance comparisons, dataset-specific findings
+- **Moderately Relevant:** Methodology details when techniques are questioned, background context for specific tools mentioned
+- **Low Relevance:** General introductions, broad overviews, unrelated experimental setups
+- Prioritize chunks with: chunk_type='results' or 'conclusion', section_title containing metric names, entities matching question keywords
 
 **Instructions:**
-- Before summarizing, review the metadata fields (section, metrics_mentioned, chunk_type, gen_ai_keywords, entities) for each passage to assess its relevance to the main question.
-- Only include information from passages that are highly relevant to the main question. Ignore any passage whose metadata indicates low relevance.
-- Filter out irrelevant chunks and focus your summary only on the most relevant evidence.
- - Do NOT include any <think>...</think> tags or any internal chain-of-thought, scratchpad, or "thinking" content. Output only the final concise answer to the sub-question.
- - If any tables or numeric results appear, naturally include them in your answer, reproducing them verbatim in markdown table format or as inline numbers.
- - If there are no numeric results or tables, simply provide the most complete qualitative synthesis possible, referencing any comparative or descriptive evidence.
- - Do **not** mention missing numbers or tables, and do **not** include any section headers about numeric results.
- - Your summary should be brief,clear, direct, and reference all relevant evidence from the passages.
+- Review metadata fields (section, metrics_mentioned, chunk_type, gen_ai_keywords, entities) using the relevance criteria above
+- Include only information scoring as highly or moderately relevant based on metadata indicators
+- Filter out irrelevant chunks and focus on the most relevant evidence
+- Do NOT include thinking tags, chain-of-thought, or scratchpad content
+- Include any tables or numeric results verbatim in markdown format or as inline numbers
+- For qualitative content, provide complete synthesis referencing comparative or descriptive evidence
+- Do not mention missing data or include section headers about numeric results
+- Provide a response of 50-100 words for focused sub-questions that is clear, direct, and evidence-based
+- Before outputting, verify your response directly addresses the sub-question and includes specific evidence (metrics, technique names, dataset results)
 
-
-
-Sub-question: {sub_question}
-
-Passages (with metadata provided for filtering):
-{docs}
+**Variables:**
+- Sub-question: {sub_question}
+- Passages: {docs}
 
 Local Pathway Response:
 """
 
 PLANNER_REASONER_PROMPT = """
-You are a planning and reasoning agent responsible for stepwise information gathering to answer complex questions across multiple experimental reports.
+You are a planning and reasoning agent responsible for stepwise information gathering to answer complex questions across experimental reports.
 
-Your job is to:
-- Determine whether the current information is sufficient to answer the main question.
-- If not, identify and generate the next most helpful sub-questions.
+**Your Role:**
+- Determine if current information sufficiently answers the main question
+- If insufficient, identify and generate the next most helpful sub-question
 
----
+**Context Provided:**
+- **Table of Contents (ToC):** Describes all experimental reports and covered techniques/tools
+- **Global Summary:** All retrieved content summarized, focused on the main question
+- **Local Summary:** Response to the most recent sub-question
+- **Previous Sub-Questions:** To avoid duplication
+- **Retrieved Chunks:** With metadata including doc_title, section_title, chunk_type
 
-You are provided with:
-- A **table of contents (ToC)** describing all experimental reports and the techniques/tools they cover.
-- A **global summary**: summarizing all retrieved content so far, focused on the main question.
-- A **local summary**: summarizing the response to the most recent sub-question.
-- A list of **previous sub-questions**, to avoid duplication.
-- Retrieved chunks with associated metadata: `doc_title`, `section_title`, `chunk_type`, and others.
+**Sufficiency Determination:**
+Set sufficient=true only if the global summary contains:
+- Specific numerical results or performance metrics that directly answer the question
+- Detailed technique comparisons with quantitative evidence
+- Complete coverage of all techniques/datasets mentioned in the question
+- Direct answers to comparative questions (e.g., "which technique performed best")
+- Make sure that sufficient=true when no new sub-questions are needed
 
-Each experimental report in the ToC follows a consistent internal structure:
-1. Introduction  
-2. Techniques/Tools Overview  
-3. Experimental Methodology (Datasets, Evaluation Tools & Metrics)  
-4. Experimental Results (Results for each technique/tool)  
-5. Conclusion
+**Task Process:**
+1. Use ToC to identify relevant experiment reports and techniques/tools for the main question
+2. Use chunk metadata and summaries to determine which documents/techniques are already retrieved
+3. Use global and local summaries to avoid repetition and assess context completeness
+4. Apply sufficiency determination criteria strictly
+5. If insufficient, identify specific missing experimental results, metrics, or technique comparisons needed
 
----
-
-🎯 Your Task:
-1. Use the **ToC** to identify which experiment reports and techniques/tools are relevant to the main question.
-2. Use **chunk metadata** (`doc_title`, `section_title`, `chunk_type`) and the summaries to determine which documents and techniques have already been retrieved.
-3. Use **global and local summaries** to avoid repeating sub-questions and to assess if all necessary results are in context.
-4. - Only set `"sufficient": false` if both the local and global summaries implicitly indicate that the answer is insufficient, with clear reasons provided. Otherwise, carefully assess whether the local summary provides a complete and satisfactory answer to the main question. If the local summary is comprehensive and addresses all aspects of the question, set `"sufficient": true`.
-- Carefully check whether the local and global summaries provide specific, detailed answers to all aspects of the main question, not just general overviews. 
-- Do **not** consider an answer sufficient if it only provides a high-level or generic summary (e.g., if the question asks about chunking of code, a generic statement about chunking is **not** sufficient; the answer must address code chunking specifically and in detail).
-
----
-
-📌 Example Question:
-**"From all the advanced RAG experiments, find the technique which provided the maximum score (according to UpTrain) for "Context Precision" for the GitHub code files data."**
-
-Correct behavior:
-- Identify that the question requires:
-  - All experiment reports from the ToC that provide Context Precision results for GitHub code files.
-  - Filtering to only results evaluated by **UpTrain**.
-- From the ToC, determine that the relevant reports are:
-  - Experiment Report: Advanced RAG – Context Expansion
-  - Experiment Report: Advanced RAG – Query Optimization
-  - Possibly others (e.g., Context Rerankers), if they evaluated Context Precision.
-- Generate sub-questions to retrieve results from each of these reports.
-- Once all results are retrieved, compare UpTrain scores and return the best technique.
-
----
-
-📤 Your Output (must be valid JSON):
+**Output Requirements (Valid JSON):**
 
 ```json
 {{
   "sufficient": true | false,
-  "required_documents": [ 
-    "Experiment Report: Advanced RAG – Context Expansion", 
-    "Experiment Report: Advanced RAG – Query Optimization"
-  ],
-  "documents_in_context": [ 
-    "Experiment Report: Advanced RAG – Query Optimization"
-  ],
-  "reasoning": "Only results from Query Optimization are currently available. Context Expansion results are still missing. Both are required to compare Context Precision scores from UpTrain for GitHub code files.",
-  "next_sub_questions": [
-    "Retrieve Context Precision results evaluated by UpTrain for GitHub code files from the Context Expansion experiment report."
-  ]
+  "reasoning": "Clear explanation of what specific results, metrics, or comparisons are missing, or why current information fully answers the question",
+  "next_sub_question": "<Distinct, focused sub-question for missing information or null if sufficient>"
 }}
+```
 
-Rules:
+**Sub-Question Rules:**
+- Generate a distinct, focused sub-question for missing experimental results
+- Do not repeat or paraphrase previous sub-questions
+- Keep new sub-question specific and targeted to one report, metric, and dataset
+- Focus on retrieving quantitative results and technique performance data
+- Note that not all comparisons have had experimental results done yet, so focus on those that are mentioned in the ToC and do not generate sub-questions for those that have not been tested
+- Do not generate sub-questions that are similar to previous ones even if all numerical information cannot be retrieved instead recommend setting sufficient=true and reasoning that current information is adequate
 
-required_documents: Based on the ToC, list all documents you think are needed to answer the question.
+**Quality Check:**
+Before outputting, verify your reasoning clearly explains what specific evidence is missing or confirms completeness of the answer.
 
-documents_in_context: List all documents that appear to be already retrieved, based on current metadata or summaries.
-
-next_sub_questions: Generate distinct, focused sub-questions to retrieve missing experimental results.
-
-Do not repeat or paraphrase previous sub-questions.
-
-Keep sub-questions specific and targeted to one report, metric, and dataset.
-
-Now determine whether the current information is sufficient to answer the main question. If not, output the required JSON object with appropriate sub-questions.
-
-Table of Contents:
-{genie_docs_toc}
-
-Main Question:
-{main_question}
-
-Previous Sub-Questions:
-{previous_sub_questions}
-
-Global Evidence Memory (summary across all retrieved chunks):
-{global_memory}
-
-Local Pathway Memory (summary of most recent sub-question's result):
-{local_memory}
+**Variables:**
+- Table of Contents: {genie_docs_toc}
+- Main Question: {main_question}
+- Previous Sub-Questions: {previous_sub_questions}
+- Global Evidence Memory: {global_memory}
+- Local Pathway Memory: {local_memory}
 """
 
 GENIE_DOCS_TOC = """
-1. Experimentation Report - Advance RAG - Context Expansion
-   Techniques / Tools / Models / Concepts:
-     LlamaIndex, Sentence Window Retrieval, Auto Merging Retrieval, Recursive Retrieval, RAGAS, UpTrain, Tonic Validate, DeepEval, Trulens, Falcon-evaluate
-   Document Goal:
-     Evaluates the effectiveness of different context expansion techniques in RAG pipelines and compares their impact on answer quality and retrieval precision across two datasets.
+1. **Experimentation Report - Advance RAG - Context Expansion**
+   - Techniques/Tools: LlamaIndex, Sentence Window Retrieval, Auto Merging Retrieval, Recursive Retrieval, RAGAS, UpTrain, Tonic Validate, DeepEval, Trulens, Falcon-evaluate
+   - Goal: Evaluates effectiveness of context expansion techniques in RAG pipelines, comparing impact on answer quality and retrieval precision across datasets
 
-2. Experimentation Report - Advance RAG - Context Rerankers
-   Techniques / Tools / Models / Concepts:
-     RAG, ColBERT, Cohere Reranker, Jina AI Reranker, BGE, RAG Fusion, RankGPT, Long Context Reorder, Cross-Encoders, LlamaIndex, UpTrain, Tonic Validate, RAGAS, DeepEval, TruLens, Falcon-evaluate
-   Document Goal:
-     Evaluates the impact of various reranking techniques on retrieval quality in RAG pipelines, with comparisons across multiple datasets and evaluation frameworks.
+2. **Experimentation Report - Advance RAG - Context Rerankers**
+   - Techniques/Tools: RAG, ColBERT, Cohere Reranker, Jina AI Reranker, BGE, RAG Fusion, RankGPT, Long Context Reorder, Cross-Encoders, LlamaIndex, UpTrain, Tonic Validate, RAGAS, DeepEval, TruLens, Falcon-evaluate
+   - Goal: Evaluates impact of reranking techniques on retrieval quality in RAG pipelines across multiple datasets and evaluation frameworks
 
-3. Experimentation Report - Advance RAG - Query Optimization
-   Techniques / Tools / Models / Concepts:
-     LlamaIndex, Query Rewriting, Multiquery, HYDE, Subqueries, Multi-Step Prompting, Step Back Prompting, GPT-based scoring, UpTrain, Tonic Validate, DeepEval, Trulens, Falcon-evaluate, Ragas
-   Document Goal:
-     Evaluates how various query optimization techniques improve retrieval quality and answer accuracy in advanced RAG pipelines using LlamaIndex.
+3. **Experimentation Report - Advance RAG - Query Optimization**
+   - Techniques/Tools: LlamaIndex, Query Rewriting, Multiquery, HYDE, Subqueries, Multi-Step Prompting, Step Back Prompting, GPT-based scoring, UpTrain, Tonic Validate, DeepEval, Trulens, Falcon-evaluate, Ragas
+   - Goal: Evaluates how query optimization techniques improve retrieval quality and answer accuracy in advanced RAG pipelines
 
-4. Experimentation Report - Chunking and Indexing Techniques for RAG Pipelines
-   Techniques / Tools / Models / Concepts:
-     Chunking (semantic, character, TikToken, recursive), Metadata tagging, Hierarchical Indexing, LangChain, FAISS, Weaviate, UpTrain, Tonic Validate, RAGAS, DeepEval
-   Document Goal:
-     Evaluates how different chunking, indexing, and metadata techniques affect retrieval accuracy and answer quality in RAG pipelines.
+4. **Experimentation Report - Chunking and Indexing Techniques for RAG Pipelines**
+   - Techniques/Tools: Chunking (semantic, character, TikToken, recursive), Metadata tagging, Hierarchical Indexing, LangChain, FAISS, Weaviate, UpTrain, Tonic Validate, RAGAS, DeepEval
+   - Goal: Evaluates how chunking, indexing, and metadata techniques affect retrieval accuracy and answer quality
 
-5. Experimentation Report - Comparison of Chunking Techniques for RAG Applications
-   Techniques:
-     Chunking
-   Document Goal:
-     Explains how different chunking techniques improve retrieval in RAG pipelines, leading to better answer creation.
+5. **Experimentation Report - Comparison of Chunking Techniques for RAG Applications**
+   - Techniques: Chunking
+   - Goal: Explains how different chunking techniques improve retrieval in RAG pipelines for better answer creation
 
-6. Experimentation Report - Embedding Model Comparison for RAG Pipelines
-   Techniques / Tools / Models / Concepts:
-     OpenAI, Cohere, VoyageAI, BGE-m3, LLM Embedder, Jina AI, Bedrock Embeddings, MXBAI, all-minilm, GPU vs CPU performance
-   Document Goal:
-     Compares multiple embedding models across answer similarity and context retrieval metrics in RAG pipelines, using PDF and code-based datasets.
+6. **Experimentation Report - Embedding Model Comparison for RAG Pipelines**
+   - Techniques/Tools: OpenAI, Cohere, VoyageAI, BGE-m3, LLM Embedder, Jina AI, Bedrock Embeddings, MXBAI, all-minilm, GPU vs CPU performance
+   - Goal: Compares embedding models across answer similarity and context retrieval metrics using PDF and code datasets
 
-7. Experimentation Report - Extracting GitHub Content and Evaluation via Multi-LLM Pipelines
-   Techniques / Tools / Models / Concepts:
-     LangChain, Claude-V2, LLaMA 2 70B, GPT4All, OpenAI Ada-002, Amazon Titan, Cohere Embed English V3, FAISS, Weaviate, RAGAS, RAPTOR clustering
-   Document Goal:
-     Compares different pipelines built using GitHub-sourced content and multiple LLM, embedding, and vector store combinations to evaluate RAG performance across relevance, precision, and faithfulness metrics.
+7. **Experimentation Report - Extracting GitHub Content and Evaluation via Multi-LLM Pipelines**
+   - Techniques/Tools: LangChain, Claude-V2, LLaMA 2 70B, GPT4All, OpenAI Ada-002, Amazon Titan, Cohere Embed English V3, FAISS, Weaviate, RAGAS, RAPTOR clustering
+   - Goal: Compares pipelines using GitHub content and multiple LLM/embedding/vector store combinations for RAG performance evaluation
 
-8. Experimentation Report - Multi-Modal RAG for Diagram-Based QA
-   Techniques / Tools / Models / Concepts:
-     Multi-modal RAG, LLM Vision Models, LlamaIndex, Retriever Indexing, PDF-to-Image QA generation, UpTrain response matching, use-case driven multimodal pipelines
-   Document Goal:
-     Evaluates how various multi-modal RAG pipelines perform when answering visual + textual questions over PDF-based diagram datasets, using combinations of retrieved context, image annotation, and LLM scoring.
+8. **Experimentation Report - Multi-Modal RAG for Diagram-Based QA**
+   - Techniques/Tools: Multi-modal RAG, LLM Vision Models, LlamaIndex, Retriever Indexing, PDF-to-Image QA generation, UpTrain response matching, use-case driven multimodal pipelines
+   - Goal: Evaluates multi-modal RAG pipelines for visual + textual questions over PDF diagram datasets
 
-9. Experimentation Report - Multi-Source RAG with Query Routing in LlamaIndex
-   Techniques / Tools / Models / Concepts:
-     LlamaIndex, RetrieverRouterQueryEngine, VectorQueryEngine, PandasQueryEngine, structured vs unstructured data, query routing, strict prompting
-   Document Goal:
-     Evaluates how well LlamaIndex routes queries to specialized engines when working with mixed data types (PDF, tabular data) in a unified RAG pipeline.
+9. **Experimentation Report - Multi-Source RAG with Query Routing in LlamaIndex**
+   - Techniques/Tools: LlamaIndex, RetrieverRouterQueryEngine, VectorQueryEngine, PandasQueryEngine, structured vs unstructured data, query routing, strict prompting
+   - Goal: Evaluates LlamaIndex query routing to specialized engines for mixed data types (PDF, tabular) in unified RAG pipeline
 """
