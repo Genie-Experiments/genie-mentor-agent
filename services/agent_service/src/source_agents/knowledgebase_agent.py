@@ -159,12 +159,22 @@ class KBAgent(RoutedAgent):
 
         # Retrieve and summarize for main question
         docs = retrieve_docs(main_question, self.retriever)
+        logger.info(f"Retrieved docs: {[doc.page_content[:200] for doc in docs]}")
+
         docs = rerank(main_question, docs)
+        logger.info(f"Reranked docs: {[doc.page_content[:200] for doc in docs]}")
+
         docs = boost_by_metadata(main_question, docs)
-        docs = docs[:5]
+        logger.info(f"Boosted docs: {[doc.page_content[:200] for doc in docs]}")
+
+        docs = docs[:15]
+        logger.info(f"Top 15 docs: {[doc.page_content[:200] for doc in docs]}")
 
         doc_texts = [
-            f"[Metadata: {', '.join(f'{k}: {v}' for k, v in doc.metadata.items())}]\n{doc.page_content}" for doc in docs]
+            f"[Metadata: {', '.join(f'{k}: {v}' for k, v in doc.metadata.items())}]\n{doc.page_content}"
+            for doc in docs
+        ]
+        logger.info(f"Final doc_texts: {doc_texts}")
 
         global_summary_prompt = GLOBAL_SUMMARIZER_PROMPT.format(
             main_question=main_question,
@@ -319,10 +329,23 @@ class KBAgent(RoutedAgent):
                 else:
                     query_text = subq
 
-                docs = retrieve_docs(query_text, self.retriever)
-                docs = rerank(query_text, docs)
-                docs = boost_by_metadata(query_text, docs)
-                docs = docs[:5]
+                docs = retrieve_docs(main_question, self.retriever)
+                logger.info(f"Retrieved docs: {[doc.page_content[:200] for doc in docs]}")
+
+                docs = rerank(main_question, docs)
+                logger.info(f"Reranked docs: {[doc.page_content[:200] for doc in docs]}")
+
+                docs = boost_by_metadata(main_question, docs)
+                logger.info(f"Boosted docs: {[doc.page_content[:200] for doc in docs]}")
+
+                docs = docs[:15]
+                logger.info(f"Top 15 docs: {[doc.page_content[:200] for doc in docs]}")
+
+                doc_texts = [
+                    f"[Metadata: {', '.join(f'{k}: {v}' for k, v in doc.metadata.items())}]\n{doc.page_content}"
+                    for doc in docs
+                ]
+                logger.info(f"Final doc_texts: {doc_texts}")
 
                 doc_texts = [
                     f"[Metadata: {', '.join(f'{k}: {v}' for k, v in doc.metadata.items())}]\n{doc.page_content}" for doc in docs]
