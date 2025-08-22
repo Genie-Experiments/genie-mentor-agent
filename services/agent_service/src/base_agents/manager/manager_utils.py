@@ -88,7 +88,7 @@ async def run_evaluation_loop(
 
     # ── 1. Initial Evaluation ─────────────────────────────────────────
     logger.info(f"[EvaluationAgent] Initial evaluation")
-    
+
     eval_payload = EvalAgentInput(
         question=question,
         answer=current_answer,
@@ -113,7 +113,7 @@ async def run_evaluation_loop(
             "error": error,
             "llm_usage": llm_usage,
         },
-        "attempt": 1,
+        "attempt": 0,
     })
 
     logger.info(f"[ManagerUtils] Initial evaluation - Score: {score}")
@@ -123,15 +123,28 @@ async def run_evaluation_loop(
         logger.info("[EvaluationAgent] Initial score ≥ threshold, no further evaluation or edits needed.")
         return current_answer, eval_history, editor_history
 
-    # ── 2. Fact Evaluation and Editing Loop ───────────────────────────────────
+    # ── 2. Editing + Re-evaluation Loop ──────────────────────────────
     logger.info("[EvaluationAgent] Proceeding with fact evaluation and editing.")
-    
-    # We already performed the initial evaluation above, so we only have
-    # (max_attempts - 1) additional evaluation attempts remaining.
+
     remaining_attempts = max(0, max_attempts - 1)
-    for attempt in range(remaining_attempts):
-        # Evaluate facts
-        logger.info(f"[EvaluationAgent] Fact evaluation (Attempt {attempt + 1})")
+    for attempt in range(1, remaining_attempts + 1):
+
+        # ── Edit ─────────────────────────────────────────────────────
+        new_answer, editor_log = await run_editor_pass(
+            send_message_func=send_message_func,
+            editor_agent_id=editor_agent_id,
+            question=question,
+            previous_answer=current_answer,
+            score=score,
+            reasoning=reasoning,
+            contexts=documents_by_source,
+            attempt=attempt,
+        )
+        editor_history.append(editor_log)
+        current_answer = new_answer
+
+        # ── Always Re-evaluate the edited answer ─────────────────────
+        logger.info(f"[EvaluationAgent] Re-evaluating after edit attempt {attempt}")
 
         eval_payload = EvalAgentInput(
             question=question,
@@ -157,33 +170,19 @@ async def run_evaluation_loop(
                 "error": error,
                 "llm_usage": llm_usage,
             },
-            "attempt": attempt + 2,  # +2 because attempt 1 was initial evaluation
+            "attempt": attempt,
         })
-        
-        logger.info(f"[ManagerUtils] Evaluation attempt {attempt + 2} - Score: {score}")
 
-        # Handle evaluation error
+        logger.info(f"[ManagerUtils] Evaluation after edit attempt {attempt} - Score: {score}")
+
         if error is not None:
             logger.error(f"[ManagerUtils] EvalAgent returned error: {error}")
             break
 
-        # Threshold met → stop looping, no edit needed
         if score >= EVALUATION_PASS_THRESHOLD:
-            logger.info("[EvaluationAgent] Score ≥ threshold, skipping edits.")
+            logger.info("[EvaluationAgent] Threshold met, stopping early.")
             return current_answer, eval_history, editor_history
 
-        # ── Edit ───────────────────────────────────────────────────────────────
-        new_answer, editor_log = await run_editor_pass(
-            send_message_func=send_message_func,
-            editor_agent_id=editor_agent_id,
-            question=question,
-            previous_answer=current_answer,
-            score=score,
-            reasoning=reasoning,
-            contexts=documents_by_source,
-            attempt=attempt + 1,
-        )
-        editor_history.append(editor_log)
-        current_answer = new_answer
-
+    # ── 3. Return final answer + last evaluation ─────────────────────
+    logger.info("[EvaluationAgent] Max attempts reached or loop ended. Returning final answer.")
     return current_answer, eval_history, editor_history

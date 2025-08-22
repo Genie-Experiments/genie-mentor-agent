@@ -36,6 +36,7 @@ Your job is to **revise only the incorrect or hallucinated parts** of the answer
      - Why it was changed (based on evaluation reasoning)
      - Which citations were preserved or removed
    - Preserve emojis and formatting.
+   - However make sure that the reasoning is not in the edited answer itself.
 
 ---
 
