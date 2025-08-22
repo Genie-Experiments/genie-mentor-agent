@@ -29,6 +29,8 @@ async def run_editor_pass(
 ) -> Tuple[str, dict]:
     """Single call to the EditorAgent, returns (new_answer, editor_log)."""
     logger.info(f"[EditorAgent] Editing (Attempt {attempt})")
+    logger.info(f"[EditorAgent] Previous Answer: {previous_answer}")
+    logger.info(f"[EditorAgent] Contexts ({len(contexts)}): {contexts}")
 
     # Convert reasoning to string format for editor agent
     if isinstance(reasoning, list):
@@ -38,6 +40,8 @@ async def run_editor_pass(
         ])
     else:
         reasoning_str = str(reasoning) if reasoning else ""
+
+    logger.info(f"[EditorAgent] Reasoning:\n{reasoning_str}")
 
     payload = EditorAgentInput(
         question=question,
@@ -59,6 +63,7 @@ async def run_editor_pass(
         },
         "attempt": attempt,
     }
+    logger.info(f"[EditorAgent] New Answer: {new_answer}")
     return new_answer, editor_log
 
 

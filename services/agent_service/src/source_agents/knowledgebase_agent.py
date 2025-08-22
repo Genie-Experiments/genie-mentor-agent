@@ -142,7 +142,7 @@ class KBAgent(RoutedAgent):
         self.llm = self.llm_client.chat.completions
         self.light_llm = self.light_llm_client.chat.completions
 
-    def run_resp_pipeline(self, main_question: str, max_hops: int = 5) -> Dict[str, Any]:
+    def run_resp_pipeline(self, main_question: str, max_hops: int = 3) -> Dict[str, Any]:
         """Run the ReSP (Retrieval-enhanced Summarization Pipeline) for multi-hop reasoning"""
         global_memory = []
         local_memory = []
@@ -338,8 +338,8 @@ class KBAgent(RoutedAgent):
                 docs = boost_by_metadata(main_question, docs)
                 logger.info(f"Boosted docs: {[doc.page_content[:200] for doc in docs]}")
 
-                docs = docs[:15]
-                logger.info(f"Top 15 docs: {[doc.page_content[:200] for doc in docs]}")
+                docs = docs[:10]
+                logger.info(f"Top 10 docs: {[doc.page_content[:200] for doc in docs]}")
 
                 doc_texts = [
                     f"[Metadata: {', '.join(f'{k}: {v}' for k, v in doc.metadata.items())}]\n{doc.page_content}"
@@ -511,7 +511,7 @@ class KBAgent(RoutedAgent):
         )
         return {"answer": answer, "trace": hops_trace, "num_hops": num_real_hops, "llm_usage": llm_usage.model_dump()}
 
-    def query_knowledgebase(self, query: str, max_hops: int = 5) -> Dict[str, Any]:
+    def query_knowledgebase(self, query: str, max_hops: int = 3) -> Dict[str, Any]:
         """Query the knowledge base using ReSP pipeline with intelligent single/multi-hop detection"""
         try:
             logger.info(f"[KBAgent] Received query: {query}")
@@ -631,15 +631,15 @@ class KBAgent(RoutedAgent):
                 # JSON format with parameters
                 params = json.loads(message.content)
                 query = params.get('query', params.get('content', '')).strip()
-                max_hops = params.get('max_hops', 5)
+                max_hops = params.get('max_hops', 3)
             else:
                 # Simple text query
                 query = message.content.strip()
-                max_hops = 5
+                max_hops = 3
         except json.JSONDecodeError:
             # Fallback to simple text query
             query = message.content.strip()
-            max_hops = 5
+            max_hops = 3
 
         try:
             loop = asyncio.get_event_loop()

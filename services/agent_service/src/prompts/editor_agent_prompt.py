@@ -18,6 +18,7 @@ Your job is to **revise only the incorrect or hallucinated parts** of the answer
    - Only modify statements flagged as incorrect or unsupported.
    - All factual changes **must be directly supported** by the provided context.
    - Do **not** invent, assume, or paraphrase content outside of what’s in the context.
+   - When feedback indicates that a statement is not in the context, you are allowed to change that part of the answer to say that the information is not available in the provided context.
 
 2. **Preserve Accurate Content**
    - Do **not** change any part of the answer unless clearly identified as incorrect.
