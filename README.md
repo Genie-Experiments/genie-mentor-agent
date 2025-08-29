@@ -70,7 +70,7 @@ KB_DATA_STORAGE_DRIVE_ID=your-drive-id
 ```
 2. **Initialize Submodules**: The project uses a Git submodule for the MCP service. Initialize it before building:
    ```bash
-   git submodule update --init --recursive
+   git submodule update --remote
 
 3.  **Build & Start Docker Images**: Navigate to the root of the project and build the Docker images using the following command:
     ```bash
@@ -86,8 +86,17 @@ KB_DATA_STORAGE_DRIVE_ID=your-drive-id
 
     Note: In case of any errors, see logs of `data-ingestion-service`
 
-6. **Access Backend API**: The backend API will be accessible at `http://localhost:8000/docs`, where you can find the OpenAPI documentation and interact with the API endpoints.|
+6. **Ingest GitHub Repositories**: The MCP Client script in the mcp submodule can be used to ingest repos using the following command: 
+   ```bash
+   python services/mcp/mcp_client.py \
+  --transport sse \
+  --server-url http://localhost:8010/sse \
+  https://github.com/Genie-Experiments/rag-vs-llamaparse \
+  https://github.com/Genie-Experiments/rag-system-evaluation-framework
+  ```
 
-7. **Access Frontend**: http://localhost:3001/
+7. **Access Backend API**: The backend API will be accessible at `http://localhost:8000/docs`, where you can find the OpenAPI documentation and interact with the API endpoints.|
+
+8. **Access Frontend**: http://localhost:3001/
 
 ---/app/

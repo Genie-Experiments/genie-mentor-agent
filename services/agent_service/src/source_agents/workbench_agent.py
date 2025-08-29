@@ -350,22 +350,22 @@ class WorkbenchAgent(RoutedAgent):
             
 
         try:
-            result_json = parse_source_response(create_result.content)
-            print("---------Final Response From MCP Agent-----------")
-            print(result_json)
+            print("-------Pasing Source Response-------")
+            print(create_result.content)
             
             # Use the collected sources and metadata
             compact_metadata = self._build_compact_metadata(self._metadata_context)
             response = WorkbenchResponse(
-                answer=result_json.get("answer", ""),
-                sources=self._response_context,  # Use the collected sources
-                metadata=compact_metadata,  # Compact, de-duplicated metadata
+                answer=create_result.content,
+                sources=self._response_context,
+                metadata=compact_metadata,
                 error=None
             )
+    
+            
             
             print("---------Final Response From MCP Agent-----------")
-            #print(response.sources)
-            print(response.metadata)
+            print(response)
             print("---------Token Usage-----------")
             print(create_result.usage.prompt_tokens)
             print(create_result.usage.completion_tokens)
@@ -377,13 +377,19 @@ class WorkbenchAgent(RoutedAgent):
             print(f"Total prompt tokens: {cumulative_prompt_tokens}")
             print(f"Total completion tokens: {cumulative_completion_tokens}")
             print(f"Total tokens: {cumulative_prompt_tokens + cumulative_completion_tokens}")
-            return Message(content=response.model_dump_json())
+            # Use json.dumps with proper escaping
+            return Message(content=json.dumps({
+                "answer": create_result.content,
+                "sources": self._response_context,
+                "metadata": compact_metadata,
+                "error": None
+            }, ensure_ascii=False, indent=None))
         except Exception as e:
             print(f"Error extracting JSON from response: {e}")
             # Create a fallback result with the collected context
             compact_metadata = self._build_compact_metadata(self._metadata_context)
             result_json = {
-                "answer": create_result.content,
+                "answer": json.dumps(create_result.content),  # Double-encode if needed
                 "sources": self._response_context,
                 "metadata": compact_metadata,
                 "error": str(e)
