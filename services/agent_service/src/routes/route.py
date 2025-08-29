@@ -3,7 +3,7 @@ from typing import Any, Dict
 
 from fastapi import APIRouter, Query
 
-from ..onboarding_team.team import send_to_agent
+from ..onboarding_team.team import send_to_agent, send_to_github_agent
 from ..protocols.message import Message
 
 router = APIRouter(prefix="/1", tags=["Agent-service"])
@@ -22,7 +22,7 @@ async def invoke_agent_service(
     return response_data
 
 
-""" @router.post("/github_agent")
+@router.post("/github_agent")
 async def invoke_github_agent(
     query: str = Query(..., description="User query to send directly to GitHub agent"),
 ):
@@ -31,4 +31,4 @@ async def invoke_github_agent(
         return json.loads(response)
     except json.JSONDecodeError:
         # Fallback: wrap plain text as answer-only response
-        return {"answer": response, "sources": [], "metadata": [], "error": None} """
+        return {"answer": response, "sources": [], "metadata": [], "error": None}

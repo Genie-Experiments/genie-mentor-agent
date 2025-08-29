@@ -1,4 +1,4 @@
 [submodule "services/mcp"]
 	path = services/mcp
-	url = https://github.com/alicodes02/Github-Repository-RAG-Pipeline-MCP.git
+	url = git@github.com:Genie-Experiments/code-rag.git
 	branch = main

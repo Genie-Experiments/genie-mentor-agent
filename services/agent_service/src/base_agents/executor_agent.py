@@ -345,7 +345,7 @@ class ExecutorAgent(RoutedAgent):
                     )
                     response = json.loads(response_message.content)
                     logger.info(f"[GitHub] Agent Response : {response}")
-                    try:
+                    """ try:
                         cleaner_input = dict(response)
                         cleaner_input.pop("sources", None)
                         cleaner_response = await self.send_message(
@@ -355,7 +355,7 @@ class ExecutorAgent(RoutedAgent):
                         cleaned_answer = cleaned_payload.get("cleaned_answer", response.get("answer", ""))
                         response["answer"] = cleaned_answer
                     except Exception as cleaning_error:
-                        logger.warning(f"[GitHub] Failed to clean answer, using raw: {cleaning_error}")
+                        logger.warning(f"[GitHub] Failed to clean answer, using raw: {cleaning_error}") """
                 except Exception as e:
                     logger.error(f"[GitHub] Error: {e}")
                     raise ExternalServiceError(

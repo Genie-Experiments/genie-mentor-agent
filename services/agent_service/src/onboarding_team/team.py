@@ -213,7 +213,7 @@ async def send_to_agent(user_message: Message) -> str:
         return handle_agent_error(e, "send_to_agent")
 
 
-""" async def send_to_github_agent(user_message: Message) -> str:
+async def send_to_github_agent(user_message: Message) -> str:
     try:
         # Validate input
         if not user_message or not user_message.content:
@@ -256,7 +256,7 @@ async def send_to_agent(user_message: Message) -> str:
         # Convert any other exceptions to structured errors
         logging.error(f"Unexpected error in send_to_github_agent: {e}")
         return handle_agent_error(e, "send_to_github_agent")
- """
+
 
 async def shutdown_agent() -> None:
     """Shutdown agent service gracefully."""

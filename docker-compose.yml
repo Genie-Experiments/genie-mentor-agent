@@ -18,6 +18,12 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://mcp-service:8010/health"]
+      interval: 20s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
 
   agent-service:
     build:
@@ -37,7 +43,8 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
     depends_on:
-      - mcp-service
+      mcp-service:
+        condition: service_healthy
     
 
   data-ingestion-service:

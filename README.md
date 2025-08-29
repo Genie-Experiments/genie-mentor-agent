@@ -68,22 +68,35 @@ GOOGLE_SERVICE_ACCOUNT_FILE="/app/secrets/promising-keep-file-here.json"
 KB_PROCESSED_FILES="/app/ingestion_state/KB_processed_files_history.txt"
 KB_DATA_STORAGE_DRIVE_ID=your-drive-id
 ```
-2.  **Build & Start Docker Images**: Navigate to the root of the project and build the Docker images using the following command:
+2. **Initialize Submodules**: The project uses a Git submodule for the MCP service. Initialize it before building:
+   ```bash
+   git submodule update --remote
+
+3.  **Build & Start Docker Images**: Navigate to the root of the project and build the Docker images using the following command:
     ```bash
     DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker-compose up -d --build
     ```
-3.  **Verify Services**: Make sure all services are running correctly. You can check the status of the containers with:
+4.  **Verify Services**: Make sure all services are running correctly. You can check the status of the containers with:
     ```bash
     docker ps
     ```
     
-4. **Access Data Ingestion API**: The data ingestion API will be accessible at `http://localhost:8003/docs`,
+5. **Access Data Ingestion API**: The data ingestion API will be accessible at `http://localhost:8003/docs`,
     Ingest PDFs store in google drive using via `http://localhost:8003/docs#/default/ingest_from_drive_api_trigger_ingestion_post`
 
     Note: In case of any errors, see logs of `data-ingestion-service`
 
-5. **Access Backend API**: The backend API will be accessible at `http://localhost:8000/docs`, where you can find the OpenAPI documentation and interact with the API endpoints.|
+6. **Ingest GitHub Repositories**: The MCP Client script in the mcp submodule can be used to ingest repos using the following command: 
+   ```bash
+   python services/mcp/mcp_client.py \
+  --transport sse \
+  --server-url http://localhost:8010/sse \
+  https://github.com/Genie-Experiments/rag-vs-llamaparse \
+  https://github.com/Genie-Experiments/rag-system-evaluation-framework
+  ```
 
-6. **Access Frontend**: http://localhost:3001/
+7. **Access Backend API**: The backend API will be accessible at `http://localhost:8000/docs`, where you can find the OpenAPI documentation and interact with the API endpoints.|
+
+8. **Access Frontend**: http://localhost:3001/
 
 ---/app/

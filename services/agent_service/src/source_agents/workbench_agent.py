@@ -134,40 +134,6 @@ class WorkbenchAgent(RoutedAgent):
         
         return sources
 
-    def contains_answer(self, messages):
-        for m in messages:
-            if isinstance(m, dict) and "answer" in m:
-                return True
-            if isinstance(m, str):
-                try:
-                    parsed = json.loads(m)
-                    if isinstance(parsed, dict) and "answer" in parsed:
-                        return True
-                except json.JSONDecodeError:
-                    continue
-        return False
-
-    def is_code_result(self, result):
-        try:
-            # Try to parse the result content as JSON to extract file info
-            content = result.to_text()
-            data = json.loads(content)
-            # Handle both list and dict (single file or multiple)
-            if isinstance(data, list):
-                files = data
-            else:
-                files = [data]
-            for file in files:
-                name = file.get('name', '').lower()
-                print("---------File Name-----------")
-                print(f"\n\n")
-                print(name)
-                if name == 'readme.md' or name == 'readme' or name.endswith('readme.md') or name == 'requirements.txt':
-                    return False
-            return True
-
-        except Exception:
-            return False
 
     def is_function_calls_string(self, content: str) -> bool:
         print("---------Content-----------")
@@ -302,7 +268,6 @@ class WorkbenchAgent(RoutedAgent):
             # Call the tools using the workbench.
             print("---------Function Call Results-----------")
             results: List[ToolResult] = []
-            valid_results = []
             all_results = []
             
             for call in create_result.content:
@@ -315,8 +280,7 @@ class WorkbenchAgent(RoutedAgent):
                 print(result)
                 
                 # Extract sources and metadata from ALL tool results
-                # This is especially important for chunking tools
-                if call.name in ["query_chromadb_tool", "get_chunks_tool", "search_by_file_tool"]:
+                if call.name in ["query_chromadb_tool", "search_by_file_tool"]:
                     # Extract sources
                     sources = self.extract_sources_from_result(result)
                     self._response_context.extend(sources)
@@ -335,14 +299,7 @@ class WorkbenchAgent(RoutedAgent):
 
                 all_results.append((call, result))
                 
-                # Check if this is a directory listing (path ends with /)
-                args = json.loads(call.arguments)
-                is_directory_listing = args.get('path', '').endswith('/')
                 
-                # Don't filter directory listings, only filter individual file reads
-                if not getattr(result, 'is_error', False):
-                    if is_directory_listing or self.is_code_result(result):
-                        valid_results.append((call, result))
 
             # Add only valid function execution results to the model context (non-error and valid code results)
             func_exec_result_msg = FunctionExecutionResultMessage(
@@ -393,22 +350,22 @@ class WorkbenchAgent(RoutedAgent):
             
 
         try:
-            result_json = parse_source_response(create_result.content)
-            print("---------Final Response From MCP Agent-----------")
-            print(result_json)
+            print("-------Pasing Source Response-------")
+            print(create_result.content)
             
             # Use the collected sources and metadata
             compact_metadata = self._build_compact_metadata(self._metadata_context)
             response = WorkbenchResponse(
-                answer=result_json.get("answer", ""),
-                sources=self._response_context,  # Use the collected sources
-                metadata=compact_metadata,  # Compact, de-duplicated metadata
+                answer=create_result.content,
+                sources=self._response_context,
+                metadata=compact_metadata,
                 error=None
             )
+    
+            
             
             print("---------Final Response From MCP Agent-----------")
-            #print(response.sources)
-            print(response.metadata)
+            print(response)
             print("---------Token Usage-----------")
             print(create_result.usage.prompt_tokens)
             print(create_result.usage.completion_tokens)
@@ -420,13 +377,19 @@ class WorkbenchAgent(RoutedAgent):
             print(f"Total prompt tokens: {cumulative_prompt_tokens}")
             print(f"Total completion tokens: {cumulative_completion_tokens}")
             print(f"Total tokens: {cumulative_prompt_tokens + cumulative_completion_tokens}")
-            return Message(content=response.model_dump_json())
+            # Use json.dumps with proper escaping
+            return Message(content=json.dumps({
+                "answer": create_result.content,
+                "sources": self._response_context,
+                "metadata": compact_metadata,
+                "error": None
+            }, ensure_ascii=False, indent=None))
         except Exception as e:
             print(f"Error extracting JSON from response: {e}")
             # Create a fallback result with the collected context
             compact_metadata = self._build_compact_metadata(self._metadata_context)
             result_json = {
-                "answer": create_result.content,
+                "answer": json.dumps(create_result.content),  # Double-encode if needed
                 "sources": self._response_context,
                 "metadata": compact_metadata,
                 "error": str(e)
