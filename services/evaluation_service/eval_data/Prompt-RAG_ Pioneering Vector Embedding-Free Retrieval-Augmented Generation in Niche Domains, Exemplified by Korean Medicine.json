@@ -1,0 +1,122 @@
+[
+  {
+    "questions": [
+      {
+        "question": "What was the aim of the comparative exploration of LLM-based vector embeddings in the KM and CM domains?",
+        "answer": "The aim of the comparative exploration of LLM-based vector embeddings in the KM (Korean Medicine) and CM (Conventional Medicine) domains was to identify and exemplify the relative representational defects of LLM-based vector embeddings in niche domains compared to other well-established domains. The experiment sought to analyze the differences in embeddings from documents in these two domains, particularly focusing on their physiological contents, and to understand how language impacts representational differences in embeddings."
+      },
+      {
+        "question": "Which documents were selected for the KM and CM domains in the experiment?",
+        "answer": "For the KM domain, the selected document was _Eastern Medicine Physiology_. For the CM domain, the selected document was _Physiology_. Additionally, documents with identical contents were collected from both the English version and the Korean-translated version of _Physiology_."
+      },
+      {
+        "question": "What models were used to extract the embedding vectors for the documents?",
+        "answer": "The models used to extract the embedding vectors for the documents were E5-mistral-7b-instruct, Voyage AI’s voyage-02, and OpenAI's text-embedding-ada-002."
+      }
+    ],
+    "metadata": {
+      "page_number": null,
+      "header": "3. Experiments",
+      "chunk_index": 5,
+      "file_path": "Prompt-RAG_ Pioneering Vector Embedding-Free Retrieval-Augmented Generation in Niche Domains, Exemplified by Korean Medicine.pdf",
+      "token_count": 5160
+    },
+    "context": "1) Comparative exploration of LLM-based vector embeddings in the KM and CM domains. This experiment aimed to identify and exemplify the relative representational defects of LLM-based vector embedding in niche domains compared to other well-established domains. To explain this point, we conducted a comparative analysis with vector embeddings from documents in KM and CM domains. For this experiment, we selected 10 documents each from KM and CM domains, specifically regarding their physiological contents. ‘ _Eastern Medicine Physiology_ '(22) served as the document pool for KM. This book, compiled in Korean, has been revised by professors from every Korean Medicine college in South Korea and is used as the principal textbook in the physiology curriculum. On the other hand, ‘ _Physiology_ '(23) was chosen for the CM domain. To investigate the impact of language on representational differences in embeddings, we collected documents with the exactly identical contents from both the English version and the Korean-translated version of ‘ _Physiology_ '. The titles of the selected documents from each domain are listed in Appendix Table 1. We extracted the embedding vectors for a total of 30 documents – 10 each from KM physiology, CM physiology in Korean (CM_KR), and CM physiology in English (CM_EN) – using E5-mistral-7b-instruct(24), Voyage AI’s voyage-02, and OpenAI's text-embedding-ada-002 models to figure out LLMs' representations of KM and CM knowledge. Our analysis focused on identifying patterns of the KM and the CM domain embeddings with three key document similarity metrics: human-evaluated document relatedness, embedding correlation coefficients, and token overlap coefficients. We assessed whether the correlation coefficients between embedding pairs closely align with the human-evaluated ground truth or merely follow the surface level similarity (token overlap) by conducting the correlation analyses across these metrics. It allows us to understand the depth of embedding representations and their correlation with human-perceived document pairwise relevance. For this, the Pearson correlation coefficients(25) were calculated for every embedding vector pair, covering 45 pairs in each of the three categories (KM, CM_KR, CM_EN). To assess explicit similarity in a document pair, we computed the overlap coefficient(26) for tokens in KM, CM_KR, CM_EN documents. The token overlap coefficient was calculated as: 𝑇𝑜𝑘𝑒𝑛 𝑜𝑣𝑒𝑟𝑙𝑎𝑝 𝑐𝑜𝑒𝑓𝑓𝑖𝑐𝑖𝑒𝑛𝑡 �,� = | A ∩B | min(|𝐴|, |𝐵|) | A ∩B |: The count of token co-occurrence between documents A and B. min(|𝐴|, |𝐵|): The minimum token count in either document A or B. Token overlap coefficients were calculated three times with different tokenizers corresponding to the embedding models: E5-mistral-7b-instruct(24), Voyage AI’s voyage-02, and OpenAI's text-embedding ada-002. Repeated appearances of a single token in a document were counted and considered separately. To determine the ground truth of document pair correlations within each domain, two KM doctors with national licenses evaluated the relatedness between each pair of the KM and CM documents. A binary scoring system was adopted: a score of 1 indicated that a pair was interrelated, and 0 for unrelated 6 documents. The human-evaluated document relatedness scores were then obtained by averaging the two doctors' scores in KM and CM documents, respectively. The correlation analyses were conducted between human-evaluated document relatedness scores and embedding correlation coefficients, and between embedding correlation coefficients and token overlap coefficients with Scipy(27) in Python 3.11. Bonferroni correction(28) was applied for p-values due to the multiple comparisons. 2) Performance comparison of Prompt-RAG and existing models (1) Chatbot Settings For the evaluation, we developed a domain-specific, prompt-RAG-based chatbot for the book _'Introduction to Current Korean Medicine_ ’(29). The chatbot employed GPT architectures: GPT-4-0613 for the heading selection and GPT-3.5-turbo-16k-0613 for the answer generation. The original ToC of the book had already been defined by the authors. Subheadings were added to it, aligning with the book’s actual sections."
+  },
+  {
+    "questions": [
+      {
+        "question": "What software was used for the correlation analyses in the study?",
+        "answer": "The correlation analyses in the study were conducted using Scipy in Python 3.11."
+      },
+      {
+        "question": "Which GPT architecture was used for heading selection in the chatbot?",
+        "answer": "The GPT architecture used for heading selection in the chatbot was GPT-4-0613."
+      },
+      {
+        "question": "What was the purpose of the Bonferroni correction in the analyses?",
+        "answer": "The purpose of the Bonferroni correction in the analyses was to adjust the p-values due to the multiple comparisons being made. This correction helps to reduce the likelihood of obtaining false-positive results when conducting multiple statistical tests."
+      }
+    ],
+    "metadata": {
+      "page_number": 7,
+      "header": "5. ---'.",
+      "chunk_index": 6,
+      "file_path": "Prompt-RAG_ Pioneering Vector Embedding-Free Retrieval-Augmented Generation in Niche Domains, Exemplified by Korean Medicine.pdf",
+      "token_count": 1078
+    },
+    "context": "The correlation analyses were conducted between human-evaluated document relatedness scores and embedding correlation coefficients, and between embedding correlation coefficients and token overlap coefficients with Scipy(27) in Python 3.11. Bonferroni correction(28) was applied for p-values due to the multiple comparisons. 2) Performance comparison of Prompt-RAG and existing models (1) Chatbot Settings For the evaluation, we developed a domain-specific, prompt-RAG-based chatbot for the book _'Introduction to Current Korean Medicine_ ’(29). The chatbot employed GPT architectures: GPT-4-0613 for the heading selection and GPT-3.5-turbo-16k-0613 for the answer generation. The original ToC of the book had already been defined by the authors. Subheadings were added to it, aligning with the book’s actual sections. The expanded table of contents exceeded the context window size for heading selection, so some headings were removed to handle this issue. The body of the book was then segmented according to the modified headings for the subsequent retrieval. We passed a model based on GPT-4 a prompt containing both the revised ToC and a query, asking the model to identify five pertinent headings from the ToC. At the same time, it was instructed to avoid selecting a heading if the query was about greetings or casual talks. The prompt for heading selection is shown in Table 1. Table 1. The prompt for heading selection “Current context: {history} [a ] Question: {question} [a] Table of Contents: {index} [a] Each heading (or line) in the table of contents above represents a fraction in a document. Select the five headings that help the best to find out the information for the question. List the headings in the order of importance and in the format of '1. --"
+  },
+  {
+    "questions": [
+      {
+        "question": "What model is used to generate answers in the described system?",
+        "answer": "The model used to generate answers in the described system is based on GPT-3.5-turbo-16k."
+      },
+      {
+        "question": "What directive is included in the prompt to minimize hallucination?",
+        "answer": "The directive included in the prompt to minimize hallucination is to refrain from saying nonsense when no relevant context is found in the reference."
+      },
+      {
+        "question": "What happens when the selected headings are absent due to a greeting or casual conversation?",
+        "answer": "An alternative prompt without a reference section is passed to a GPT-3.5-turbo-based model, in order to reduce token usage and save on expenses."
+      }
+    ],
+    "metadata": {
+      "page_number": null,
+      "header": "ABSTRACT",
+      "chunk_index": 2,
+      "file_path": "Prompt-RAG_ Pioneering Vector Embedding-Free Retrieval-Augmented Generation in Niche Domains, Exemplified by Korean Medicine.pdf",
+      "token_count": 1422
+    },
+    "context": "Don't say anything other than the format. If the question is about greetings or casual talks, just say 'Disregard the reference.'.” a These represent the placeholders for conversational buffer memory, the user’s query, and the table of 7 contents, respectively, from top to bottom. Upon selecting the headings, the corresponding book sections were fetched and concatenated. In turn, this was provided as a reference in a prompt along with the query to another generative model based on GPT-3.5-turbo-16k. This model was required to generate an answer with the prompt which also contained a directive to refrain from saying nonsense when no relevant context was found in the reference thereby aiming to minimize hallucination. In cases where the selected headings are absent due to the query being a greeting or casual conversation, an alternative prompt without a reference section is passed to a GPT-3.5-turbo-based model, in order to reduce token usage and save on expenses. The prompts for answer generation are depicted in Table 2. Table 2. The prompts for answer generation"
+  },
+  {
+    "questions": [
+      {
+        "question": "What is the novel approach proposed to enhance the performance of generative large language models in niche domains?",
+        "answer": "The novel approach proposed to enhance the performance of generative large language models in niche domains is called natural language prompt-based retrieval augmented generation (Prompt-RAG)."
+      },
+      {
+        "question": "How do conventional RAG methods differ from Prompt-RAG in terms of embedding requirements?",
+        "answer": "Conventional RAG methods primarily rely on vector embeddings to represent documents, which can be problematic in specialized domains where generic LLM-based embeddings may not be suitable. In contrast, Prompt-RAG operates without the need for embedding vectors, utilizing a natural language prompt-based approach instead. This fundamental difference allows Prompt-RAG to enhance the performance of generative large language models in niche domains without the limitations associated with conventional embedding requirements."
+      },
+      {
+        "question": "What were the findings regarding the correlation of KM document embeddings compared to CM embeddings?",
+        "answer": "The findings indicated that Korean Medicine (KM) document embeddings correlated more with token overlaps and less with human-assessed document relatedness, in contrast to Conventional Medicine (CM) embeddings."
+      }
+    ],
+    "metadata": {
+      "page_number": 10,
+      "header": "Scoring guide",
+      "chunk_index": 10,
+      "file_path": "Prompt-RAG_ Pioneering Vector Embedding-Free Retrieval-Augmented Generation in Niche Domains, Exemplified by Korean Medicine.pdf",
+      "token_count": 672
+    },
+    "context": "We propose a natural language prompt-based retrieval augmented generation (Prompt-RAG), a novel approach to enhance the performance of generative large language models (LLMs) in niche domains. Conventional RAG methods mostly require vector embeddings, yet the suitability of generic LLM based embedding representations for specialized domains remains uncertain. To explore and exemplify this point, we compared vector embeddings from Korean Medicine (KM) and Conventional Medicine (CM) documents, finding that KM document embeddings correlated more with token overlaps and less with human-assessed document relatedness, in contrast to CM embeddings. Prompt-RAG, distinct from conventional RAG models, operates without the need for embedding vectors. Its performance was assessed through a Question-Answering (QA) chatbot application, where responses were evaluated for relevance, readability, and informativeness. The results showed that Prompt-RAG outperformed existing models, including ChatGPT and conventional vector embedding-based RAGs, in terms of relevance and informativeness. Despite challenges like content structuring and response latency, the advancements in LLMs are expected to encourage the use of Prompt-RAG, making it a promising tool for other domains in need of RAG methods. Keywords: Retrieval augmented generation, Natural language process, Korean medicine, Conversational AI, Question-answering, GPT"
+  },
+  {
+    "questions": [
+      {
+        "question": "What statistical tests were performed to evaluate the model's scores?",
+        "answer": "The statistical tests performed to evaluate the model's scores were t-tests and Mann-Whitney U tests. The t-tests compared the scores across the criteria of relevance, readability, and informativeness, while the Mann-Whitney U tests were applied to the scores categorized by question types."
+      },
+      {
+        "question": "Which criteria were compared using t-tests?",
+        "answer": "The criteria compared using t-tests were relevance, readability, and informativeness."
+      },
+      {
+        "question": "What type of tests were applied to scores categorized by question types?",
+        "answer": "Mann-Whitney U tests were applied to the scores categorized by question types."
+      }
+    ],
+    "metadata": {
+      "page_number": 24,
+      "header": "4) Open-ended Questions: (22) – (24)",
+      "chunk_index": 17,
+      "file_path": "Prompt-RAG_ Pioneering Vector Embedding-Free Retrieval-Augmented Generation in Niche Domains, Exemplified by Korean Medicine.pdf",
+      "token_count": 1476
+    },
+    "context": "0 points unacceptable. 10 1 point Some flaws present in criterion, answer still usable. 2 points Good overall criterion quality. (4) Statistical analysis To evaluate the statistical significance of our model’s scores in relation to those of the others, we performed t-tests and Mann-Whitney U tests. The t-tests compared the scores across the criteria of relevance, readability, and informativeness, while Mann-Whitney U tests were applied to the scores categorized by question types. P-values were adjusted using Bonferroni correction(28) to account for the multiple comparisons. All statistical analyses were conducted with the Statsmodels(36) package in Python 3.11. 11"
+  }
+]

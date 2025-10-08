@@ -1,0 +1,122 @@
+[
+  {
+    "questions": [
+      {
+        "question": "What phenomenon do Large Language Models experience that is referred to as \"hallucinations\"?",
+        "answer": "Large Language Models (LLMs) experience a phenomenon referred to as \"hallucinations,\" which occurs when they generate incorrect information."
+      },
+      {
+        "question": "What is the primary goal of Retrieval-Augmented Generation (RAG)?",
+        "answer": "The primary goal of Retrieval-Augmented Generation (RAG) is to mitigate the issue of incorrect information generation, known as \"hallucinations,\" by using document retrieval to provide accurate responses."
+      },
+      {
+        "question": "How does the study aim to improve RAG?",
+        "answer": "The study aims to improve Retrieval-Augmented Generation (RAG) by optimizing query generation through the use of a query-document alignment score. It refines queries using Large Language Models (LLMs) to enhance the precision and efficiency of document retrieval, ultimately reducing the occurrence of hallucinations and improving overall document retrieval accuracy."
+      }
+    ],
+    "metadata": {
+      "page_number": null,
+      "header": "KAIST",
+      "chunk_index": 1,
+      "file_path": "Optimizing Query Generation for Enhanced Document Retrieval in RAG.pdf",
+      "token_count": 647
+    },
+    "context": "minseonkim@kaist.ac.kr Large Language Models (LLMs) excel in various language tasks but they often generate incorrect information, a phenomenon known as \"hallucinations\". Retrieval-Augmented Generation (RAG) aims to mitigate this by using document retrieval for accurate responses. However, RAG still faces hallucinations due to vague queries. This study aims to improve RAG by optimizing query generation with a querydocument alignment score, refining queries using LLMs for better precision and efficiency of document retrieval. Experiments have shown that our approach improves document retrieval, resulting in an average accuracy gain of 1.6%."
+  },
+  {
+    "questions": [
+      {
+        "question": "What issue continues to undermine user belief in large language models (LLMs)?",
+        "answer": "The issue that continues to undermine user belief in large language models (LLMs) is hallucination."
+      },
+      {
+        "question": "How does the Retrieval-Augmented Generation (RAG) method help with hallucinations in LLM outputs?",
+        "answer": "The Retrieval-Augmented Generation (RAG) method helps mitigate hallucinations in large language model (LLM) outputs by enhancing the reliability and factual consistency of the responses generated. It achieves this by integrating external knowledge sources, which allows the model to reference accurate information when generating responses. This approach reduces the likelihood of generating incorrect or fabricated information, thereby improving the accuracy and relevance of the answers provided to user queries. However, it is important to note that while RAG is effective in reducing hallucinations, it does not completely eliminate them, prompting the development of further refined RAG systems to lower the occurrence of such errors."
+      },
+      {
+        "question": "What does RAG enhance in terms of LLM responses?",
+        "answer": "RAG enhances the reliability and factual consistency of LLM outputs, ensuring accuracy and relevance in response to user queries."
+      }
+    ],
+    "metadata": {
+      "page_number": null,
+      "header": "2 Related Works Hallucination in RAG",
+      "chunk_index": 4,
+      "file_path": "Optimizing Query Generation for Enhanced Document Retrieval in RAG.pdf",
+      "token_count": 975
+    },
+    "context": "Despite the vast training dataoflargelanguagemodels(LLMs),theissue of hallucination of LLM continues to undermine user belief. Among the strategies to mitigate, the Retrieval-Augmented Generation (RAG) method has proven effective in reducing hallucinations, enhancing the reliability and factual consistency of LLM outputs, thus ensuring accuracy and relevance in response to user queries (Shuster et al., 2021; Béchard and Ayala, 2024). However, RAG does not thoroughly eliminate hallucinations (Béchard and Ayala, 2024; Niu et al., 2024) that encouraged further refined RAG systems for lowered hallucination. LLM-Augmenter (Peng et al., 2023) leverages external knowledge and automated feedback via Plug and Play (Li et al., 2024) modules to enhance model responses. Moreover, EVER (Kang et al., 2024) introduces a real-time, step-wise generation and hallucination rectification strategy that validates each sentence during generation, preventing the propagation of errors."
+  },
+  {
+    "questions": [
+      {
+        "question": "What datasets are used to illustrate the performance of various document retrieval models in Table 1?",
+        "answer": "The datasets used to illustrate the performance of various document retrieval models in Table 1 are SciFact, Trec-Covid, and FiQA."
+      },
+      {
+        "question": "Which model achieves the best BM25 score in SciFact?",
+        "answer": "The model that achieves the best BM25 score in SciFact is QOQA, with a score of 75.4."
+      },
+      {
+        "question": "What is the formula for calculating the IDF of a query term?",
+        "answer": "The formula for calculating the IDF (Inverse Document Frequency) of a query term \\( q_i \\) is given by:\n\n\\[\nIDF(q_i) = \\log\\left(\\frac{N}{n(q_i)} + 0.5\\right)\n\\]\n\nwhere:\n- \\( N \\) is the total number of documents,\n- \\( n(q_i) \\) is the number of documents containing the query term \\( q_i \\)."
+      }
+    ],
+    "metadata": {
+      "page_number": 3,
+      "header": "Retrieval results compared to baselines",
+      "chunk_index": 11,
+      "file_path": "Optimizing Query Generation for Enhanced Document Retrieval in RAG.pdf",
+      "token_count": 1648
+    },
+    "context": "Table 1 illustrates the performance of various document retrieval models across the SciFact, Trec-Covid, and FiQA datasets. For dense retrieval, our enhanced models (+QOQA variants) exhibit superior performance. Notably, QOQA (BM25 score) achieves the bestresultinSciFactwithascoreof75.4,demon f( _q_ _i_ _, D_ ) + _k_ 1 _·_ (1 _−_ _b_ + _b ·_ _|D|_ where f( _q_ _i_ _, D_ ) is frequency of query terms in the document _D_, _|D|_ is the length of the document, AVG DL is average document length, and _k_ 1 and _b_ are default hyper-parameters from Pyserini (Lin et al., 2021). IDF( _q_ _i_ ) is inverse document frequency term as follow, IDF( _q_ _i_ ) = log _[N][ −]_ _[n]_ [(] _[q]_ _[i]_ [)][ + 0] _[.]_ [5] (2) _n_ ( _q_ _i_ ) + 0 _._ 5 where IDF( _q_ _i_ ) is calculated with total number of documents _N_, and _n_ ( _q_ _i_ ) as number of documents containing _q_ _i_ . Dense score is relevance score between queries and documents using learned dense representations, i.e., embedding space. As both queries and documents are embedded into the high-dimensional continuous vector space, alignment score Dense is calculated as follow, Dense( _q_ _i_ _, d_ _j_ ) = _E_ _q_ _i_ _· E_ _d_ _j_ (3) where _E_ _q_ _i_ and _E_ _d_ _j_ are the dense embedding vectors of the query _q_ _i_ and the document _d_ _j_ _∈_ _D_, respectively, from dense retrieval model. For our experiment, we employ BAAI/bge-base-env1.5 (Xiao et al., 2024) model. Hybrid score combines both BM25 scores and Dense scores by appropriately tuning parameters of alpha _α_ as follow, Hybrid( _q_ _i_ _, d_ _j_ ) = _α_ _·_ BM25( _q_ _i_ _, D_ )+ Dense( _q_ _i_ _, d_ _j_ ) _._ (4)"
+  },
+  {
+    "questions": [
+      {
+        "question": "What three types of evaluation scores are used in the optimization step for query-document alignment score?",
+        "answer": "The three types of evaluation scores used in the optimization step for query-document alignment score are: \n\n1. BM25 scores from sparse retrievals\n2. Dense scores from dense retrievals\n3. Hybrid scores that combine the sparse and dense retrievals."
+      },
+      {
+        "question": "How is the BM25 alignment score calculated according to the provided formula?",
+        "answer": "The BM25 alignment score is calculated using the following formula:\n\n\\[\n\\text{BM25}(q_i, D) = \\text{IDF}(q_i) \\cdot f(q_i, D) \\cdot \\frac{(k_1 + 1)}{|D| \\cdot \\text{AVG DL}}\n\\]\n\nWhere:\n- \\( q_i \\) is the query.\n- \\( D \\) is the set of documents.\n- \\(\\text{IDF}(q_i)\\) is the inverse document frequency of the query.\n- \\( f(q_i, D) \\) is the term frequency of the query in the document set.\n- \\( k_1 \\) is a parameter that adjusts the term frequency saturation.\n- \\(|D|\\) is the total number of documents in the set.\n- \\(\\text{AVG DL}\\) is the average document length in the set. \n\nThis formula combines these components to compute the BM25 score, which reflects the relevance of the query to the documents."
+      },
+      {
+        "question": "What does the notation IDF(q_i) represent in the BM25 alignment score formula?",
+        "answer": "In the BM25 alignment score formula, the notation IDF(q_i) represents the Inverse Document Frequency of the query term q_i. It is a measure used to evaluate how important a term is within the context of the entire document set. The IDF value increases as the number of documents containing the term decreases, indicating that rarer terms are more informative and contribute more to the overall score."
+      }
+    ],
+    "metadata": {
+      "page_number": 2,
+      "header": "3.2 Query-document alignment score",
+      "chunk_index": 8,
+      "file_path": "Optimizing Query Generation for Enhanced Document Retrieval in RAG.pdf",
+      "token_count": 1115
+    },
+    "context": "To employ query-document alignment score in optimization step, we use three types of evaluation scores: BM25 scores from sparse retrievals, dense scores from dense retrievals, hybrid scores that combine the sparse and dense retrievals. Given query _q_ _i_, and documents set _D_ = _{d_ _j_ _}_ _[J]_ _j_ =1 the BM25 alignment score is as follow, IDF( _q_ _i_ ) _·_ f( _q_ _i_ _, D_ ) _·_ ( _k_ 1 + 1) BM25( _q_ _i_ _, D_ ) = _|D|_ (1) AVG DL [)] Table 1: Results of document retrieval task. All scores denote nDCG@10. **Bold** indicates the best result across all models, and the second best is underlined. Scifact Trec-covid FiQA _Sparse Retrieval_ BM25 67.9 59.5 23.6 + RM3 (Lv and Zhai, 2009) 64.6 59.3 19.2 + Q2D/PRF (Jagerman et al., 2023) 71.7 73.8 29.0 + CSQE (Lei et al., 2024) 69.6 74.2 25.0 + QOQA (BM25 score) 67.5 61.1 21.4 + QOQA (Dense score) 69.7 48.4 23.6 + QOQA (Hybrid score) 66.4 43.2 22.4 _Dense Retrieval_ BGE-base-1.5 74.1 78.2 **40.7** + CSQE (Lei et al., 2024) 73.7 78.2 40.1 + QOQA (BM25 score) **75.4** 60.6 37.4 + QOQA (Dense score) 74.3 77.9 40.6 + QOQA (Hybrid score) 73.9 **79.2** 40.0"
+  },
+  {
+    "questions": [
+      {
+        "question": "What retrieval function does the BM25 model rely on?",
+        "answer": "The BM25 model relies on a bag-of-words retrieval function that uses token-matching between two high-dimensional sparse vectors, which utilize TF-IDF token weights."
+      },
+      {
+        "question": "What is the purpose of the BM25+RM3 method?",
+        "answer": "The purpose of the BM25+RM3 method is to enhance the effectiveness of information retrieval through query expansion using pseudo-relevance feedback (PRF). This method builds upon the BM25 model by improving the initial query results, allowing for a more refined and relevant set of documents to be retrieved."
+      },
+      {
+        "question": "What prefix is added for dense retrieval tasks in the BGE-base-en-v1.5 model?",
+        "answer": "The prefix added for dense retrieval tasks in the BGE-base-en-v1.5 model is \"Represent this sentence for searching relevant passages:\"."
+      }
+    ],
+    "metadata": {
+      "page_number": 3,
+      "header": "Baseline",
+      "chunk_index": 9,
+      "file_path": "Optimizing Query Generation for Enhanced Document Retrieval in RAG.pdf",
+      "token_count": 951
+    },
+    "context": "(1) Sparse Retrieval: (a) BM25 (Robertson and Zaragoza, 2009) model is a widelyused bag-of-words retrieval function that relies on token-matching between two high-dimensional sparse vectors, which use TF-IDF token weights. We used default setting from Pyserini (Lin et al., 2021). (b) BM25+RM3 (Robertson and Zaragoza, 2009; Lv and Zhai, 2009) is query expansion method using PRF. We also include (c) BM25+Q2D/PRF (Robertson and Zaragoza, 2009; Jagerman et al., 2023) that use both LLM-based and PRF query expansion methods. (2) Dense Retrieval: (a) BGE-base-en-v1.5 model is a stateof-the-art embedding model designed for various NLP tasks like retrieval, clustering, and classification. For dense retrieval tasks, we added ’Represent this sentence for searching relevant passages:’ as a query prefix, following the default setting from Pyserini. (Lin et al., 2021). We also used CSQE (Lei et al., 2024) for both sparse retrieval and dense retrieval."
+  }
+]

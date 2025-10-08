@@ -1,0 +1,122 @@
+[
+  {
+    "questions": [
+      {
+        "question": "What is the role of retrieval in information retrieval applications like search and Question-Answering systems?",
+        "answer": "Retrieval plays a crucial role in information retrieval applications such as search and Question-Answering (Q&A) systems by enabling the identification and extraction of relevant information from large datasets. It involves leveraging text embedding models to semantically match queries with relevant textual content, which can include similar sentences or documents. In these systems, retrieval is essential for efficiently finding pertinent passages or answers that address user queries, thereby enhancing the overall effectiveness and accuracy of the application. By utilizing techniques like embedding models and multi-stage retrieval pipelines, these systems can optimize the retrieval process, ensuring that users receive accurate and timely information."
+      },
+      {
+        "question": "How do embedding models represent variable-length text?",
+        "answer": "Embedding models represent variable-length text as fixed-dimensional vectors. This transformation allows the models to capture the semantic meaning of the text, enabling them to match pieces of textual content effectively. The embeddings are generated using architectures like Transformers, and the models are typically trained using techniques such as Contrastive Learning. By converting variable-length text into fixed-size embeddings, these models facilitate downstream tasks such as retrieval, classification, and semantic textual similarity."
+      },
+      {
+        "question": "What training method is typically used for embedding models?",
+        "answer": "Embedding models are typically trained using Contrastive Learning."
+      }
+    ],
+    "metadata": {
+      "page_number": 1,
+      "header": "Introduction",
+      "chunk_index": 2,
+      "file_path": "fine-tuning and deploying Rerankers for RAG.pdf",
+      "token_count": 3212
+    },
+    "context": "retrieval is a core component for many information retrieval ications like search, Question-Answering (Q&A) and recomder systems. More recently, text retrieval has been leveraged by ieval-Augmented Generation (RAG)[ 15, 27 ] systems, empowg Large Language Models (LLM) with external and up-to-date ext. ext embedding models represent variable-length text as a fixed ension vector that can be used for downstream tasks. They are for effective text retrieval, as they can semantically match pieces extual content that can be symmetric (e.g. similar sentences ocuments) or asymmetric (question and passages that might aining its answer). Embedding models are based on the Transformer architec Some examples of seminal works are Sentence-BERT [ 28 ], D [ 12 ], E5 [ 32 ] and E5-Mistral [ 33 ]. They are typically trained w Constrastive Learning [ 3, 12 ] as a _bi-encoder_ or _late combina_ _model_ [ 38 ], i.e. query and passage are embedded separately and model is optimized to maximize the similarity between query relevant (positive) passages and minimize the similarity betw query and non-relevant (negative) passages. Retrieval systems that leverage text embedding models typic split the corpus into small chunks or passages (e.g. sentence paragraphs), embed those passages and index corresponding em dings into a vector database. This setup allows efficiently retrie relevant passages from the embedded query by using Maxim Inner Product Search (MIPS) [ 15 ] or another Approximate Nea Neighbor (ANN) algorithm. The MTEB [ 22 ] is a popular benchmark of text embedding m els for different tasks like retrieval, classification, clustering mantic textual similarity, among others. We can notice from M leaderboard [1] that in general the larger the embedding mode terms of parameters the higher the accuracy it can achieve. H ever, that brings engineering challenges for companies in deplo such systems, as large embedding models can be prohibitively co or slow to index very large textual corpus / knowledge bases. For that reason, multi-stage text retrieval pipelines have b proposed to increase indexing and serving throughput, as we improving the retrieval accuracy. In those pipelines, a sparse an dense embedding model are first used to retrieve top-k candi passages, followed by a ranking model that refines the final ran of those passages, as illustrated in Figure 1. Ranking models are typically Transformer models that ope as a _cross-encoder_ or _early combination model_ [ 38 ] that take input both the query and passage pair concatenated and uses self-attention mechanism to interact more deeply with the qu and passage pair, and model their semantic relationship. Rank models are used to provide relevance predictions only for the k candidates retrieved by the retrieval model. They can incr retrieval accuracy and make it possible using smaller embedd model, considerably reducing the indexing time and cost. In this paper, we present a benchmark of publicly available r ing models for text retrieval and discuss how they affect the ran accuracy compared to the original ordering provided by diffe 1 [https://huggingface.co/spaces/mteb/leaderboard](https://huggingface.co/spaces/mteb/leaderboard)"
+  },
+  {
+    "questions": [
+      {
+        "question": "What loss is typically used to train ss-encoders?",
+        "answer": "The loss typically used to train ss-encoders is the point-wise Binary Cross-Entropy (BCE) loss."
+      },
+      {
+        "question": "What loss is used to fine-tune Mistral 4B?",
+        "answer": "The loss used to fine-tune Mistral 4B is the list-wise NCE loss (InfoNCE)."
+      },
+      {
+        "question": "What type of learning is employed alongside the list-wise NCE loss?",
+        "answer": "Contrastive learning is employed alongside the list-wise NCE loss."
+      }
+    ],
+    "metadata": {
+      "page_number": 4,
+      "header": "BCE vs InfoNCE Loss",
+      "chunk_index": 19,
+      "file_path": "fine-tuning and deploying Rerankers for RAG.pdf",
+      "token_count": 769
+    },
+    "context": "ss-encoders are typically trained with the point-wise Binary ss-Entropy (BCE) loss (Equation 1), as we discussed in Section 4. n the other hand, we fine-tune _Mistral 4B_ with the list-wise NCE loss[25] (Equation 2) and contrastive learning. We experiment with those two losses, both using the same sets ard-negative passages mined from the corpus, as described in ion 4. n Table 4, we can clearly observe the higher retrieval accuracy ined when using InfoNCE, a list-wise contrastive learning loss ned to maximize the relevance score of the question and positive age pair, while minimizing the score for question and negative age pairs. his ablation study explains our choices of using bi-directional ntion and InfoNCE loss for fine-tuning _NV-RerankQA-Mistral-_ _3_ ."
+  },
+  {
+    "questions": [
+      {
+        "question": "What is the title of the paper referenced on page 6?",
+        "answer": "The title of the paper referenced on page 6 is \"Deep self-attention distillation for task-agnostic compression.\""
+      },
+      {
+        "question": "Who are the authors of the paper titled \"HotpotQA\"?",
+        "answer": "The authors of the paper titled \"HotpotQA\" are Zhilin Yang, Peng Qi, Saizheng Zhang, Yoshua Bengio, William W. Cohen, R. Salakhutdinov, and Christopher D. Manning."
+      },
+      {
+        "question": "What year was the paper on \"Deep self-attention distillation for task-agnostic compression\" published?",
+        "answer": "The paper on \"Deep self-attention distillation for task-agnostic compression\" was published in 2020."
+      }
+    ],
+    "metadata": {
+      "page_number": 6,
+      "header": "2020. Minilm: Deep self-attention distillation for task-agnostic compressi",
+      "chunk_index": 24,
+      "file_path": "fine-tuning and deploying Rerankers for RAG.pdf",
+      "token_count": 794
+    },
+    "context": "pre-trained transformers. _Advances in Neural Information Processing Syste_ (2020), 5776–5788. [36] Wei Yang, Haotian Zhang, and Jimmy Lin. 1903. Simple applications of B for ad hoc document retrieval. CoRR abs/1903.10972 (2019). _URL: http://_ _org/abs/1903.10972_ (1903). [37] Zhilin Yang, Peng Qi, Saizheng Zhang, Yoshua Bengio, William W Cohen, R Salakhutdinov, and Christopher D Manning. 2018. HotpotQA: A dataset f verse, explainable multi-hop question answering. _arXiv preprint arXiv:1809._ (2018). [38] Hamed Zamani, Mostafa Dehghani, W Bruce Croft, Erik Learned-Miller Jaap Kamps. 2018. From neural re-ranking to neural ranking: Learning a s representation for inverted indexing. In _Proceedings of the 27th ACM interna_ _conference on information and knowledge management_ . 497–506."
+  },
+  {
+    "questions": [
+      {
+        "question": "What type of models are ross-encoder ranking models classified as?",
+        "answer": "Ross-encoder ranking models are classified as binary classifiers that discriminate between positive and negative passages."
+      },
+      {
+        "question": "What loss function is typically used with ross-encoder ranking models?",
+        "answer": "The loss function typically used with ross-encoder ranking models is the binary cross-entropy loss."
+      },
+      {
+        "question": "What happens to accuracy when more top layers are pruned from the Mistral 7B model?",
+        "answer": "When more top layers are pruned from the Mistral 7B model, the accuracy decreases. The findings indicate that the lower the number of layers retained, the lower the accuracy becomes. However, keeping the bottom layers provides a good trade-off between accuracy penalty (which is around -1%) and model size reduction (which is about -50% in the number of parameters) compared to the original 32-layer model."
+      }
+    ],
+    "metadata": {
+      "page_number": 4,
+      "header": "oder, pruned and adapted from Mistral 7B",
+      "chunk_index": 13,
+      "file_path": "fine-tuning and deploying Rerankers for RAG.pdf",
+      "token_count": 1598
+    },
+    "context": "ross-encoder ranking models are binary classifiers that discrime between positive and negative passages. They typically are ned with the binary cross-entropy loss as in Equation 1, where _𝜙_ ( _𝑞,𝑑_ ) is the model predicted likelihood of the passage _𝑑_ being vant to query _𝑞_ . _𝐿_ = −( _𝑦_ log( _𝑝_ ) + (1 − _𝑦_ ) log(1 − _𝑝_ )) (1) also tried pruning different number of top layers from Mistral 7B model, the layers we remove the lower the accuracy. We found out that keeping bottom yers provides a good trade-off between accuracy penalty (-1%) and model size tion (-50% # parameters) compared to the original 32-layer model. Instead, for _NV-RerankQA-Mistral-4B-v3_ we follow [ 31 ] and t the reranker with contrastive learning over the positive an negative candidates scores using the list-wise InfoNCE loss shown in Equation 2, where _𝑑_ [+] is a positive relevant passage, _𝑑_ one of the _𝑁_ negative passages and _𝜏_ is the temperature param _𝐿_ = −log exp( _𝜙_ ( _𝑞,𝑑_ [+] )/ _𝜏_ )) exp( _𝜙_ ( _𝑞,𝑑_ [+] )/ _𝜏_ )) + ~~[�]~~ _𝑖_ _[𝑁]_ =1 [exp][(] _[𝜙]_ [(] _[𝑞,𝑑]_ [−] [)/] _[𝜏]_ [))] The negative candidates used for contrastive learning are m from the corpus in the data pre-processing stage by using a tea embedding model. We use the _TopK-PercPos_ hard-negative min method introduced in [ 21 ], configured with maximum nega score threshold as 95% of the positive scores to remove poten false negatives. We present in Section 5 an ablation study on fine-tuning ran models, with some experiments focused on our choices for the and self-attention mechanism for _NV-RerankQA-Mistral-4B-v3_"
+  },
+  {
+    "questions": [
+      {
+        "question": "What type of attention mechanism was modified in the adapted Mistral 4B?",
+        "answer": "The adapted Mistral 4B modified the standard self-attention mechanism from directional (causal) to bi-directional attention."
+      },
+      {
+        "question": "From what type of attention to what type was the attention mechanism modified?",
+        "answer": "The attention mechanism was modified from directional (causal) attention to bi-directional attention."
+      },
+      {
+        "question": "What section describes the modification of the attention mechanism in Mistral 4B?",
+        "answer": "Section 4 describes the modification of the attention mechanism in Mistral 4B."
+      }
+    ],
+    "metadata": {
+      "page_number": 4,
+      "header": "5.2 Causal vs Bi-directional Attention mechanism",
+      "chunk_index": 16,
+      "file_path": "fine-tuning and deploying Rerankers for RAG.pdf",
+      "token_count": 399
+    },
+    "context": "In Section 4 we describe that for our adapted _Mistral 4B_ we m ified the standard self-attention mechanism of Mistral from directional (causal) to bi-directional attention. 18 [https://huggingface.co/microsoft/MiniLM-L12-H384-uncased](https://huggingface.co/microsoft/MiniLM-L12-H384-uncased) 19 [https://huggingface.co/microsoft/deberta-v3-large](https://huggingface.co/microsoft/deberta-v3-large)"
+  }
+]
